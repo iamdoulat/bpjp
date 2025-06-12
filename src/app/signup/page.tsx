@@ -1,0 +1,160 @@
+// src/app/signup/page.tsx
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, UserPlus, Handshake } from "lucide-react";
+import type { AuthError } from "firebase/auth";
+
+const signupFormSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match.",
+  path: ["confirmPassword"],
+});
+
+type SignupFormValues = z.infer<typeof signupFormSchema>;
+
+export default function SignupPage() {
+  const { signup, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const form = useForm<SignupFormValues>({
+    resolver: zodResolver(signupFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+    mode: "onChange",
+  });
+
+  async function onSubmit(data: SignupFormValues) {
+    setIsSubmitting(true);
+    const result = await signup(data.email, data.password);
+    setIsSubmitting(false);
+
+    if (result && 'code' in result) { // AuthError
+      const firebaseError = result as AuthError;
+      let errorMessage = "Signup failed. Please try again.";
+      if (firebaseError.code === 'auth/email-already-in-use') {
+        errorMessage = "This email is already registered. Try logging in.";
+      } else if (firebaseError.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format.";
+      } else if (firebaseError.code === 'auth/weak-password') {
+        errorMessage = "Password is too weak. Please choose a stronger password.";
+      }
+      toast({
+        title: "Signup Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } else if (result) { // User
+      toast({
+        title: "Signup Successful!",
+        description: "Your account has been created. Redirecting to dashboard...",
+        variant: "default",
+      });
+      router.push("/"); // Redirect to dashboard
+    } else {
+         toast({
+            title: "Signup Error",
+            description: "An unexpected error occurred. Please try again.",
+            variant: "destructive",
+          });
+    }
+  }
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+      <div className="absolute top-8 left-8 flex items-center gap-2 text-xl font-semibold text-primary">
+        <Handshake className="h-8 w-8" />
+        <span>ImpactBoard</span>
+      </div>
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
+          <CardDescription>Join ImpactBoard to start making a difference.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="you@example.com" {...field} disabled={isSubmitting || authLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting || authLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting || authLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full" disabled={isSubmitting || authLoading || !form.formState.isValid}>
+                {(isSubmitting || authLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Account
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter className="flex flex-col items-center gap-2 text-sm">
+          <p>
+            Already have an account?{" "}
+            <Button variant="link" asChild className="p-0 h-auto">
+              <Link href="/login">Sign In</Link>
+            </Button>
+          </p>
+        </CardFooter>
+      </Card>
+    </main>
+  );
+}

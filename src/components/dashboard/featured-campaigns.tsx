@@ -1,3 +1,4 @@
+// src/components/dashboard/featured-campaigns.tsx
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -6,8 +7,10 @@ import { CampaignCard } from './campaign-card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, ServerCrash } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 
 export function FeaturedCampaigns() {
+  const { user } = useAuth(); // Get user from auth context
   const [campaigns, setCampaigns] = useState<PersonalizedCampaignRecommendationsOutput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,11 +20,19 @@ export function FeaturedCampaigns() {
       try {
         setLoading(true);
         setError(null);
-        // Mock user data for the AI flow
+        
+        // Use actual user ID if available, otherwise a placeholder for public view
+        const userId = user ? user.uid : 'publicUser'; 
+        // Example preferences, could be fetched or hardcoded for public view
+        const userPreferences = user ? "environment, education" : "general, popular"; 
+        // Example donation history, empty if no user or public
+        const userDonationHistory = user ? ['campaignA', 'campaignB'] : [];
+
+
         const input: PersonalizedCampaignRecommendationsInput = {
-          userId: 'user123',
-          donationHistory: ['campaignA', 'campaignB'], // Example history
-          preferences: 'environment, education', // Example preferences
+          userId: userId,
+          donationHistory: userDonationHistory, 
+          preferences: userPreferences,
         };
         const recommendedCampaigns = await personalizedCampaignRecommendations(input);
         setCampaigns(recommendedCampaigns);
@@ -33,12 +44,16 @@ export function FeaturedCampaigns() {
       }
     }
     fetchCampaigns();
-  }, []);
+  }, [user]); // Re-fetch if user changes
 
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-headline font-semibold mb-2">Featured Campaigns</h2>
-      <p className="text-muted-foreground mb-6">Discover campaigns you can support, tailored to your interests.</p>
+      <h2 className="text-2xl font-headline font-semibold mb-2">
+        {user ? "Campaigns For You" : "Featured Campaigns"}
+      </h2>
+      <p className="text-muted-foreground mb-6">
+        {user ? "Discover campaigns tailored to your interests." : "Explore popular campaigns you can support."}
+      </p>
 
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -67,7 +82,10 @@ export function FeaturedCampaigns() {
       {!loading && !error && campaigns && campaigns.length === 0 && (
          <Alert className="bg-card">
            <AlertTitle>No Campaigns Found</AlertTitle>
-           <AlertDescription>We couldn't find any campaigns matching your profile right now. Please check back later!</AlertDescription>
+           <AlertDescription>
+             {user ? "We couldn't find any campaigns matching your profile right now." : "No featured campaigns available at the moment."}
+             Please check back later!
+           </AlertDescription>
          </Alert>
       )}
     </div>
