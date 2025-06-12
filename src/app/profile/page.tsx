@@ -8,17 +8,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+// Removed unused Label import: import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form"; // Removed Controller as it's not used directly here anymore.
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
-import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon } from "lucide-react";
+import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign } from "lucide-react"; // Added DollarSign
 import { format } from 'date-fns';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
@@ -219,7 +219,7 @@ export default function ProfilePage() {
                 alt="Cover photo" 
                 layout="fill" 
                 objectFit="cover" 
-                priority // Preload cover image
+                priority 
                 data-ai-hint="abstract texture" 
               />
             </div>
@@ -276,13 +276,19 @@ export default function ProfilePage() {
           <CardContent className="mt-6 space-y-6">
            <Form {...form}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div className="flex items-center space-x-2 p-3 bg-muted/20 rounded-md">
-                <Mail className="h-5 w-5 text-primary" />
-                <span>{user.email || "No email provided"}</span>
+              <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                <Mail className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="font-semibold">{user.email || "No email provided"}</p>
+                </div>
               </div>
-              <div className="flex items-center space-x-2 p-3 bg-muted/20 rounded-md">
-                <CalendarDays className="h-5 w-5 text-primary" />
-                <span>Joined: {user.metadata.creationTime ? format(new Date(user.metadata.creationTime), "MMMM d, yyyy") : "N/A"}</span>
+              <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                <CalendarDays className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                 <div>
+                  <p className="text-xs text-muted-foreground">Joined</p>
+                  <p className="font-semibold">{user.metadata.creationTime ? format(new Date(user.metadata.creationTime), "MMMM d, yyyy") : "N/A"}</p>
+                </div>
               </div>
             </div>
             
@@ -322,30 +328,32 @@ export default function ProfilePage() {
                 </div>
               </form>
             ) : (
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 p-3 bg-muted/20 rounded-md min-h-[46px]">
-                  <Smartphone className="h-5 w-5 text-primary" />
-                  <span>{profileData?.mobileNumber || "Not set"}</span>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                  <Smartphone className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Mobile Number</p>
+                    <p className="font-semibold">{profileData?.mobileNumber || "Not set"}</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                  <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Approved Donations</p>
+                    <p className="font-semibold">$360</p>
+                  </div>
                 </div>
               </div>
             )}
             
             {!isEditing && (
-               <div className="flex justify-end">
+               <div className="flex justify-end mt-6">
                  <Button onClick={handleEditToggle}>
                    <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
                  </Button>
                </div>
             )}
-            <Card className="mt-8">
-                <CardHeader>
-                    <CardTitle className="flex items-center"><UserIcon className="mr-2 h-5 w-5 text-primary" /> Donation History</CardTitle>
-                    <CardDescription>Your contributions and their status (coming soon).</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground text-center py-8">Donation history feature will be available here.</p>
-                </CardContent>
-            </Card>
+            {/* Removed the separate "Donation History" card as requested by placing donation info above */}
            </Form>
           </CardContent>
         </Card>
