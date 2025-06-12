@@ -1,3 +1,4 @@
+
 // src/components/dashboard/user-info.tsx
 "use client";
 
@@ -57,7 +58,7 @@ export function UserInfo() {
           <p className="text-sm text-muted-foreground">{userEmail}</p>
         </div>
       </div>
-      <p className="text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         Welcome to Your Dashboard – Here's an overview of your activity, ongoing campaigns, and platform impact.
       </p>
     </div>
