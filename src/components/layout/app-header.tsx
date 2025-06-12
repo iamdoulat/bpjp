@@ -1,8 +1,10 @@
+
 // src/components/layout/app-header.tsx
 import {
   Handshake,
   Moon,
   Bell,
+  LayoutGrid, // Keep if needed, or remove if SidebarTrigger default is fine
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,9 +15,11 @@ export function AppHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2"> {/* Left items container */}
+          {/* Mobile Sidebar Trigger */}
           <SidebarTrigger className="md:hidden" />
           {/* App Logo & Title - shown on mobile OR when desktop sidebar is collapsed */}
-          <div className="hidden items-center gap-2 md:flex group-data-[sidebar-collapsible=icon]/sidebar-wrapper:md:hidden group-data-[sidebar-state=expanded]/sidebar-wrapper:md:hidden">
+          {/* Hidden on desktop when sidebar is expanded (as sidebar shows its own title) */}
+          <div className="hidden items-center gap-2 md:flex peer-data-[state=expanded]:md:hidden">
             <Handshake className="h-6 w-6 text-primary" />
             <span className="font-semibold text-lg text-foreground">ImpactBoard</span>
           </div>

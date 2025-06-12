@@ -1,7 +1,9 @@
+
 import type { ReactNode } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarNavItems } from './sidebar-nav-items';
 import { AppHeader } from './app-header';
+import { LayoutGrid } from 'lucide-react';
 
 interface AppShellProps {
   children: ReactNode;
@@ -12,10 +14,16 @@ export function AppShell({ children }: AppShellProps) {
     <SidebarProvider defaultOpen>
       <div className="flex min-h-screen">
         <Sidebar collapsible="icon">
-          <SidebarHeader className="p-4">
-            <div className="flex items-center justify-between">
-               <h1 className="text-2xl font-headline font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">ImpactBoard</h1>
-               <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
+          <SidebarHeader className="p-4 border-b border-sidebar-border">
+            <div className="flex items-center gap-3">
+               {/* Desktop sidebar toggle, visible in sidebar header */}
+               <SidebarTrigger className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground p-1">
+                 <LayoutGrid className="h-5 w-5" />
+               </SidebarTrigger>
+               {/* Title, hidden when sidebar is collapsed on desktop */}
+               <h1 className="text-xl font-headline font-semibold text-sidebar-foreground group-data-[state=collapsed]:hidden truncate">
+                 ImpactBoard
+               </h1>
             </div>
           </SidebarHeader>
           <SidebarContent>
@@ -25,7 +33,6 @@ export function AppShell({ children }: AppShellProps) {
         <SidebarInset className="flex-1 flex flex-col">
           <AppHeader />
           {/* The main page content (children) will be rendered below the AppHeader */}
-          {/* The AppHeader component itself contains the mobile sidebar trigger, so the one previously here was redundant. */}
           {children}
         </SidebarInset>
       </div>
