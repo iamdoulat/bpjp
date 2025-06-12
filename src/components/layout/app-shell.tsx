@@ -46,23 +46,25 @@ export function AppShell({ children }: AppShellProps) {
       <div className="flex min-h-screen">
         <Sidebar collapsible="icon">
           <SidebarHeader className="p-4 border-b border-sidebar-border">
-            <div className="flex items-center justify-between w-full gap-3"> {/* Modified for justify-between and w-full */}
-              {/* Logo and App Name (Left side) */}
-              <Link href="/" passHref>
-                <div className="flex items-center gap-2 cursor-pointer">
-                  {appLogoUrl ? (
-                    <Image src={appLogoUrl} alt="BPJP Logo" width={28} height={28} className="h-7 w-7 rounded" data-ai-hint="logo company" />
-                  ) : (
-                    <LayoutGrid className="h-7 w-7 text-sidebar-foreground" /> // Icon if no logo
-                  )}
-                  <h1 className="text-xl font-headline font-semibold text-sidebar-foreground truncate group-data-[state=collapsed]:hidden">
-                    BPJP
-                  </h1>
-                </div>
-              </Link>
+            <div className="flex items-center justify-between w-full gap-3">
+              {/* Wrapper for Logo and App Name - hides when sidebar is collapsed */}
+              <div className="flex items-center gap-2 group-data-[state=collapsed]:hidden">
+                <Link href="/" passHref>
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    {appLogoUrl ? (
+                      <Image src={appLogoUrl} alt="BPJP Logo" width={28} height={28} className="h-7 w-7 rounded" data-ai-hint="logo company" />
+                    ) : (
+                      <LayoutGrid className="h-7 w-7 text-sidebar-foreground" />
+                    )}
+                    <h1 className="text-xl font-headline font-semibold text-sidebar-foreground truncate">
+                      BPJP
+                    </h1>
+                  </div>
+                </Link>
+              </div>
 
-              {/* Sidebar Trigger Button (Right side, hidden when collapsed) */}
-              <SidebarTrigger className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground p-1 group-data-[state=collapsed]:hidden">
+              {/* Sidebar Trigger Button for desktop - remains visible to toggle */}
+              <SidebarTrigger className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground p-1">
                 {/* PanelLeft icon is default from SidebarTrigger component */}
               </SidebarTrigger>
             </div>
