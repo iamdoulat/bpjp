@@ -55,15 +55,15 @@ export function AppShell({ children }: AppShellProps) {
               {appLogoUrl ? (
                 <Link href="/" passHref>
                   <div className="flex items-center gap-2 cursor-pointer group-data-[state=collapsed]:hidden">
-                    <Image src={appLogoUrl} alt="ImpactBoard Logo" width={28} height={28} className="h-7 w-7 rounded" data-ai-hint="logo company" />
+                    <Image src={appLogoUrl} alt="BPJP Logo" width={28} height={28} className="h-7 w-7 rounded" data-ai-hint="logo company" />
                     <h1 className="text-xl font-headline font-semibold text-sidebar-foreground truncate">
-                      ImpactBoard
+                      BPJP
                     </h1>
                   </div>
                 </Link>
               ) : (
                  <h1 className="text-xl font-headline font-semibold text-sidebar-foreground group-data-[state=collapsed]:hidden truncate">
-                   ImpactBoard
+                   BPJP
                  </h1>
               )}
             </div>

@@ -40,8 +40,8 @@ export function AppHeader() {
             {appLogoUrl ? (
               <Link href="/" passHref>
                 <div className="flex items-center gap-2 cursor-pointer">
-                  <Image src={appLogoUrl} alt="ImpactBoard Logo" width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />
-                  <span className="font-semibold text-lg text-foreground">ImpactBoard</span>
+                  <Image src={appLogoUrl} alt="BPJP Logo" width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />
+                  <span className="font-semibold text-lg text-foreground">BPJP</span>
                 </div>
               </Link>
             ) : (
@@ -49,7 +49,7 @@ export function AppHeader() {
                  <div className="flex items-center gap-2 cursor-pointer">
                     {/* Fallback if no logo URL, or use a default icon like Handshake */}
                     {/* For now, just show text if no logo */}
-                    <span className="font-semibold text-lg text-foreground">ImpactBoard</span>
+                    <span className="font-semibold text-lg text-foreground">BPJP</span>
                  </div>
               </Link>
             )}

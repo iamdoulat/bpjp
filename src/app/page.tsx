@@ -27,7 +27,7 @@ export default function DashboardPage() {
     return (
       <AppShell> {/* AppShell will show login/signup in header */}
         <main className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4">
-          <h1 className="text-3xl font-headline font-semibold">Welcome to ImpactBoard</h1>
+          <h1 className="text-3xl font-headline font-semibold">Welcome to BPJP</h1>
           <p className="text-muted-foreground max-w-md">
             Your platform for discovering and supporting impactful campaigns. Please log in or sign up to access your dashboard and manage your contributions.
           </p>

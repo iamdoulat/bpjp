@@ -83,12 +83,12 @@ export default function LoginPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
        <div className="absolute top-8 left-8 flex items-center gap-2 text-xl font-semibold text-primary">
           <Handshake className="h-8 w-8" />
-          <span>ImpactBoard</span>
+          <span>BPJP</span>
         </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Welcome Back!</CardTitle>
-          <CardDescription>Sign in to access your ImpactBoard dashboard.</CardDescription>
+          <CardDescription>Sign in to access your BPJP dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

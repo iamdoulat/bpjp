@@ -90,12 +90,12 @@ export default function SignupPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="absolute top-8 left-8 flex items-center gap-2 text-xl font-semibold text-primary">
         <Handshake className="h-8 w-8" />
-        <span>ImpactBoard</span>
+        <span>BPJP</span>
       </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
-          <CardDescription>Join ImpactBoard to start making a difference.</CardDescription>
+          <CardDescription>Join BPJP to start making a difference.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

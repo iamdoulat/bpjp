@@ -5,7 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from "@/components/layout/theme-provider";
 
 export const metadata: Metadata = {
-  title: 'ImpactBoard',
+  title: 'BPJP',
   description: 'Donor & Campaign Management Dashboard',
 };
 
