@@ -28,7 +28,7 @@ import {
 import { DatePicker } from "@/components/ui/date-picker"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card"
-import { addCampaign } from '@/services/campaignService';
+import { addCampaign, type NewCampaignInputData } from '@/services/campaignService';
 import { Loader2 } from "lucide-react"
 
 const newCampaignFormSchema = z.object({
@@ -58,12 +58,13 @@ const newCampaignFormSchema = z.object({
 
 type NewCampaignFormValues = z.infer<typeof newCampaignFormSchema>
 
-const defaultValues: Partial<NewCampaignFormValues> = {
+// This ensures the type passed to addCampaign matches NewCampaignInputData
+const defaultValues: NewCampaignFormValues = {
   campaignTitle: "",
   description: "",
   goalAmount: 1000,
-  startDate: undefined,
-  endDate: undefined,
+  startDate: undefined as unknown as Date, // Required, but set to undefined for initial empty state
+  endDate: undefined as unknown as Date,   // Required, but set to undefined for initial empty state
   campaignImageUrl: "",
   organizerName: "",
   initialStatus: "draft",
@@ -84,13 +85,19 @@ export default function NewCampaignPage() {
   async function onSubmit(data: NewCampaignFormValues) {
     setIsSubmitting(true);
     try {
-      const campaignId = await addCampaign(data);
+      // Ensure data conforms to NewCampaignInputData, especially date types
+      const campaignInput: NewCampaignInputData = {
+        ...data,
+        startDate: new Date(data.startDate), // Ensure it's a Date object
+        endDate: new Date(data.endDate),     // Ensure it's a Date object
+      };
+      const campaignId = await addCampaign(campaignInput);
       toast({
         title: "Campaign Created!",
-        description: `Campaign "${data.campaignTitle}" (ID: ${campaignId}) has been successfully saved to Firestore.`,
+        description: `Campaign "${data.campaignTitle}" (ID: ${campaignId}) has been successfully saved.`,
         variant: "default",
       });
-      form.reset(); // Optionally reset form after submission
+      form.reset(); 
     } catch (error) {
       console.error("Failed to save campaign:", error);
       let errorMessage = "An unexpected error occurred.";
@@ -188,7 +195,9 @@ export default function NewCampaignPage() {
                             if (isSubmitting) return true;
                             const today = new Date();
                             today.setHours(0,0,0,0);
+                            // Disable past dates
                             if (date < today) return true;
+                            // Disable if end date is set and this date is after end date
                             if (watchedEndDate && date > watchedEndDate) return true;
                             return false;
                           }}
@@ -216,7 +225,7 @@ export default function NewCampaignPage() {
                             today.setHours(0,0,0,0);
                              // If no start date, disable only past dates
                             if (!watchedStartDate && date < today) return true;
-                            // If start date exists, disable dates before start date OR past dates
+                            // If start date exists, disable dates before start date OR past dates (if start date itself is in past)
                             if (watchedStartDate && (date < watchedStartDate || date < today)) return true;
                             return false;
                           }}
@@ -235,7 +244,7 @@ export default function NewCampaignPage() {
                       <FormItem>
                         <FormLabel>Campaign Image URL (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://placehold.co/600x400.png" {...field} disabled={isSubmitting} />
+                          <Input placeholder="https://placehold.co/600x400.png" {...field} value={field.value ?? ""} disabled={isSubmitting} />
                         </FormControl>
                         <FormDescription>
                           Provide a URL for the campaign image. Use a placeholder like https://placehold.co/600x400.png if needed.
@@ -251,7 +260,7 @@ export default function NewCampaignPage() {
                       <FormItem>
                         <FormLabel>Organizer Name (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="Your Organization or Name" {...field} disabled={isSubmitting}/>
+                          <Input placeholder="Your Organization or Name" {...field} value={field.value ?? ""} disabled={isSubmitting}/>
                         </FormControl>
                         <FormDescription>
                           Name of the individual or group running the campaign.
@@ -285,7 +294,7 @@ export default function NewCampaignPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || !form.formState.isValid}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isSubmitting ? "Creating..." : "Create Campaign"}
                   </Button>
