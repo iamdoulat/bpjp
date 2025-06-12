@@ -14,7 +14,8 @@ import {
   ClipboardList,
   PlusCircle,
   LogIn,
-  UserPlus as UserPlusIcon // Renamed to avoid conflict
+  UserPlus as UserPlusIcon, // Renamed to avoid conflict
+  History as HistoryIcon, // Added for My Donations
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -27,7 +28,7 @@ const baseNavItems = [
 ];
 
 const authenticatedNavItems = [
-  { href: '/my-donations', label: 'My Donations', icon: HeartHandshake, requiresAuth: true },
+  { href: '/my-donations', label: 'My Donations', icon: HistoryIcon, requiresAuth: true }, // Updated icon
   { href: '/profile', label: 'Profile', icon: UserCircle2, requiresAuth: true },
 ];
 
@@ -59,13 +60,40 @@ export function SidebarNavItems() {
     let items = [...baseNavItems.filter(item => !item.requiresAuth || (item.requiresAuth && user))];
     
     if (user) {
-      items = items.concat(authenticatedNavItems); // Adds My Donations, Profile
+      // Add authenticated items, ensuring they aren't already there (e.g. if one was made public)
+      authenticatedNavItems.forEach(authItem => {
+        if (!items.some(existing => existing.href === authItem.href)) {
+          items.push(authItem);
+        }
+      });
+      
       if (isAdminUser) { 
-        items = items.concat(adminNavItems.filter(item => !items.some(existing => existing.href === item.href))); // Add admin items
+        adminNavItems.forEach(adminItem => {
+            if (!items.some(existing => existing.href === adminItem.href)) {
+                items.push(adminItem);
+            }
+        });
       }
     } else {
       items = items.concat(unauthenticatedNavItems);
     }
+
+    // Ensure correct order: Dashboard, Browse, My Donations, Profile, then Admin or Login/Signup
+    const desiredOrder = [
+        '/', '/campaigns', '/my-donations', '/profile', 
+        '/admin/overview', '/admin/users', '/admin/payments', '/admin/campaigns', '/new-campaign',
+        '/login', '/signup'
+    ];
+    
+    items.sort((a, b) => {
+        const indexA = desiredOrder.indexOf(a.href);
+        const indexB = desiredOrder.indexOf(b.href);
+        if (indexA === -1) return 1; // Put unknown items at the end
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+    });
+
+
     // Filter out admin items if not admin, even if user is present (covers edge cases)
     if (user && !isAdminUser) {
         items = items.filter(item => !item.isAdmin);
@@ -74,6 +102,7 @@ export function SidebarNavItems() {
     if (!user) {
         items = items.filter(item => !item.requiresAuth || item.href === '/login' || item.href === '/signup');
     }
+
 
     return items;
   };
@@ -115,3 +144,4 @@ export function SidebarNavItems() {
     </SidebarMenu>
   );
 }
+

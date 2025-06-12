@@ -3,13 +3,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Megaphone, HeartHandshake, UserCircle2 } from 'lucide-react';
+import { LayoutDashboard, Megaphone, History, UserCircle2 } from 'lucide-react'; // Changed HeartHandshake to History
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
-  { href: '/my-donations', label: 'My Donations', icon: HeartHandshake },
+  { href: '/my-donations', label: 'My Donations', icon: History }, // Changed icon and label if needed
   { href: '/profile', label: 'Profile', icon: UserCircle2 },
 ];
 
