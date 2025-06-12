@@ -114,7 +114,7 @@ export default function MyDonationsPage() {
   if (authLoading) {
     return (
       <AppShell>
-        <main className="flex-1 p-4 md:p-6 space-y-6">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4 md:py-6 space-y-6 overflow-auto pb-20 md:pb-6">
            <Skeleton className="h-8 w-1/4 mb-2" />
            <Skeleton className="h-4 w-1/2 mb-6" />
            <Skeleton className="h-10 w-24 self-end mb-4" />
@@ -143,7 +143,7 @@ export default function MyDonationsPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
+      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4 md:py-6 space-y-6 overflow-auto pb-20 md:pb-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <History className="h-8 w-8 text-primary" />
@@ -263,3 +263,4 @@ export default function MyDonationsPage() {
     </AppShell>
   );
 }
+
