@@ -18,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
-import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign } from "lucide-react"; 
+import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet } from "lucide-react"; 
 import { format } from 'date-fns';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import DonationHistory from "@/components/profile/donation-history"; // Added import
@@ -329,30 +329,32 @@ export default function ProfilePage() {
                 </div>
               </form>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
-                  <Smartphone className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Mobile Number</p>
-                    <p className="font-semibold">{profileData?.mobileNumber || "Not set"}</p>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                    <Smartphone className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Mobile Number</p>
+                      <p className="font-semibold">{profileData?.mobileNumber || "Not set"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                    <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total Approved Donations</p>
+                      <p className="font-semibold">$360</p> 
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
-                  <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Approved Donations</p>
-                    <p className="font-semibold">$360</p>
-                  </div>
+                <div className="flex justify-end mt-6 gap-2">
+                   <Button variant="outline" onClick={() => toast({ title: "My Wallet Clicked", description: "Wallet functionality coming soon!"})}>
+                    <Wallet className="mr-2 h-4 w-4" /> My Wallet
+                  </Button>
+                  <Button onClick={handleEditToggle}>
+                    <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
+                  </Button>
                 </div>
-              </div>
-            )}
-            
-            {!isEditing && (
-               <div className="flex justify-end mt-6">
-                 <Button onClick={handleEditToggle}>
-                   <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
-                 </Button>
-               </div>
+              </>
             )}
            </Form>
           </CardContent>
