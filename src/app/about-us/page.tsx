@@ -7,7 +7,7 @@ import Image from "next/image";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Info, MapPin, Building, Phone, Mail, UserCircle, Users } from "lucide-react";
+import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange } from "lucide-react"; // Added CalendarRange
 // import { getOrganizationSettings, type OrganizationSettingsData } from "@/services/organizationSettingsService"; // To be created
 
 // Placeholder Data - Replace with fetched data
@@ -15,6 +15,7 @@ const placeholderSettings = {
   organizationName: "BPJP Organization",
   address: "123 Philanthropy Lane, Generosity City, State 12345",
   registrationNumber: "NGO-REG-001",
+  committeePeriod: "2024-2026", // Added committee period
   contactPersonName: "Jane Donor",
   contactPersonCell: "+1-800-GIVE-NOW",
   contactEmail: "info@bpjporg.example.com",
@@ -60,7 +61,7 @@ export default function AboutUsPage() {
               <Skeleton className="h-4 w-3/4" />
             </CardHeader>
             <CardContent className="space-y-6">
-              {[...Array(3)].map((_, i) => (
+              {[...Array(4)].map((_, i) => ( // Increased to 4 for new item
                 <div key={i} className="flex items-start space-x-3">
                   <Skeleton className="h-6 w-6 rounded-full" />
                   <div className="space-y-1.5 flex-1">
@@ -118,6 +119,11 @@ export default function AboutUsPage() {
               <CardDescription className="pt-1 pl-10">
                 Registration No: {settings.registrationNumber}
               </CardDescription>
+            )}
+             {settings.committeePeriod && (
+                <CardDescription className="pt-1 pl-10">
+                    Committee Period: {settings.committeePeriod}
+                </CardDescription>
             )}
           </CardHeader>
           <CardContent className="p-6 space-y-6">

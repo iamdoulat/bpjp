@@ -29,6 +29,7 @@ const organizationSettingsSchema = z.object({
   organizationName: z.string().min(3, { message: "Organization name must be at least 3 characters." }),
   address: z.string().min(10, { message: "Address must be at least 10 characters." }),
   registrationNumber: z.string().optional().or(z.literal('')),
+  committeePeriod: z.string().optional().or(z.literal('')), // Added committee period
   contactPersonName: z.string().min(3, { message: "Contact person name must be at least 3 characters." }),
   contactPersonCell: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid contact person cell number." }).or(z.literal('')),
   contactEmail: z.string().email({ message: "Invalid contact email format." }),
@@ -45,6 +46,7 @@ const defaultValues: OrganizationSettingsFormValues = {
   organizationName: "BPJP Placeholder Org",
   address: "123 Main Street, Anytown, AT 12345",
   registrationNumber: "REG12345XYZ",
+  committeePeriod: "2024-2026", // Added placeholder
   contactPersonName: "John Doe",
   contactPersonCell: "+15551234567",
   contactEmail: "contact@bpjp.org",
@@ -176,6 +178,22 @@ export default function AdminSettingsPage() {
                       <FormControl>
                         <Input placeholder="e.g., 12345/AB/2024" {...field} value={field.value ?? ""} disabled={isSubmitting} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="committeePeriod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Committee Period (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 2024-2026 or Current Term" {...field} value={field.value ?? ""} disabled={isSubmitting} />
+                      </FormControl>
+                       <FormDescription>
+                        Specify the current committee's term period.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
