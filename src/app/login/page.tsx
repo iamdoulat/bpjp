@@ -84,21 +84,21 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4 relative">
-      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 md:top-8 md:left-8">
-        <Link href="/" passHref>
-          <div className="flex items-center gap-2 cursor-pointer text-lg sm:text-xl font-semibold text-primary">
-            {appLogoUrl ? (
-              <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 rounded flex-shrink-0" data-ai-hint="logo company"/>
-            ) : (
-              <Handshake className="h-7 w-7 sm:h-8 sm:w-8" />
-            )}
-            <span>{appName}</span>
-          </div>
-        </Link>
-      </div>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
+        <div className="flex flex-col items-center pt-6 pb-2">
+            <Link href="/" passHref>
+            <div className="flex flex-col items-center gap-2 cursor-pointer">
+                {appLogoUrl ? (
+                <Image src={appLogoUrl} alt={`${appName} Logo`} width={40} height={40} className="h-10 w-10 rounded" data-ai-hint="logo company"/>
+                ) : (
+                <Handshake className="h-10 w-10 text-primary" />
+                )}
+                <span className="text-xl font-semibold text-foreground">{appName}</span>
+            </div>
+            </Link>
+        </div>
+        <CardHeader className="text-center pt-2"> {/* Adjusted pt-2 for spacing */}
           <CardTitle className="text-2xl font-headline">Welcome Back!</CardTitle>
           <CardDescription>Sign in to access your {appName} dashboard.</CardDescription>
         </CardHeader>
