@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useAppContext } from '@/contexts/AppContext'; // Added useAppContext
+import { useAppContext } from '@/contexts/AppContext';
 
 interface AppShellProps {
   children: ReactNode;
@@ -21,7 +21,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const { user, loading } = useAuth();
-  const { appName } = useAppContext(); // Get appName from context
+  const { appName } = useAppContext();
   const router = useRouter();
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
@@ -49,7 +49,7 @@ export function AppShell({ children }: AppShellProps) {
         <Sidebar collapsible="icon">
           <SidebarHeader className="p-4 border-b border-sidebar-border">
             <div className="flex items-center justify-between w-full gap-3">
-              {/* Left side: Logo and App Name - hides when sidebar is collapsed on desktop */}
+              {/* Left side: Logo - hides when sidebar is collapsed on desktop */}
               <div className="flex items-center gap-2 group-data-[state=collapsed]:hidden">
                 <Link href="/" passHref>
                   <div className="flex items-center gap-2 cursor-pointer">
@@ -58,12 +58,9 @@ export function AppShell({ children }: AppShellProps) {
                     ) : (
                       <LayoutGrid className="h-7 w-7 text-sidebar-foreground" />
                     )}
-                    <h1 className="text-xl font-headline font-semibold text-sidebar-foreground truncate">
-                      {appName}
-                    </h1>
+                    {/* App Name text removed from here */}
                   </div>
                 </Link>
-                {/* Redundant button removed from here */}
               </div>
                {/* Standalone Logo/Icon for collapsed state on desktop - always visible if logo URL exists */}
                {appLogoUrl && (
@@ -80,7 +77,6 @@ export function AppShell({ children }: AppShellProps) {
                    </Link>
                  </div>
                )}
-
 
               {/* Primary Sidebar Trigger Button for desktop - remains visible to toggle */}
               <SidebarTrigger className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground p-1">
@@ -101,3 +97,4 @@ export function AppShell({ children }: AppShellProps) {
     </SidebarProvider>
   );
 }
+
