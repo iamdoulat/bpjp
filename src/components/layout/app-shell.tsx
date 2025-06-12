@@ -28,8 +28,8 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     if (!loading && !user) {
       const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/signup' && !currentPath.startsWith('/campaigns')) {
-        // router.push('/login');
+      if (currentPath !== '/login' && currentPath !== '/signup' && !currentPath.startsWith('/campaigns') && currentPath !== '/our-mission' && currentPath !== '/about-us' && currentPath !== '/upcoming-events' && currentPath !== '/') {
+        // router.push('/login'); // Allow certain public pages
       }
     }
   }, [user, loading, router]);
@@ -49,7 +49,7 @@ export function AppShell({ children }: AppShellProps) {
         <Sidebar collapsible="icon">
           <SidebarHeader className="p-4 border-b border-sidebar-border">
             <div className="flex items-center justify-between w-full gap-3">
-              {/* Left side: Logo - hides when sidebar is collapsed on desktop */}
+              {/* Left side: Logo - hides when sidebar is expanded on desktop */}
               <div className="flex items-center gap-2 group-data-[state=collapsed]:hidden">
                 <Link href="/" passHref>
                   <div className="flex items-center gap-2 cursor-pointer">
@@ -58,7 +58,6 @@ export function AppShell({ children }: AppShellProps) {
                     ) : (
                       <LayoutGrid className="h-7 w-7 text-sidebar-foreground" />
                     )}
-                    {/* App Name text removed from here */}
                   </div>
                 </Link>
               </div>
@@ -77,10 +76,7 @@ export function AppShell({ children }: AppShellProps) {
                    </Link>
                  </div>
                )}
-
-              {/* Primary Sidebar Trigger Button for desktop - remains visible to toggle */}
               <SidebarTrigger className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground p-1">
-                {/* PanelLeft icon is default from SidebarTrigger component */}
               </SidebarTrigger>
             </div>
           </SidebarHeader>
@@ -88,13 +84,27 @@ export function AppShell({ children }: AppShellProps) {
             <SidebarNavItems />
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="flex-1 flex flex-col">
+        <SidebarInset className="flex-1 flex flex-col"> {/* Main content area wrapper */}
           <AppHeader />
-          {children}
+          <div className="flex-1 overflow-auto"> {/* This wrapper allows children to scroll */}
+            {children}
+          </div>
+          {/* Desktop Footer - appears below the scrollable children */}
+          <footer className="p-4 text-center text-xs text-muted-foreground border-t border-border/40 hidden md:block">
+            © 2025 - Designed and Developed by{' '}
+            <a
+              href="https://vcard.mddoulat.com/iamdoulat"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold hover:underline text-primary"
+            >
+              Doulat
+            </a>{' '}
+            v1.0
+          </footer>
         </SidebarInset>
-        {user && <MobileBottomNav /> }
+        {user && <MobileBottomNav />} {/* This is fixed, overlays everything at the bottom on mobile */}
       </div>
     </SidebarProvider>
   );
 }
-
