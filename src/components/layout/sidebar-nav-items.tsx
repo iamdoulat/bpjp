@@ -17,8 +17,10 @@ import {
   History as HistoryIcon,
   ReceiptText,
   FilePlus2,
-  CalendarCheck2, // Added for Upcoming Events
-  CalendarPlus,   // Added for Create Event
+  CalendarCheck2, 
+  CalendarPlus,
+  Settings, // Added for Admin Settings
+  Info,     // Added for About Us
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -28,7 +30,8 @@ import { Skeleton } from '../ui/skeleton';
 const baseNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone, requiresAuth: false }, 
-  { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2, requiresAuth: false }, // Added
+  { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2, requiresAuth: false },
+  { href: '/about-us', label: 'About Us', icon: Info, requiresAuth: false }, // Added About Us
 ];
 
 const authenticatedNavItems = [
@@ -44,7 +47,8 @@ const adminNavItems = [
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList, requiresAuth: true, isAdmin: true },
   { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle, requiresAuth: true, isAdmin: true },
   { href: '/admin/expenses/create', label: 'Create Expense', icon: FilePlus2, requiresAuth: true, isAdmin: true },
-  { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus, requiresAuth: true, isAdmin: true }, // Added
+  { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus, requiresAuth: true, isAdmin: true },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, requiresAuth: true, isAdmin: true }, // Added Admin Settings
 ];
 
 const unauthenticatedNavItems = [
@@ -80,13 +84,16 @@ export function SidebarNavItems() {
         });
       }
     } else {
+      // For unauthenticated users, ensure only non-auth-required base items + login/signup are shown
+      items = items.filter(item => !item.requiresAuth);
       items = items.concat(unauthenticatedNavItems);
     }
 
     const desiredOrder = [
-        '/', '/campaigns', '/upcoming-events', '/my-donations', '/expenses/history', '/profile', 
+        '/', '/campaigns', '/upcoming-events', '/about-us', 
+        '/my-donations', '/expenses/history', '/profile', 
         '/admin/overview', '/admin/users', '/admin/payments', '/admin/campaigns', 
-        '/new-campaign', '/admin/expenses/create', '/admin/events/create',
+        '/new-campaign', '/admin/expenses/create', '/admin/events/create', '/admin/settings',
         '/login', '/signup'
     ];
     
@@ -101,8 +108,17 @@ export function SidebarNavItems() {
     if (user && !isAdminUser) {
         items = items.filter(item => !item.isAdmin);
     }
+    
+    // Final filter for unauthenticated users after sorting
     if (!user) {
-        items = items.filter(item => !item.requiresAuth || item.href === '/login' || item.href === '/signup' || item.href === '/campaigns' || item.href === '/upcoming-events');
+        items = items.filter(item => 
+            !item.requiresAuth || 
+            item.href === '/login' || 
+            item.href === '/signup' ||
+            item.href === '/campaigns' ||  // Already handled by initial filter
+            item.href === '/upcoming-events' || // Already handled
+            item.href === '/about-us' // Already handled
+        );
     }
 
 
@@ -114,7 +130,7 @@ export function SidebarNavItems() {
   if (loading) {
     return (
       <SidebarMenu>
-        {[...Array(7)].map((_, i) => ( // Increased skeleton items for new links
+        {[...Array(9)].map((_, i) => ( // Increased skeleton items for new links
           <SidebarMenuItem key={i}>
              <div className="flex items-center gap-2 p-2 w-full">
                 <Skeleton className="h-6 w-6 rounded" />
@@ -146,3 +162,6 @@ export function SidebarNavItems() {
     </SidebarMenu>
   );
 }
+
+
+    
