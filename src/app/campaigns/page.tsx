@@ -1,0 +1,178 @@
+
+// src/app/campaigns/page.tsx
+"use client";
+
+import * as React from "react";
+import { AppShell } from "@/components/layout/app-shell";
+import { CampaignCard } from "@/components/dashboard/campaign-card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getCampaigns, type CampaignData } from "@/services/campaignService";
+import { Megaphone, ChevronLeft, ChevronRight, ServerCrash } from "lucide-react";
+
+const CAMPAIGNS_PER_PAGE = 6; // Adjust as needed
+
+export default function BrowseCampaignsPage() {
+  const [ongoingCampaigns, setOngoingCampaigns] = React.useState<CampaignData[]>([]);
+  const [upcomingCampaigns, setUpcomingCampaigns] = React.useState<CampaignData[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const [currentOngoingPage, setCurrentOngoingPage] = React.useState(1);
+  const [currentUpcomingPage, setCurrentUpcomingPage] = React.useState(1);
+
+  React.useEffect(() => {
+    async function fetchAllCampaigns() {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedCampaigns = await getCampaigns();
+        const active = fetchedCampaigns.filter(c => c.initialStatus === 'active')
+                                     .sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)); // Sort by newest
+        const upcoming = fetchedCampaigns.filter(c => c.initialStatus === 'upcoming')
+                                     .sort((a,b) => (a.startDate instanceof Date ? a.startDate.getTime() : (a.startDate as any)?.toMillis() || 0) - (b.startDate instanceof Date ? b.startDate.getTime() : (b.startDate as any)?.toMillis() || 0)); // Sort by soonest start date
+
+
+        setOngoingCampaigns(active);
+        setUpcomingCampaigns(upcoming);
+      } catch (e) {
+        console.error("Failed to fetch campaigns:", e);
+        setError(e instanceof Error ? e.message : "Could not load campaigns. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAllCampaigns();
+  }, []);
+
+  const paginateCampaigns = (campaigns: CampaignData[], currentPage: number) => {
+    const totalPages = Math.ceil(campaigns.length / CAMPAIGNS_PER_PAGE);
+    const startIndex = (currentPage - 1) * CAMPAIGNS_PER_PAGE;
+    const endIndex = startIndex + CAMPAIGNS_PER_PAGE;
+    return {
+      paginatedItems: campaigns.slice(startIndex, endIndex),
+      totalPages,
+    };
+  };
+
+  const { paginatedItems: displayedOngoing, totalPages: totalOngoingPages } = paginateCampaigns(ongoingCampaigns, currentOngoingPage);
+  const { paginatedItems: displayedUpcoming, totalPages: totalUpcomingPages } = paginateCampaigns(upcomingCampaigns, currentUpcomingPage);
+
+  const renderCampaignSection = (
+    title: string,
+    campaignsToShow: CampaignData[],
+    currentPage: number,
+    setCurrentPage: (page: number) => void,
+    totalPages: number,
+    emptyMessage: string
+  ) => {
+    return (
+      <section className="mb-12">
+        <h2 className="text-3xl font-headline font-semibold mb-2 text-primary">{title}</h2>
+        <p className="text-muted-foreground mb-6">
+          {title === "Ongoing Campaigns" ? "Support these active initiatives today." : "Get ready to support these upcoming causes."}
+        </p>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => <CampaignCardSkeleton key={i} />)}
+          </div>
+        ) : error ? (
+           <Alert variant="destructive" className="bg-destructive/10">
+            <ServerCrash className="h-5 w-5 text-destructive" />
+            <AlertTitle>Error Loading Campaigns</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : campaignsToShow.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">
+              {campaignsToShow.map(campaign => (
+                <CampaignCard key={campaign.id} campaign={campaign} isPublicView={true} />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-8">
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <Alert>
+            <AlertTitle>No Campaigns Found</AlertTitle>
+            <AlertDescription>{emptyMessage}</AlertDescription>
+          </Alert>
+        )}
+      </section>
+    );
+  };
+
+
+  return (
+    <AppShell>
+      <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <Megaphone className="h-10 w-10 text-primary" />
+            <div>
+              <h1 className="text-4xl font-headline font-bold">Browse Campaigns</h1>
+              <p className="text-muted-foreground text-lg">
+                Find causes you care about and make a difference.
+              </p>
+            </div>
+          </div>
+          {/* Potential global filter or search can go here later */}
+        </div>
+
+        {renderCampaignSection(
+          "Ongoing Campaigns",
+          displayedOngoing,
+          currentOngoingPage,
+          setCurrentOngoingPage,
+          totalOngoingPages,
+          "No active campaigns at the moment. Check back soon!"
+        )}
+
+        {renderCampaignSection(
+          "Upcoming Campaigns",
+          displayedUpcoming,
+          currentUpcomingPage,
+          setCurrentUpcomingPage,
+          totalUpcomingPages,
+          "No upcoming campaigns scheduled yet. Stay tuned!"
+        )}
+
+      </main>
+    </AppShell>
+  );
+}
+
+function CampaignCardSkeleton() {
+  return (
+    <div className="flex flex-col space-y-3 p-0 bg-card rounded-lg shadow-md overflow-hidden">
+      <Skeleton className="aspect-[3/2] w-full rounded-t-md" />
+      <div className="p-4 space-y-3">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-2 w-full" />
+        <Skeleton className="h-3 w-1/4" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="p-3 bg-muted/20 border-t flex items-center justify-between">
+        <Skeleton className="h-8 w-20" />
+        <div className="flex space-x-2">
+            <Skeleton className="h-7 w-7 rounded-full" />
+            <Skeleton className="h-7 w-7 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}

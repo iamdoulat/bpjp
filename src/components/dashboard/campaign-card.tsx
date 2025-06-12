@@ -1,13 +1,16 @@
 
 import Image from 'next/image';
-import { Card, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
+import { Card, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { CampaignData } from '@/services/campaignService';
 import { cn } from '@/lib/utils';
+import { Heart, ThumbsUp, Eye } from 'lucide-react';
 
 interface CampaignCardProps {
   campaign: CampaignData;
+  isPublicView?: boolean; // To differentiate if it's shown on public browse page
 }
 
 function getCampaignImageHint(title: string, description: string): string {
@@ -21,7 +24,7 @@ function getCampaignImageHint(title: string, description: string): string {
 }
 
 
-export function CampaignCard({ campaign }: CampaignCardProps) {
+export function CampaignCard({ campaign, isPublicView = false }: CampaignCardProps) {
   const progressPercentage = campaign.goalAmount > 0 ? (campaign.raisedAmount / campaign.goalAmount) * 100 : 0;
 
   return (
@@ -38,23 +41,45 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
       </div>
       {/* Content Section */}
       <div className="p-4 bg-card flex flex-col flex-grow">
-        <CardTitle className="font-headline text-lg mb-3 leading-tight HIDE_TEXT_AFTER_TWO_LINES"> {/* Adjusted mb */}
+        <CardTitle className="font-headline text-lg mb-3 leading-tight HIDE_TEXT_AFTER_TWO_LINES">
           {campaign.campaignTitle}
         </CardTitle>
-        <div className="my-2 space-y-1"> {/* Adjusted my and added space-y */}
+        <div className="my-2 space-y-1">
           <Progress value={progressPercentage} className="h-2 rounded-full" />
           <p className="text-xs text-muted-foreground">{progressPercentage > 100 ? '100+' : progressPercentage.toFixed(0)}% funded</p>
         </div>
-        <Button 
-          variant="default" 
+        <Button
+          variant="default"
           className={cn(
-            "w-full mt-auto text-sm py-2 h-auto", // Ensure button takes available space, adjust padding
-            "bg-accent hover:bg-accent/90 text-accent-foreground dark:bg-accent dark:hover:bg-accent/90 dark:text-accent-foreground" // Explicit dark theme styling
+            "w-full mt-auto text-sm py-2 h-auto",
+            "bg-accent hover:bg-accent/90 text-accent-foreground dark:bg-accent dark:hover:bg-accent/90 dark:text-accent-foreground"
           )}
+          // onClick={() => { /* Implement donation logic later */ }}
         >
           Donate Now
         </Button>
       </div>
+      {/* Footer for View Details and Reactions - only if isPublicView is true or for general cards */}
+      {(isPublicView || !campaign.id?.startsWith('admin_preview')) && ( // Example conditional rendering
+        <CardFooter className="p-3 bg-muted/20 border-t flex items-center justify-between">
+          <Button variant="outline" size="sm" asChild className="text-xs h-auto py-1.5 px-3">
+            <Link href={`/campaigns/view/${campaign.id}`}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" />
+              View
+            </Link>
+          </Button>
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-rose-500">
+              <Heart className="h-4 w-4" />
+              <span className="sr-only">Like campaign</span>
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
+              <ThumbsUp className="h-4 w-4" />
+              <span className="sr-only">Support campaign</span>
+            </Button>
+          </div>
+        </CardFooter>
+      )}
       <style jsx>{`
         .HIDE_TEXT_AFTER_TWO_LINES {
           display: -webkit-box;
@@ -68,4 +93,3 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
     </Card>
   );
 }
-
