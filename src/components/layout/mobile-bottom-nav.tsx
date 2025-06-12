@@ -1,15 +1,16 @@
-
+// src/components/layout/mobile-bottom-nav.tsx
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Megaphone, History, UserCircle2 } from 'lucide-react'; // Changed HeartHandshake to History
+import { LayoutDashboard, Megaphone, History, UserCircle2, ReceiptText } from 'lucide-react'; // Added ReceiptText
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
-  { href: '/my-donations', label: 'My Donations', icon: History }, // Changed icon and label if needed
+  { href: '/my-donations', label: 'Donations', icon: History }, 
+  { href: '/expenses/history', label: 'Expenses', icon: ReceiptText }, // Added Expenses History
   { href: '/profile', label: 'Profile', icon: UserCircle2 },
 ];
 
@@ -21,17 +22,22 @@ export function MobileBottomNav() {
       <div className="flex h-full items-center justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          // Shorten labels slightly for mobile if needed
+          let displayLabel = item.label;
+          if (item.label === "My Donations") displayLabel = "Donations";
+          if (item.label === "Expenses History") displayLabel = "Expenses";
+
           return (
             <Link
               key={item.label}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center space-y-1 p-2 text-xs w-1/4',
+                'flex flex-col items-center justify-center space-y-1 p-2 text-xs w-1/5', // Adjusted to w-1/5 for 5 items
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <item.icon className={cn('h-5 w-5', isActive ? 'text-primary' : '')} />
-              <span>{item.label}</span>
+              <span>{displayLabel}</span>
             </Link>
           );
         })}
