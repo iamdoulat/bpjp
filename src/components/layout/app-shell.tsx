@@ -49,7 +49,7 @@ export function AppShell({ children }: AppShellProps) {
         <Sidebar collapsible="icon">
           <SidebarHeader className="p-4 border-b border-sidebar-border">
             <div className="flex items-center justify-between w-full gap-3">
-              {/* Wrapper for Logo and App Name - hides when sidebar is collapsed on desktop */}
+              {/* Left side: Logo and App Name - hides when sidebar is collapsed on desktop */}
               <div className="flex items-center gap-2 group-data-[state=collapsed]:hidden">
                 <Link href="/" passHref>
                   <div className="flex items-center gap-2 cursor-pointer">
@@ -63,6 +63,7 @@ export function AppShell({ children }: AppShellProps) {
                     </h1>
                   </div>
                 </Link>
+                {/* Redundant button removed from here */}
               </div>
                {/* Standalone Logo/Icon for collapsed state on desktop - always visible if logo URL exists */}
                {appLogoUrl && (
@@ -81,8 +82,7 @@ export function AppShell({ children }: AppShellProps) {
                )}
 
 
-              {/* Sidebar Trigger Button for desktop - remains visible to toggle */}
-              {/* This button is part of the Sidebar component itself if used within, or can be a custom one */}
+              {/* Primary Sidebar Trigger Button for desktop - remains visible to toggle */}
               <SidebarTrigger className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground p-1">
                 {/* PanelLeft icon is default from SidebarTrigger component */}
               </SidebarTrigger>
