@@ -56,18 +56,18 @@ export function AppHeader() {
       <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2"> {/* Left items container */}
           {user && <SidebarTrigger className="md:hidden" /> }
-          <div className="flex items-center gap-2 md:flex peer-data-[state=expanded]:md:hidden">
+          <div className="flex items-center gap-2 md:flex peer-data-[state=expanded]:md:hidden min-w-0"> {/* Added min-w-0 here */}
             {appLogoUrl ? (
               <Link href="/" passHref>
                 <div className="flex items-center gap-2 cursor-pointer">
-                  <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />
-                  <span className="font-semibold text-lg text-foreground">{appName}</span>
+                  <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded flex-shrink-0" data-ai-hint="logo company" />
+                  <span className="font-semibold text-base md:text-lg text-foreground truncate">{appName}</span>
                 </div>
               </Link>
             ) : (
               <Link href="/" passHref>
                  <div className="flex items-center gap-2 cursor-pointer">
-                    <span className="font-semibold text-lg text-foreground">{appName}</span>
+                    <span className="font-semibold text-base md:text-lg text-foreground truncate">{appName}</span>
                  </div>
               </Link>
             )}
