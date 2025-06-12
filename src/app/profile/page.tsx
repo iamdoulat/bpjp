@@ -346,9 +346,9 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end mt-6 gap-2">
+                <div className="flex justify-start mt-6 gap-2"> {/* Changed justify-end to justify-start */}
                    <Button variant="outline" onClick={() => toast({ title: "My Wallet Clicked", description: "Wallet functionality coming soon!"})}>
-                    <Wallet className="mr-2 h-4 w-4" /> My Wallet
+                    <Wallet className="mr-2 h-4 w-4" /> My Wallet: $0.00
                   </Button>
                   <Button onClick={handleEditToggle}>
                     <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
