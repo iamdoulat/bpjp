@@ -211,7 +211,7 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
-        <Card className="shadow-xl"> {/* Removed max-w-4xl mx-auto */}
+        <Card className="shadow-xl">
           <CardHeader className="p-0">
             <div className="h-48 bg-muted/30 relative">
               <Image 
@@ -232,7 +232,7 @@ export default function ProfilePage() {
                 <Button
                     variant="outline"
                     size="sm"
-                    className="absolute top-16 right-4 sm:right-8 md:right-12 lg:right-20 bg-background/70 backdrop-blur-sm" // Adjusted right padding for responsiveness
+                    className="absolute top-16 right-4 sm:right-8 md:right-12 lg:right-20 bg-background/70 backdrop-blur-sm" 
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
                     aria-label="Upload profile picture"
@@ -328,7 +328,7 @@ export default function ProfilePage() {
                 </div>
               </form>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
                   <Smartphone className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                   <div>
