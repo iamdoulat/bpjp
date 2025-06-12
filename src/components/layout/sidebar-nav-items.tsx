@@ -1,3 +1,4 @@
+
 // src/components/layout/sidebar-nav-items.tsx
 "use client";
 
@@ -28,8 +29,6 @@ const baseNavItems = [
 const authenticatedNavItems = [
   { href: '/my-donations', label: 'My Donations', icon: HeartHandshake, requiresAuth: true },
   { href: '/profile', label: 'Profile', icon: UserCircle2, requiresAuth: true },
-  // "Create Campaign" is removed from here for standard authenticated users
-  // It can be added back or managed via a different role/permission if needed
 ];
 
 const adminNavItems = [
@@ -49,8 +48,10 @@ const unauthenticatedNavItems = [
 export function SidebarNavItems() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
-  // Placeholder for admin check, replace with actual logic if available
-  const isAdminUser = user && (user.email === 'admin@example.com'); // Example admin check
+  
+  // Read admin email from environment variable
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  const isAdminUser = user && user.email === adminEmail;
 
   const getNavItems = () => {
     if (loading) return [];
@@ -60,7 +61,7 @@ export function SidebarNavItems() {
     if (user) {
       items = items.concat(authenticatedNavItems); // Adds My Donations, Profile
       if (isAdminUser) { 
-        items = items.concat(adminNavItems.filter(item => !items.some(existing => existing.href === item.href))); // Add admin items, including Create Campaign for admin
+        items = items.concat(adminNavItems.filter(item => !items.some(existing => existing.href === item.href))); // Add admin items
       }
     } else {
       items = items.concat(unauthenticatedNavItems);
@@ -73,7 +74,6 @@ export function SidebarNavItems() {
     if (!user) {
         items = items.filter(item => !item.requiresAuth || item.href === '/login' || item.href === '/signup');
     }
-
 
     return items;
   };
