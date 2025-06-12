@@ -3,20 +3,25 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { CampaignCard } from './campaign-card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, ServerCrash } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, ServerCrash, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCampaigns, type CampaignData } from '@/services/campaignService'; // Updated imports
+import { getCampaigns, type CampaignData } from '@/services/campaignService';
 
-const MAX_FEATURED_CAMPAIGNS = 3;
+const CAMPAIGNS_PER_PAGE = 4;
 
 export function FeaturedCampaigns() {
   const { user } = useAuth();
-  const [campaigns, setCampaigns] = useState<CampaignData[] | null>(null);
+  const [allCampaigns, setAllCampaigns] = useState<CampaignData[]>([]);
+  const [displayedCampaigns, setDisplayedCampaigns] = useState<CampaignData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     async function fetchCampaignsData() {
@@ -24,20 +29,23 @@ export function FeaturedCampaigns() {
         setLoading(true);
         setError(null);
         
-        const allCampaigns = await getCampaigns();
-        // Simple logic for "featured": take the most recent ones or just the first few active ones.
-        // For now, just take the first few active, then upcoming, then draft.
-        const sortedCampaigns = [...allCampaigns].sort((a, b) => {
-            const statusOrder = { active: 0, upcoming: 1, draft: 2, completed: 3 };
-            const statusDiff = statusOrder[a.initialStatus] - statusOrder[b.initialStatus];
+        const fetchedCampaigns = await getCampaigns();
+        const activeOrUpcomingCampaigns = fetchedCampaigns.filter(
+          campaign => campaign.initialStatus === 'active' || campaign.initialStatus === 'upcoming'
+        );
+
+        const sortedCampaigns = [...activeOrUpcomingCampaigns].sort((a, b) => {
+            const statusOrder = { active: 0, upcoming: 1 }; // Draft and completed are filtered out
+            const statusDiff = statusOrder[a.initialStatus as 'active' | 'upcoming'] - statusOrder[b.initialStatus as 'active' | 'upcoming'];
             if (statusDiff !== 0) return statusDiff;
-            // If status is the same, sort by most recently created (assuming createdAt is a Timestamp)
+            
             const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toMillis();
             const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toMillis();
-            return dateB - dateA;
+            return dateB - dateA; // Most recent first
         });
         
-        setCampaigns(sortedCampaigns.slice(0, MAX_FEATURED_CAMPAIGNS));
+        setAllCampaigns(sortedCampaigns);
+        setTotalPages(Math.ceil(sortedCampaigns.length / CAMPAIGNS_PER_PAGE));
 
       } catch (e) {
         console.error("Failed to fetch campaigns:", e);
@@ -47,20 +55,34 @@ export function FeaturedCampaigns() {
       }
     }
     fetchCampaignsData();
-  }, []); // Fetch once on mount
+  }, []);
+
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * CAMPAIGNS_PER_PAGE;
+    const endIndex = startIndex + CAMPAIGNS_PER_PAGE;
+    setDisplayedCampaigns(allCampaigns.slice(startIndex, endIndex));
+  }, [allCampaigns, currentPage]);
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
 
   return (
     <div className="mt-8">
       <h2 className="text-2xl font-headline font-semibold mb-2">
-        {user ? "Recommended Campaigns" : "Featured Campaigns"}
+        Featured Campaigns
       </h2>
       <p className="text-muted-foreground mb-6">
-        {user ? "Discover campaigns relevant to you." : "Explore popular campaigns you can support."}
+        Discover campaigns you can support.
       </p>
 
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(MAX_FEATURED_CAMPAIGNS)].map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6"> {/* Changed to sm:grid-cols-2 lg:grid-cols-2 */}
+          {[...Array(CAMPAIGNS_PER_PAGE)].map((_, i) => (
             <CardSkeleton key={i} />
           ))}
         </div>
@@ -74,15 +96,44 @@ export function FeaturedCampaigns() {
         </Alert>
       )}
 
-      {!loading && !error && campaigns && campaigns.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campaigns.map((campaign) => (
-            <CampaignCard key={campaign.id || campaign.campaignTitle} campaign={campaign} />
-          ))}
-        </div>
+      {!loading && !error && displayedCampaigns.length > 0 && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6"> {/* Changed to sm:grid-cols-2 lg:grid-cols-2 */}
+            {displayedCampaigns.map((campaign) => (
+              <CampaignCard key={campaign.id || campaign.campaignTitle} campaign={campaign} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-8">
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Prev
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-8 flex justify-center">
+            <Button asChild variant="default" size="lg">
+              <Link href="/campaigns">
+                <Search className="mr-2 h-5 w-5" />
+                Explore All Campaigns
+              </Link>
+            </Button>
+          </div>
+        </>
       )}
 
-      {!loading && !error && campaigns && campaigns.length === 0 && (
+      {!loading && !error && allCampaigns.length === 0 && (
          <Alert className="bg-card">
            <AlertTitle>No Campaigns Found</AlertTitle>
            <AlertDescription>
@@ -96,13 +147,14 @@ export function FeaturedCampaigns() {
 
 function CardSkeleton() {
   return (
-    <div className="flex flex-col space-y-3 p-4 bg-card rounded-lg shadow-md">
-      <Skeleton className="h-[125px] w-full rounded-xl" />
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-[250px]" />
-        <Skeleton className="h-4 w-[200px]" />
+    <div className="flex flex-col space-y-3 p-4 bg-card rounded-lg shadow-md overflow-hidden">
+      <Skeleton className="aspect-[3/2] w-full rounded-t-md" />
+      <div className="p-4 space-y-2">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-2 w-full mt-2" />
+        <Skeleton className="h-3 w-1/4 mt-1" />
+        <Skeleton className="h-10 w-full mt-4" />
       </div>
-      <Skeleton className="h-8 w-full mt-auto" />
     </div>
   );
 }
