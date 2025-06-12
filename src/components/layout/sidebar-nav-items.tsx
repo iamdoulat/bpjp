@@ -32,7 +32,7 @@ import { Skeleton } from '../ui/skeleton';
 const baseNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone, requiresAuth: false }, 
-  { href: '/our-mission', label: 'Our Mission', icon: Target, requiresAuth: false }, // Added Our Mission
+  { href: '/our-mission', label: 'Our Mission', icon: Target, requiresAuth: false },
   { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2, requiresAuth: false },
   { href: '/about-us', label: 'About Us', icon: Info, requiresAuth: false },
 ];
@@ -51,7 +51,7 @@ const adminNavItems = [
   { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle, requiresAuth: true, isAdmin: true },
   { href: '/admin/expenses/create', label: 'Create Expense', icon: FilePlus2, requiresAuth: true, isAdmin: true },
   { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus, requiresAuth: true, isAdmin: true },
-  { href: '/admin/mission/edit', label: 'Edit Mission Page', icon: FileEdit, requiresAuth: true, isAdmin: true }, // Added Edit Mission Page
+  { href: '/admin/mission/edit', label: 'Edit Mission Page', icon: FileEdit, requiresAuth: true, isAdmin: true },
   { href: '/admin/settings', label: 'Settings', icon: Settings, requiresAuth: true, isAdmin: true },
 ];
 
@@ -96,10 +96,10 @@ export function SidebarNavItems() {
     // Define the desired order of navigation items
     const desiredOrder = [
         '/', 
-        '/my-donations', // Moved here
+        '/my-donations',
         '/campaigns', 
+        '/upcoming-events', // Moved here
         '/our-mission',
-        '/upcoming-events', 
         '/about-us', 
         '/expenses/history', 
         '/profile', 
