@@ -4,11 +4,9 @@
 import Link from 'next/link';
 import Image from 'next/image'; // Import Image
 import {
-  // Handshake, // Removed Handshake
   Moon,
   Sun,
   Bell,
-  // LayoutGrid, // LayoutGrid is used in AppShell, not directly here for the logo
   LogIn,
   LogOut,
   UserPlus
@@ -32,7 +30,7 @@ export function AppHeader() {
 
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-header-background/95 backdrop-blur supports-[backdrop-filter]:bg-header-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2"> {/* Left items container */}
           {user && <SidebarTrigger className="md:hidden" /> }

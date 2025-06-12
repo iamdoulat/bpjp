@@ -6,6 +6,7 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 224 71.4% 4.1%;
+    --header-background: 0 0% 95%; /* Slightly darker for light theme header */
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
@@ -44,6 +45,7 @@
   .dark {
     --background: 0 0% 20%; /* #333333 Dark Slate Gray */
     --foreground: 0 0% 95%; /* Light gray for text */
+    --header-background: 0 0% 18%; /* #2E2E2E - Slightly darker for dark theme header */
 
     --card: 0 0% 24%; /* #3D3D3D */
     --card-foreground: 0 0% 95%;
