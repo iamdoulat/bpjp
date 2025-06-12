@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
 import { getCampaignById, type CampaignData } from '@/services/campaignService';
-import { Loader2, AlertCircle, ArrowLeft, CalendarDays, Users, DollarSign, Target as TargetIcon } from "lucide-react"
+import { Loader2, AlertCircle, ArrowLeft, CalendarDays, Users, DollarSign, Target as TargetIcon, Edit } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function formatCurrency(amount: number) {
@@ -26,7 +26,7 @@ function formatDisplayDate(date: Date | undefined, options?: Intl.DateTimeFormat
     month: "long",
     day: "numeric",
   };
-  return new Intl.DateTimeFormat("en-US", { ...defaultOptions, ...options }).format(date);
+  return new Intl.DateTimeFormat("en-US", { ...defaultOptions, ...options }).format(new Date(date));
 }
 
 const getStatusBadgeVariant = (status?: CampaignData["initialStatus"]) => {
@@ -218,14 +218,14 @@ export default function ViewCampaignPage() {
                   <CalendarDays className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-xs text-muted-foreground">Start Date</p>
-                    <p className="font-semibold">{formatDisplayDate(campaign.startDate as Date)}</p>
+                    <p className="font-semibold">{formatDisplayDate(new Date(campaign.startDate as Date))}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                    <CalendarDays className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-xs text-muted-foreground">End Date</p>
-                    <p className="font-semibold">{formatDisplayDate(campaign.endDate as Date)}</p>
+                    <p className="font-semibold">{formatDisplayDate(new Date(campaign.endDate as Date))}</p>
                   </div>
                 </div>
                 {campaign.organizerName && (
@@ -257,3 +257,6 @@ export default function ViewCampaignPage() {
     </AppShell>
   )
 }
+
+
+      
