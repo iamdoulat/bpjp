@@ -28,6 +28,8 @@ import {
 import { DatePicker } from "@/components/ui/date-picker"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card"
+import { addCampaign } from '@/services/campaignService';
+import { Loader2 } from "lucide-react"
 
 const newCampaignFormSchema = z.object({
   campaignTitle: z.string().min(5, {
@@ -69,6 +71,7 @@ const defaultValues: Partial<NewCampaignFormValues> = {
 
 export default function NewCampaignPage() {
   const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const form = useForm<NewCampaignFormValues>({
     resolver: zodResolver(newCampaignFormSchema),
     defaultValues,
@@ -78,17 +81,30 @@ export default function NewCampaignPage() {
   const watchedStartDate = form.watch("startDate");
   const watchedEndDate = form.watch("endDate");
 
-  function onSubmit(data: NewCampaignFormValues) {
-    console.log(data)
-    toast({
-      title: "Campaign Created!",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    })
-    // form.reset(); // Optionally reset form after submission
+  async function onSubmit(data: NewCampaignFormValues) {
+    setIsSubmitting(true);
+    try {
+      const campaignId = await addCampaign(data);
+      toast({
+        title: "Campaign Created!",
+        description: `Campaign "${data.campaignTitle}" (ID: ${campaignId}) has been successfully saved to Firestore.`,
+        variant: "default",
+      });
+      form.reset(); // Optionally reset form after submission
+    } catch (error) {
+      console.error("Failed to save campaign:", error);
+      let errorMessage = "An unexpected error occurred.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast({
+        title: "Error Creating Campaign",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -112,7 +128,7 @@ export default function NewCampaignPage() {
                       <FormItem>
                         <FormLabel>Campaign Title</FormLabel>
                         <FormControl>
-                          <Input placeholder="E.g., Support Local Animal Shelter" {...field} />
+                          <Input placeholder="E.g., Support Local Animal Shelter" {...field} disabled={isSubmitting} />
                         </FormControl>
                         <FormDescription>
                           A catchy and descriptive title for your campaign.
@@ -132,6 +148,7 @@ export default function NewCampaignPage() {
                             placeholder="Tell us more about your campaign, its goals, and impact..."
                             className="resize-y min-h-[100px]"
                             {...field}
+                            disabled={isSubmitting}
                           />
                         </FormControl>
                         <FormDescription>
@@ -148,7 +165,7 @@ export default function NewCampaignPage() {
                       <FormItem>
                         <FormLabel>Goal Amount ($)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="1000" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                          <Input type="number" placeholder="1000" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} disabled={isSubmitting} />
                         </FormControl>
                         <FormDescription>
                           The target amount you aim to raise.
@@ -168,6 +185,7 @@ export default function NewCampaignPage() {
                           setDate={field.onChange}
                           placeholder="Select campaign start date"
                           disabled={(date) => {
+                            if (isSubmitting) return true;
                             const today = new Date();
                             today.setHours(0,0,0,0);
                             if (date < today) return true;
@@ -193,6 +211,7 @@ export default function NewCampaignPage() {
                           setDate={field.onChange}
                           placeholder="Select campaign end date"
                           disabled={(date) => {
+                            if (isSubmitting) return true;
                             const today = new Date();
                             today.setHours(0,0,0,0);
                              // If no start date, disable only past dates
@@ -216,7 +235,7 @@ export default function NewCampaignPage() {
                       <FormItem>
                         <FormLabel>Campaign Image URL (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://placehold.co/600x400.png" {...field} />
+                          <Input placeholder="https://placehold.co/600x400.png" {...field} disabled={isSubmitting} />
                         </FormControl>
                         <FormDescription>
                           Provide a URL for the campaign image. Use a placeholder like https://placehold.co/600x400.png if needed.
@@ -232,7 +251,7 @@ export default function NewCampaignPage() {
                       <FormItem>
                         <FormLabel>Organizer Name (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="Your Organization or Name" {...field} />
+                          <Input placeholder="Your Organization or Name" {...field} disabled={isSubmitting}/>
                         </FormControl>
                         <FormDescription>
                           Name of the individual or group running the campaign.
@@ -247,7 +266,7 @@ export default function NewCampaignPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Initial Status</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select initial status" />
@@ -266,7 +285,10 @@ export default function NewCampaignPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full md:w-auto">Create Campaign</Button>
+                  <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSubmitting ? "Creating..." : "Create Campaign"}
+                  </Button>
                 </form>
               </Form>
             </CardContent>
