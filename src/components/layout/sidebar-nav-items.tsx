@@ -96,11 +96,11 @@ export function SidebarNavItems() {
     // Define the desired order of navigation items
     const desiredOrder = [
         '/', 
+        '/my-donations', // Moved here
         '/campaigns', 
-        '/our-mission', // New position for Our Mission
+        '/our-mission',
         '/upcoming-events', 
         '/about-us', 
-        '/my-donations', 
         '/expenses/history', 
         '/profile', 
         '/admin/overview', 
@@ -110,7 +110,7 @@ export function SidebarNavItems() {
         '/new-campaign', 
         '/admin/expenses/create', 
         '/admin/events/create',
-        '/admin/mission/edit', // New position for Edit Mission Page
+        '/admin/mission/edit',
         '/admin/settings',
         '/login', 
         '/signup'
