@@ -4,6 +4,7 @@ import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarInset, 
 import { SidebarNavItems } from './sidebar-nav-items';
 import { AppHeader } from './app-header';
 import { LayoutGrid } from 'lucide-react';
+import { MobileBottomNav } from './mobile-bottom-nav';
 
 interface AppShellProps {
   children: ReactNode;
@@ -35,6 +36,7 @@ export function AppShell({ children }: AppShellProps) {
           {/* The main page content (children) will be rendered below the AppHeader */}
           {children}
         </SidebarInset>
+        <MobileBottomNav />
       </div>
     </SidebarProvider>
   );

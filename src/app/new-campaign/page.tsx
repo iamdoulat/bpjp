@@ -109,7 +109,7 @@ export default function NewCampaignPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
+      <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
         <div className="max-w-3xl mx-auto">
           <Card className="shadow-lg">
             <CardHeader>
