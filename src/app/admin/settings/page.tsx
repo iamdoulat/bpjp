@@ -170,10 +170,13 @@ export default function AdminSettingsPage() {
                   name="organizationName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Organization Name (for About Us)</FormLabel>
+                      <FormLabel>Organization Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Your Organization's Official Name" {...field} disabled={isSubmitting} />
                       </FormControl>
+                      <FormDescription>
+                        This name will be displayed on the "About Us" page and other public-facing areas.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -356,3 +359,4 @@ export default function AdminSettingsPage() {
     </AppShell>
   );
 }
+
