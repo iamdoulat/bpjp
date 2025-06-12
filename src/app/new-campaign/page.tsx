@@ -25,9 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { DatePicker } from "@/components/ui/date-picker" // Ensure this path is correct
+import { DatePicker } from "@/components/ui/date-picker"
 import { useToast } from "@/hooks/use-toast"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card" // Renamed to avoid conflict
+import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card"
 
 const newCampaignFormSchema = z.object({
   campaignTitle: z.string().min(5, {
@@ -40,13 +40,19 @@ const newCampaignFormSchema = z.object({
     (val) => Number(String(val).replace(/[^0-9.-]+/g, "")),
     z.number().min(1, { message: "Goal amount must be at least $1." })
   ),
+  startDate: z.date({
+    required_error: "A start date is required.",
+  }),
   endDate: z.date({
     required_error: "An end date is required.",
   }),
   campaignImageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   organizerName: z.string().max(100, { message: "Organizer name must be at most 100 characters."}).optional().or(z.literal('')),
   initialStatus: z.enum(["draft", "upcoming", "active"]),
-})
+}).refine(data => data.endDate >= data.startDate, {
+  message: "End date cannot be before start date.",
+  path: ["endDate"],
+});
 
 type NewCampaignFormValues = z.infer<typeof newCampaignFormSchema>
 
@@ -54,6 +60,7 @@ const defaultValues: Partial<NewCampaignFormValues> = {
   campaignTitle: "",
   description: "",
   goalAmount: 1000,
+  startDate: undefined,
   endDate: undefined,
   campaignImageUrl: "",
   organizerName: "",
@@ -67,6 +74,9 @@ export default function NewCampaignPage() {
     defaultValues,
     mode: "onChange",
   })
+
+  const watchedStartDate = form.watch("startDate");
+  const watchedEndDate = form.watch("endDate");
 
   function onSubmit(data: NewCampaignFormValues) {
     console.log(data)
@@ -149,6 +159,31 @@ export default function NewCampaignPage() {
                   />
                   <FormField
                     control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Start Date</FormLabel>
+                        <DatePicker
+                          date={field.value}
+                          setDate={field.onChange}
+                          placeholder="Select campaign start date"
+                          disabled={(date) => {
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                            if (date < today) return true;
+                            if (watchedEndDate && date > watchedEndDate) return true;
+                            return false;
+                          }}
+                        />
+                        <FormDescription>
+                          When the campaign will officially start.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="endDate"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
@@ -157,7 +192,15 @@ export default function NewCampaignPage() {
                           date={field.value}
                           setDate={field.onChange}
                           placeholder="Select campaign end date"
-                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} // Disable past dates
+                          disabled={(date) => {
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                             // If no start date, disable only past dates
+                            if (!watchedStartDate && date < today) return true;
+                            // If start date exists, disable dates before start date OR past dates
+                            if (watchedStartDate && (date < watchedStartDate || date < today)) return true;
+                            return false;
+                          }}
                         />
                         <FormDescription>
                           When the campaign will officially end.
