@@ -153,8 +153,8 @@ export default function ProfilePage() {
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 space-y-6">
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
+          <Card className="shadow-xl">
+            <CardHeader className="p-0">
               <Skeleton className="h-48 w-full rounded-t-md" />
               <div className="relative flex justify-center -mt-16">
                 <Skeleton className="h-32 w-32 rounded-full border-4 border-background" />
@@ -211,7 +211,7 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
-        <Card className="max-w-4xl mx-auto shadow-xl">
+        <Card className="shadow-xl"> {/* Removed max-w-4xl mx-auto */}
           <CardHeader className="p-0">
             <div className="h-48 bg-muted/30 relative">
               <Image 
@@ -232,7 +232,7 @@ export default function ProfilePage() {
                 <Button
                     variant="outline"
                     size="sm"
-                    className="absolute top-16 right-20 bg-background/70 backdrop-blur-sm"
+                    className="absolute top-16 right-4 sm:right-8 md:right-12 lg:right-20 bg-background/70 backdrop-blur-sm" // Adjusted right padding for responsiveness
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
                     aria-label="Upload profile picture"
@@ -353,7 +353,6 @@ export default function ProfilePage() {
                  </Button>
                </div>
             )}
-            {/* Removed the separate "Donation History" card as requested by placing donation info above */}
            </Form>
           </CardContent>
         </Card>
@@ -361,3 +360,4 @@ export default function ProfilePage() {
     </AppShell>
   );
 }
+
