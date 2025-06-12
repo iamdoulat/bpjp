@@ -124,8 +124,8 @@ export default function BrowseCampaignsPage() {
           <div className="flex items-center gap-3">
             <Megaphone className="h-10 w-10 text-primary" />
             <div>
-              <h1 className="text-4xl font-headline font-bold">Browse Campaigns</h1>
-              <p className="text-muted-foreground text-lg">
+              <h1 className="text-3xl font-headline font-bold">Browse Campaigns</h1>
+              <p className="text-muted-foreground text-md">
                 Find causes you care about and make a difference.
               </p>
             </div>
@@ -176,3 +176,4 @@ function CampaignCardSkeleton() {
     </div>
   );
 }
+
