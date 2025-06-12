@@ -41,7 +41,7 @@ const DonationHistory: React.FC = () => {
 
   if (donations.length === 0) {
     return (
-      <Card className="shadow-lg mt-8">
+      <Card className="shadow-lg mt-8 w-full">
         <CardHeader>
           <div className="flex items-center gap-2">
             <List className="h-6 w-6 text-primary" />
@@ -57,7 +57,7 @@ const DonationHistory: React.FC = () => {
   }
 
   return (
-    <Card className="shadow-lg mt-8">
+    <Card className="shadow-lg mt-8 w-full">
       <CardHeader>
         <div className="flex items-center gap-2">
           <List className="h-6 w-6 text-primary" />

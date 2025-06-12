@@ -1,5 +1,5 @@
-# Firebase Studio
+Firebase Studio Project
+This is a Non profit Nextjs app for Bhujpur Probashi Jobakollan Porisod .
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+Facebook Group Link: [Group](https://www.facebook.com/groups/bpkt2018)
+Facebook Group Link: [Profile](https://www.facebook.com/bpjkp)
