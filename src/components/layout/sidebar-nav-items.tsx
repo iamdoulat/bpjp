@@ -1,3 +1,4 @@
+
 // src/components/layout/sidebar-nav-items.tsx
 "use client";
 
@@ -5,7 +6,6 @@ import Link from 'next/link';
 import {
   LayoutDashboard,
   Megaphone,
-  // HeartHandshake, // Replaced by HistoryIcon for My Donations
   UserCircle2,
   ShieldCheck,
   Users,
@@ -13,10 +13,12 @@ import {
   ClipboardList,
   PlusCircle,
   LogIn,
-  UserPlus as UserPlusIcon, // Renamed to avoid conflict
+  UserPlus as UserPlusIcon,
   History as HistoryIcon,
-  ReceiptText, // Added for Expenses History
-  FilePlus2, // Added for Create Expense
+  ReceiptText,
+  FilePlus2,
+  CalendarCheck2, // Added for Upcoming Events
+  CalendarPlus,   // Added for Create Event
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -26,6 +28,7 @@ import { Skeleton } from '../ui/skeleton';
 const baseNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone, requiresAuth: false }, 
+  { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2, requiresAuth: false }, // Added
 ];
 
 const authenticatedNavItems = [
@@ -41,6 +44,7 @@ const adminNavItems = [
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList, requiresAuth: true, isAdmin: true },
   { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle, requiresAuth: true, isAdmin: true },
   { href: '/admin/expenses/create', label: 'Create Expense', icon: FilePlus2, requiresAuth: true, isAdmin: true },
+  { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus, requiresAuth: true, isAdmin: true }, // Added
 ];
 
 const unauthenticatedNavItems = [
@@ -80,9 +84,9 @@ export function SidebarNavItems() {
     }
 
     const desiredOrder = [
-        '/', '/campaigns', '/my-donations', '/expenses/history', '/profile', 
+        '/', '/campaigns', '/upcoming-events', '/my-donations', '/expenses/history', '/profile', 
         '/admin/overview', '/admin/users', '/admin/payments', '/admin/campaigns', 
-        '/admin/expenses/create', '/new-campaign',
+        '/new-campaign', '/admin/expenses/create', '/admin/events/create',
         '/login', '/signup'
     ];
     
@@ -98,8 +102,9 @@ export function SidebarNavItems() {
         items = items.filter(item => !item.isAdmin);
     }
     if (!user) {
-        items = items.filter(item => !item.requiresAuth || item.href === '/login' || item.href === '/signup');
+        items = items.filter(item => !item.requiresAuth || item.href === '/login' || item.href === '/signup' || item.href === '/campaigns' || item.href === '/upcoming-events');
     }
+
 
     return items;
   };
@@ -109,7 +114,7 @@ export function SidebarNavItems() {
   if (loading) {
     return (
       <SidebarMenu>
-        {[...Array(6)].map((_, i) => ( // Increased skeleton items
+        {[...Array(7)].map((_, i) => ( // Increased skeleton items for new links
           <SidebarMenuItem key={i}>
              <div className="flex items-center gap-2 p-2 w-full">
                 <Skeleton className="h-6 w-6 rounded" />
