@@ -1,7 +1,7 @@
 
 // src/services/userService.ts
 import { db, auth, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, type Timestamp } from 'firebase/firestore'; // Added Timestamp here
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore'; // Corrected import
 import { updateProfile as updateAuthProfile, type User as AuthUser } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -119,7 +119,7 @@ export async function uploadProfilePictureAndUpdate(
         dataToUpdate.uid = authUser.uid;
         dataToUpdate.email = authUser.email;
         dataToUpdate.displayName = authUser.displayName;
-        dataToUpdate.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp(); // Use imported Timestamp
+        dataToUpdate.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
         await setDoc(userDocRef, dataToUpdate);
     }
 
