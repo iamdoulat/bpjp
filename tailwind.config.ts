@@ -17,7 +17,7 @@ export default {
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        'header-background': 'hsl(var(--header-background))', // Added header background
+        'header-background': 'hsl(var(--header-background))',
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
@@ -66,11 +66,9 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
-        'specific-button': {
-          bg: 'hsl(var(--specific-button-bg))',
-          fg: 'hsl(var(--specific-button-fg))',
-          'hover-bg': 'hsl(var(--specific-button-hover-bg))',
-        },
+        'specific-button-bg': 'hsl(var(--specific-button-bg))',
+        'specific-button-fg': 'hsl(var(--specific-button-fg))',
+        'specific-button-hover-bg': 'hsl(var(--specific-button-hover-bg))',
       },
       borderRadius: {
         lg: 'var(--radius)',
