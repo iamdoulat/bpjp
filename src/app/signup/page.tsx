@@ -152,12 +152,12 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className={cn(
                   "w-full",
-                  "bg-blue-700 text-white hover:bg-blue-800"
-                )} 
+                  "bg-specific-button-bg text-specific-button-fg hover:bg-specific-button-hover-bg"
+                )}
                 disabled={isSubmitting || authLoading || !form.formState.isValid}
               >
                 {(isSubmitting || authLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
