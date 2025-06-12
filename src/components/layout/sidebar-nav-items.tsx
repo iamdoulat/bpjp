@@ -28,7 +28,8 @@ const baseNavItems = [
 const authenticatedNavItems = [
   { href: '/my-donations', label: 'My Donations', icon: HeartHandshake, requiresAuth: true },
   { href: '/profile', label: 'Profile', icon: UserCircle2, requiresAuth: true },
-  { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle, requiresAuth: true }, // Added this line
+  // "Create Campaign" is removed from here for standard authenticated users
+  // It can be added back or managed via a different role/permission if needed
 ];
 
 const adminNavItems = [
@@ -36,6 +37,7 @@ const adminNavItems = [
   { href: '/admin/users', label: 'Manage Users', icon: Users, requiresAuth: true, isAdmin: true },
   { href: '/admin/payments', label: 'Track Payments', icon: CreditCard, requiresAuth: true, isAdmin: true },
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList, requiresAuth: true, isAdmin: true },
+  { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle, requiresAuth: true, isAdmin: true }, // Admin can create campaigns
 ];
 
 const unauthenticatedNavItems = [
@@ -56,9 +58,9 @@ export function SidebarNavItems() {
     let items = [...baseNavItems.filter(item => !item.requiresAuth || (item.requiresAuth && user))];
     
     if (user) {
-      items = items.concat(authenticatedNavItems);
-      if (isAdminUser) { // Assuming you have a way to check if user is admin
-        items = items.concat(adminNavItems);
+      items = items.concat(authenticatedNavItems); // Adds My Donations, Profile
+      if (isAdminUser) { 
+        items = items.concat(adminNavItems.filter(item => !items.some(existing => existing.href === item.href))); // Add admin items, including Create Campaign for admin
       }
     } else {
       items = items.concat(unauthenticatedNavItems);
@@ -113,4 +115,3 @@ export function SidebarNavItems() {
     </SidebarMenu>
   );
 }
-
