@@ -25,6 +25,7 @@ import {
   Target,
   FileEdit,
   ChevronRight, // Added ChevronRight
+  Gift, // Placeholder for Donors List, will use Users
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -42,6 +43,7 @@ const baseNavItems = [
 
 const authenticatedNavItems = [
   { href: '/my-donations', label: 'My Donations', icon: HistoryIcon, requiresAuth: true },
+  { href: '/donors-list', label: 'Donors List', icon: Users, requiresAuth: false }, // Added Donors List
   { href: '/expenses/history', label: 'Expenses History', icon: ReceiptText, requiresAuth: true },
   { href: '/profile', label: 'Profile', icon: UserCircle2, requiresAuth: true },
 ];
@@ -110,18 +112,25 @@ export function SidebarNavItems() {
       }
     } else {
       items = items.filter(item => !item.requiresAuth);
+      // For unauthenticated users, also add items from authenticatedNavItems that don't require auth (like Donors List)
+      authenticatedNavItems.forEach(authItem => {
+        if (!authItem.requiresAuth && !items.some(existing => existing.href === authItem.href)) {
+          items.push(authItem);
+        }
+      });
       items = items.concat(unauthenticatedNavItems);
     }
 
     const desiredOrder = [
         '/',                 // Dashboard
         '/my-donations',
+        '/donors-list',      // Donors List here
         '/campaigns',        // Browse Campaigns
         '/upcoming-events',
         '/expenses/history',
-        '/our-mission',      // Moved here
-        '/about-us',         // Moved here
-        '/profile',          // Profile is after About Us
+        '/our-mission',
+        '/about-us',
+        '/profile',
         adminAccordionToggleItem.href, // Position for the admin accordion toggle
         '/login',
         '/signup'
@@ -130,9 +139,9 @@ export function SidebarNavItems() {
     items.sort((a, b) => {
         const indexA = desiredOrder.indexOf(a.href);
         const indexB = desiredOrder.indexOf(b.href);
-        if (indexA === -1 && indexB === -1) return 0;
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
+        if (indexA === -1 && indexB === -1) return 0; // if both not in order, keep original relative order
+        if (indexA === -1) return 1; // if a not in order, b comes first
+        if (indexB === -1) return -1; // if b not in order, a comes first
         return indexA - indexB;
     });
     
@@ -141,14 +150,15 @@ export function SidebarNavItems() {
         items = items.filter(item => !item.isAdmin);
     }
     
+    // Final filter for unauthenticated users to ensure only non-auth-required or login/signup links are shown
     if (!user) {
         items = items.filter(item =>
             !item.requiresAuth ||
             item.href === '/login' ||
-            item.href === '/signup' ||
-            baseNavItems.some(baseItem => baseItem.href === item.href && !baseItem.requiresAuth)
+            item.href === '/signup'
         );
     }
+
 
     return items;
   };
