@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, LogIn, Handshake } from "lucide-react";
 import type { AuthError } from "firebase/auth";
 import { useAppContext } from "@/contexts/AppContext";
+import { cn } from "@/lib/utils";
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -131,7 +132,14 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isSubmitting || authLoading || !form.formState.isValid}>
+              <Button 
+                type="submit" 
+                className={cn(
+                  "w-full",
+                  "bg-blue-700 text-white hover:bg-blue-800"
+                )} 
+                disabled={isSubmitting || authLoading || !form.formState.isValid}
+              >
                 {(isSubmitting || authLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>

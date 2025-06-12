@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, Handshake } from "lucide-react";
 import type { AuthError } from "firebase/auth";
 import { useAppContext } from "@/contexts/AppContext";
+import { cn } from "@/lib/utils";
 
 const signupFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -151,7 +152,14 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isSubmitting || authLoading || !form.formState.isValid}>
+              <Button 
+                type="submit" 
+                className={cn(
+                  "w-full",
+                  "bg-blue-700 text-white hover:bg-blue-800"
+                )} 
+                disabled={isSubmitting || authLoading || !form.formState.isValid}
+              >
                 {(isSubmitting || authLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
               </Button>
