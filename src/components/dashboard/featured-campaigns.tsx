@@ -1,63 +1,66 @@
+
 // src/components/dashboard/featured-campaigns.tsx
 "use client";
 
 import { useEffect, useState } from 'react';
-import { personalizedCampaignRecommendations, type PersonalizedCampaignRecommendationsOutput, type PersonalizedCampaignRecommendationsInput } from '@/ai/flows/personalized-campaign-recommendations';
 import { CampaignCard } from './campaign-card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, ServerCrash } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/contexts/AuthContext';
+import { getCampaigns, type CampaignData } from '@/services/campaignService'; // Updated imports
+
+const MAX_FEATURED_CAMPAIGNS = 3;
 
 export function FeaturedCampaigns() {
-  const { user } = useAuth(); // Get user from auth context
-  const [campaigns, setCampaigns] = useState<PersonalizedCampaignRecommendationsOutput | null>(null);
+  const { user } = useAuth();
+  const [campaigns, setCampaigns] = useState<CampaignData[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchCampaigns() {
+    async function fetchCampaignsData() {
       try {
         setLoading(true);
         setError(null);
         
-        // Use actual user ID if available, otherwise a placeholder for public view
-        const userId = user ? user.uid : 'publicUser'; 
-        // Example preferences, could be fetched or hardcoded for public view
-        const userPreferences = user ? "environment, education" : "general, popular"; 
-        // Example donation history, empty if no user or public
-        const userDonationHistory = user ? ['campaignA', 'campaignB'] : [];
+        const allCampaigns = await getCampaigns();
+        // Simple logic for "featured": take the most recent ones or just the first few active ones.
+        // For now, just take the first few active, then upcoming, then draft.
+        const sortedCampaigns = [...allCampaigns].sort((a, b) => {
+            const statusOrder = { active: 0, upcoming: 1, draft: 2, completed: 3 };
+            const statusDiff = statusOrder[a.initialStatus] - statusOrder[b.initialStatus];
+            if (statusDiff !== 0) return statusDiff;
+            // If status is the same, sort by most recently created (assuming createdAt is a Timestamp)
+            const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toMillis();
+            const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toMillis();
+            return dateB - dateA;
+        });
+        
+        setCampaigns(sortedCampaigns.slice(0, MAX_FEATURED_CAMPAIGNS));
 
-
-        const input: PersonalizedCampaignRecommendationsInput = {
-          userId: userId,
-          donationHistory: userDonationHistory, 
-          preferences: userPreferences,
-        };
-        const recommendedCampaigns = await personalizedCampaignRecommendations(input);
-        setCampaigns(recommendedCampaigns);
       } catch (e) {
-        console.error("Failed to fetch campaign recommendations:", e);
-        setError("Could not load campaign recommendations. Please try again later.");
+        console.error("Failed to fetch campaigns:", e);
+        setError(e instanceof Error ? e.message : "Could not load campaigns. Please try again later.");
       } finally {
         setLoading(false);
       }
     }
-    fetchCampaigns();
-  }, [user]); // Re-fetch if user changes
+    fetchCampaignsData();
+  }, []); // Fetch once on mount
 
   return (
     <div className="mt-8">
       <h2 className="text-2xl font-headline font-semibold mb-2">
-        {user ? "Campaigns For You" : "Featured Campaigns"}
+        {user ? "Recommended Campaigns" : "Featured Campaigns"}
       </h2>
       <p className="text-muted-foreground mb-6">
-        {user ? "Discover campaigns tailored to your interests." : "Explore popular campaigns you can support."}
+        {user ? "Discover campaigns relevant to you." : "Explore popular campaigns you can support."}
       </p>
 
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
+          {[...Array(MAX_FEATURED_CAMPAIGNS)].map((_, i) => (
             <CardSkeleton key={i} />
           ))}
         </div>
@@ -74,7 +77,7 @@ export function FeaturedCampaigns() {
       {!loading && !error && campaigns && campaigns.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {campaigns.map((campaign) => (
-            <CampaignCard key={campaign.campaignId} campaign={campaign} />
+            <CampaignCard key={campaign.id || campaign.campaignTitle} campaign={campaign} />
           ))}
         </div>
       )}
@@ -83,8 +86,7 @@ export function FeaturedCampaigns() {
          <Alert className="bg-card">
            <AlertTitle>No Campaigns Found</AlertTitle>
            <AlertDescription>
-             {user ? "We couldn't find any campaigns matching your profile right now." : "No featured campaigns available at the moment."}
-             Please check back later!
+             No featured campaigns available at the moment. Please check back later or create a new campaign!
            </AlertDescription>
          </Alert>
       )}
