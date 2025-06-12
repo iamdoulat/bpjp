@@ -23,12 +23,14 @@ const placeholderSettings = {
   presidentImageURL: "https://placehold.co/150x150.png",
   secretaryName: "Ms. Casey Secretary",
   secretaryImageURL: "https://placehold.co/150x150.png",
-  coverImageUrl: "https://placehold.co/1200x250.png", // Added placeholder cover image
+  // coverImageUrl is now handled by environment variable or fallback
 };
 
 export default function AboutUsPage() {
-  const [settings, setSettings] = React.useState<typeof placeholderSettings | null>(placeholderSettings); // Default to placeholder
+  const [settings, setSettings] = React.useState<Omit<typeof placeholderSettings, 'coverImageUrl'> | null>(placeholderSettings); // Default to placeholder
   const [loading, setLoading] = React.useState(false); // Set to true when fetching data
+
+  const coverImageUrl = process.env.NEXT_PUBLIC_PROFILE_COVER_URL || "https://placehold.co/1200x250.png";
 
   // React.useEffect(() => {
   //   async function fetchSettings() {
@@ -57,7 +59,7 @@ export default function AboutUsPage() {
           <Skeleton className="h-10 w-3/4 mb-2" />
           <Skeleton className="h-6 w-1/2 mb-8" />
           <Card className="shadow-lg">
-            <Skeleton className="h-40 w-full rounded-t-lg" /> {/* Skeleton for banner */}
+            <Skeleton className="h-40 md:h-56 w-full rounded-t-lg" /> {/* Skeleton for banner */}
             <CardHeader>
               <Skeleton className="h-8 w-1/2 mb-1" />
               <Skeleton className="h-4 w-3/4" />
@@ -114,7 +116,7 @@ export default function AboutUsPage() {
         <Card className="shadow-xl overflow-hidden rounded-lg">
           <div className="relative h-40 md:h-56 w-full"> {/* Banner Image Container */}
             <Image
-              src={settings.coverImageUrl}
+              src={coverImageUrl}
               alt={`${settings.organizationName} cover image`}
               layout="fill"
               objectFit="cover"
