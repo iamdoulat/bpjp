@@ -1,6 +1,7 @@
 
 "use client";
 
+import Link from 'next/link';
 import {
   LayoutDashboard,
   Megaphone,
@@ -35,12 +36,14 @@ export function SidebarNavItems() {
       {navItems.map((item) => (
         <SidebarMenuItem key={item.label}>
           <SidebarMenuButton
-            href={item.href}
+            asChild
             isActive={pathname === item.href}
             tooltip={item.label}
           >
-            <item.icon />
-            <span>{item.label}</span>
+            <Link href={item.href}>
+              <item.icon />
+              <span>{item.label}</span>
+            </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
