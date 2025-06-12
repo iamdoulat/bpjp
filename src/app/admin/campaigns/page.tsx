@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Import useRouter
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ClipboardList, Search, PlusCircle, MoreHorizontal, AlertCircle } from "lucide-react";
+import { ClipboardList, Search, PlusCircle, MoreHorizontal, AlertCircle, Edit } from "lucide-react";
 import { getCampaigns, type CampaignData } from "@/services/campaignService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -47,6 +48,7 @@ export default function ManageCampaignsPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
+  const router = useRouter(); // Initialize router
 
   React.useEffect(() => {
     async function fetchCampaigns() {
@@ -194,7 +196,8 @@ export default function ManageCampaignsPage() {
                             <DropdownMenuItem onSelect={() => alert(`View ${campaign.campaignTitle}`)}>
                               View
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => alert(`Edit ${campaign.campaignTitle}`)}>
+                            <DropdownMenuItem onSelect={() => router.push(`/admin/campaigns/edit/${campaign.id}`)}>
+                              <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={() => alert(`Delete ${campaign.campaignTitle}`)}>

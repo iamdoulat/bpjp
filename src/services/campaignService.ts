@@ -1,7 +1,7 @@
 
 // src/services/campaignService.ts
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, Timestamp, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
 
 // Extended CampaignData to include raisedAmount and id for display purposes
 export interface CampaignData {
@@ -30,15 +30,28 @@ export interface NewCampaignInputData {
   initialStatus: "draft" | "upcoming" | "active"; // "completed" is not an initial status
 }
 
+// Type for data being updated in Firestore
+export interface CampaignUpdateData {
+  campaignTitle: string;
+  description: string;
+  goalAmount: number;
+  startDate: Date;
+  endDate: Date;
+  campaignImageUrl?: string;
+  organizerName?: string;
+  initialStatus: "draft" | "upcoming" | "active" | "completed"; // Allow setting to completed during edit
+}
+
 
 export async function addCampaign(campaignData: NewCampaignInputData): Promise<string> {
   try {
-    const dataWithTimestampAndRaised: Omit<CampaignData, 'id' | 'startDate' | 'endDate'> & { startDate: Timestamp, endDate: Timestamp } = {
+    const dataWithTimestampAndRaised: Omit<CampaignData, 'id' | 'startDate' | 'endDate'> & { startDate: Timestamp, endDate: Timestamp, initialStatus: NewCampaignInputData["initialStatus"] } = {
       ...campaignData,
       startDate: Timestamp.fromDate(campaignData.startDate),
       endDate: Timestamp.fromDate(campaignData.endDate),
       raisedAmount: 0, // Default raised amount to 0 on creation
       createdAt: Timestamp.now(),
+      initialStatus: campaignData.initialStatus,
     };
     const docRef = await addDoc(collection(db, 'campaigns'), dataWithTimestampAndRaised);
     return docRef.id;
@@ -63,14 +76,13 @@ export async function getCampaigns(): Promise<CampaignData[]> {
         campaignTitle: data.campaignTitle,
         description: data.description,
         goalAmount: data.goalAmount,
-        // Convert Firestore Timestamps to JS Dates
         startDate: (data.startDate as Timestamp).toDate(),
         endDate: (data.endDate as Timestamp).toDate(),
         campaignImageUrl: data.campaignImageUrl,
         organizerName: data.organizerName,
         initialStatus: data.initialStatus as "draft" | "upcoming" | "active" | "completed",
-        createdAt: data.createdAt as Timestamp, // Keep as Timestamp or convert if needed
-        raisedAmount: data.raisedAmount || 0, // Ensure raisedAmount is present
+        createdAt: data.createdAt as Timestamp,
+        raisedAmount: data.raisedAmount || 0,
       });
     });
     return campaigns;
@@ -80,5 +92,59 @@ export async function getCampaigns(): Promise<CampaignData[]> {
       throw new Error(`Failed to fetch campaigns: ${error.message}`);
     }
     throw new Error('An unknown error occurred while fetching campaigns.');
+  }
+}
+
+// Function to fetch a single campaign by ID
+export async function getCampaignById(id: string): Promise<CampaignData | null> {
+  try {
+    const docRef = doc(db, "campaigns", id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        campaignTitle: data.campaignTitle,
+        description: data.description,
+        goalAmount: data.goalAmount,
+        startDate: (data.startDate as Timestamp).toDate(),
+        endDate: (data.endDate as Timestamp).toDate(),
+        campaignImageUrl: data.campaignImageUrl,
+        organizerName: data.organizerName,
+        initialStatus: data.initialStatus as "draft" | "upcoming" | "active" | "completed",
+        createdAt: data.createdAt as Timestamp,
+        raisedAmount: data.raisedAmount || 0,
+      };
+    } else {
+      console.log("No such document!");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching campaign by ID from Firestore: ", error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch campaign: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while fetching the campaign.');
+  }
+}
+
+// Function to update an existing campaign
+export async function updateCampaign(id: string, campaignData: CampaignUpdateData): Promise<void> {
+  try {
+    const docRef = doc(db, "campaigns", id);
+    // Convert JS Dates back to Firestore Timestamps for updating
+    const dataToUpdate = {
+      ...campaignData,
+      startDate: Timestamp.fromDate(campaignData.startDate),
+      endDate: Timestamp.fromDate(campaignData.endDate),
+    };
+    await updateDoc(docRef, dataToUpdate);
+  } catch (error) {
+    console.error("Error updating document in Firestore: ", error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to update campaign: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while updating the campaign.');
   }
 }
