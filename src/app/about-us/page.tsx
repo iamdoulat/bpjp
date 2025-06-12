@@ -23,6 +23,7 @@ const placeholderSettings = {
   presidentImageURL: "https://placehold.co/150x150.png",
   secretaryName: "Ms. Casey Secretary",
   secretaryImageURL: "https://placehold.co/150x150.png",
+  coverImageUrl: "https://placehold.co/1200x250.png", // Added placeholder cover image
 };
 
 export default function AboutUsPage() {
@@ -56,6 +57,7 @@ export default function AboutUsPage() {
           <Skeleton className="h-10 w-3/4 mb-2" />
           <Skeleton className="h-6 w-1/2 mb-8" />
           <Card className="shadow-lg">
+            <Skeleton className="h-40 w-full rounded-t-lg" /> {/* Skeleton for banner */}
             <CardHeader>
               <Skeleton className="h-8 w-1/2 mb-1" />
               <Skeleton className="h-4 w-3/4" />
@@ -109,8 +111,18 @@ export default function AboutUsPage() {
           </div>
         </div>
 
-        <Card className="shadow-xl overflow-hidden">
-          <CardHeader className="bg-muted/20 border-b">
+        <Card className="shadow-xl overflow-hidden rounded-lg">
+          <div className="relative h-40 md:h-56 w-full"> {/* Banner Image Container */}
+            <Image
+              src={settings.coverImageUrl}
+              alt={`${settings.organizationName} cover image`}
+              layout="fill"
+              objectFit="cover"
+              priority
+              data-ai-hint="abstract banner"
+            />
+          </div>
+          <CardHeader className="bg-muted/20 border-b border-t"> {/* Added border-t for separation */}
             <div className="flex items-center gap-3">
               <Building className="h-7 w-7 text-primary" />
               <CardTitle className="text-2xl font-headline">{settings.organizationName}</CardTitle>
