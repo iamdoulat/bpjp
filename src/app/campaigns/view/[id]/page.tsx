@@ -15,6 +15,19 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { getCampaignById, type CampaignData } from '@/services/campaignService';
 import { Loader2, AlertCircle, ArrowLeft, CalendarDays, Users, DollarSign, Target as TargetIcon, HeartHandshake } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -57,6 +70,12 @@ export default function PublicViewCampaignPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [donationAmount, setDonationAmount] = React.useState("");
+  const [lastFourDigits, setLastFourDigits] = React.useState("");
+  const [isSubmittingDonation, setIsSubmittingDonation] = React.useState(false);
+  const { toast } = useToast();
+
   React.useEffect(() => {
     if (campaignId) {
       async function fetchCampaign() {
@@ -82,6 +101,53 @@ export default function PublicViewCampaignPage() {
       fetchCampaign();
     }
   }, [campaignId]);
+
+  const handleDonationSubmit = async () => {
+    if (!donationAmount || !lastFourDigits) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both amount and the last 4 digits.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (isNaN(parseFloat(donationAmount)) || parseFloat(donationAmount) <= 0) {
+        toast({
+            title: "Invalid Amount",
+            description: "Please enter a valid donation amount.",
+            variant: "destructive",
+        });
+        return;
+    }
+    if (lastFourDigits.length !== 4 || !/^\d{4}$/.test(lastFourDigits)) {
+        toast({
+            title: "Invalid Last 4 Digits",
+            description: "Please enter exactly 4 digits.",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    setIsSubmittingDonation(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    console.log("Donation Submitted:", {
+      campaignId: campaign?.id,
+      campaignTitle: campaign?.campaignTitle,
+      amount: parseFloat(donationAmount),
+      lastFour: lastFourDigits,
+    });
+
+    toast({
+      title: "Donation Submitted!",
+      description: "Your donation is pending verification by an admin. Thank you for your support!",
+    });
+    setDonationAmount("");
+    setLastFourDigits("");
+    setIsSubmittingDonation(false);
+    setIsDialogOpen(false); // Close dialog on successful submission
+  };
 
   if (isLoading) {
     return (
@@ -227,12 +293,66 @@ export default function PublicViewCampaignPage() {
 
             </CardContent>
              <CardFooter className="bg-card p-4 md:p-6 border-t">
-                <Button size="lg" className="w-full sm:w-auto text-lg py-3 px-8 bg-accent hover:bg-accent/90 text-accent-foreground">
-                  <HeartHandshake className="mr-2 h-5 w-5" /> Donate Now
-                </Button>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="lg" className="w-full sm:w-auto text-lg py-3 px-8 bg-accent hover:bg-accent/90 text-accent-foreground">
+                      <HeartHandshake className="mr-2 h-5 w-5" /> Donate Now
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Make a Donation</DialogTitle>
+                      <DialogDescription>
+                        Support "{campaign.campaignTitle}". Every contribution makes a difference. Enter amount and last 4 digits of your transaction reference.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="amount" className="text-right">
+                          Amount
+                        </Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          value={donationAmount}
+                          onChange={(e) => setDonationAmount(e.target.value)}
+                          className="col-span-3"
+                          placeholder="USD"
+                          disabled={isSubmittingDonation}
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="lastFour" className="text-right">
+                          Last 4 Digits
+                        </Label>
+                        <Input
+                          id="lastFour"
+                          value={lastFourDigits}
+                          onChange={(e) => setLastFourDigits(e.target.value)}
+                          className="col-span-3"
+                          placeholder="e.g., 1234 (from transaction)"
+                          maxLength={4}
+                          disabled={isSubmittingDonation}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button type="button" variant="outline" disabled={isSubmittingDonation}>
+                          Cancel
+                        </Button>
+                      </DialogClose>
+                      <Button type="button" onClick={handleDonationSubmit} disabled={isSubmittingDonation || !donationAmount || !lastFourDigits || lastFourDigits.length !== 4}>
+                        {isSubmittingDonation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Submit Donation
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
             </CardFooter>
           </Card>
       </main>
     </AppShell>
   )
 }
+
