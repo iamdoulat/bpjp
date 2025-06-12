@@ -2,14 +2,15 @@
 "use client";
 
 import Link from 'next/link';
-import Image from 'next/image'; // Import Image
+import Image from 'next/image';
 import {
   Moon,
   Sun,
   Bell,
   LogIn,
   LogOut,
-  UserPlus
+  UserPlus,
+  UserCircle2 // Added for profile icon
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,15 +18,34 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from 'next-themes';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"; // Added DropdownMenu components
+import { useRouter } from 'next/navigation'; // Added for navigation
 
 export function AppHeader() {
   const { user, loading, logout } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const router = useRouter(); // Initialize router
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
-  const getInitials = (email?: string | null) => {
-    if (!email) return "U";
-    return email.substring(0, 2).toUpperCase();
+  const getInitials = (name?: string | null, email?: string | null) => {
+    if (name) {
+        const parts = name.split(" ");
+        if (parts.length > 1) {
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    }
+    if (email) {
+        return email.substring(0, 2).toUpperCase();
+    }
+    return "U";
   };
 
 
@@ -45,8 +65,6 @@ export function AppHeader() {
             ) : (
               <Link href="/" passHref>
                  <div className="flex items-center gap-2 cursor-pointer">
-                    {/* Fallback if no logo URL, or use a default icon like Handshake */}
-                    {/* For now, just show text if no logo */}
                     <span className="font-semibold text-lg text-foreground">BPJP</span>
                  </div>
               </Link>
@@ -81,13 +99,37 @@ export function AppHeader() {
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent"></span>
                 </span>
               </Button>
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={user.photoURL || `https://placehold.co/40x40.png?text=${getInitials(user.email)}`} alt={user.displayName || user.email || "User"} data-ai-hint="profile person" />
-                <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
-              </Avatar>
-              <Button variant="ghost" size="sm" onClick={logout} className="h-9">
-                <LogOut className="mr-0 md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Logout</span>
-              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.photoURL || `https://placehold.co/40x40.png?text=${getInitials(user.displayName, user.email)}`} alt={user.displayName || user.email || "User"} data-ai-hint="profile person" />
+                      <AvatarFallback>{getInitials(user.displayName, user.email)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.displayName || user.email?.split('@')[0]}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/profile')}>
+                    <UserCircle2 className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
 
