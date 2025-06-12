@@ -96,7 +96,7 @@ export function AppShell({ children }: AppShellProps) {
               href="https://vcard.mddoulat.com/iamdoulat"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-bold hover:underline text-primary"
+              className="font-bold hover:underline text-foreground"
             >
               Doulat
             </a>{' '}
