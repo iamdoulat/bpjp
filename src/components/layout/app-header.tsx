@@ -3,124 +3,10 @@ import {
   Handshake,
   Moon,
   Bell,
-  PanelLeft,
-  PlusCircle,
-  Save,
-  Share2,
-  Printer,
-  Undo2,
-  Redo2,
-  Scissors,
-  Copy,
-  ClipboardPaste,
-  Search,
-  Maximize2,
-  UserCog,
-  Settings2,
-  LogOut,
-  HelpCircle,
-  LifeBuoy,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  Menubar,
-  MenubarContent,
-  MenubarItem,
-  MenubarMenu,
-  MenubarSeparator,
-  MenubarShortcut,
-  MenubarTrigger,
-} from "@/components/ui/menubar";
-
-function HeaderMenubar() {
-  return (
-    <Menubar className="hidden md:flex rounded-none border-none bg-transparent h-auto p-0 ml-4">
-      <MenubarMenu>
-        <MenubarTrigger className="h-9 px-3 py-2 text-sm">File</MenubarTrigger>
-        <MenubarContent>
-          <MenubarItem>
-            <PlusCircle className="mr-2 h-4 w-4" /> New Project <MenubarShortcut>⌘N</MenubarShortcut>
-          </MenubarItem>
-          <MenubarItem>
-            <Save className="mr-2 h-4 w-4" /> Save <MenubarShortcut>⌘S</MenubarShortcut>
-          </MenubarItem>
-          <MenubarItem>
-            <Share2 className="mr-2 h-4 w-4" /> Share
-          </MenubarItem>
-          <MenubarSeparator />
-          <MenubarItem>
-            <Printer className="mr-2 h-4 w-4" /> Print... <MenubarShortcut>⌘P</MenubarShortcut>
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-      <MenubarMenu>
-        <MenubarTrigger className="h-9 px-3 py-2 text-sm">Edit</MenubarTrigger>
-        <MenubarContent>
-          <MenubarItem>
-            <Undo2 className="mr-2 h-4 w-4" /> Undo <MenubarShortcut>⌘Z</MenubarShortcut>
-          </MenubarItem>
-          <MenubarItem>
-            <Redo2 className="mr-2 h-4 w-4" /> Redo <MenubarShortcut>⇧⌘Z</MenubarShortcut>
-          </MenubarItem>
-          <MenubarSeparator />
-          <MenubarItem>
-            <Scissors className="mr-2 h-4 w-4" /> Cut <MenubarShortcut>⌘X</MenubarShortcut>
-          </MenubarItem>
-          <MenubarItem>
-            <Copy className="mr-2 h-4 w-4" /> Copy <MenubarShortcut>⌘C</MenubarShortcut>
-          </MenubarItem>
-          <MenubarItem>
-            <ClipboardPaste className="mr-2 h-4 w-4" /> Paste <MenubarShortcut>⌘V</MenubarShortcut>
-          </MenubarItem>
-          <MenubarSeparator />
-           <MenubarItem>
-            <Search className="mr-2 h-4 w-4" /> Find... <MenubarShortcut>⌘F</MenubarShortcut>
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-      <MenubarMenu>
-        <MenubarTrigger className="h-9 px-3 py-2 text-sm">View</MenubarTrigger>
-        <MenubarContent>
-          <MenubarItem>
-            <Maximize2 className="mr-2 h-4 w-4" /> Full Screen
-          </MenubarItem>
-          <MenubarItem>
-            Toggle Sidebar <MenubarShortcut>⌘B</MenubarShortcut>
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-      <MenubarMenu>
-        <MenubarTrigger className="h-9 px-3 py-2 text-sm">Account</MenubarTrigger>
-        <MenubarContent>
-          <MenubarItem>
-            <UserCog className="mr-2 h-4 w-4" /> Profile
-          </MenubarItem>
-          <MenubarItem>
-            <Settings2 className="mr-2 h-4 w-4" /> Settings
-          </MenubarItem>
-          <MenubarSeparator />
-          <MenubarItem>
-            <LogOut className="mr-2 h-4 w-4" /> Log Out
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-       <MenubarMenu>
-        <MenubarTrigger className="h-9 px-3 py-2 text-sm">Help</MenubarTrigger>
-        <MenubarContent>
-          <MenubarItem>
-            <HelpCircle className="mr-2 h-4 w-4" /> Documentation
-          </MenubarItem>
-          <MenubarItem>
-            <LifeBuoy className="mr-2 h-4 w-4" /> Support
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-    </Menubar>
-  );
-}
-
 
 export function AppHeader() {
   return (
@@ -133,8 +19,6 @@ export function AppHeader() {
             <Handshake className="h-6 w-6 text-primary" />
             <span className="font-semibold text-lg text-foreground">ImpactBoard</span>
           </div>
-          
-          <HeaderMenubar /> {/* Menubar added here */}
         </div>
 
         <div className="flex items-center gap-3"> {/* Right items container */}
