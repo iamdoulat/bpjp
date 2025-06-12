@@ -114,16 +114,15 @@ export function SidebarNavItems() {
     }
 
     const desiredOrder = [
-        '/',
+        '/',                 // Dashboard
         '/my-donations',
-        '/campaigns',
+        '/campaigns',        // Browse Campaigns
         '/upcoming-events',
-        '/our-mission',
-        '/about-us',
         '/expenses/history',
-        '/profile',
+        '/our-mission',      // Moved here
+        '/about-us',         // Moved here
+        '/profile',          // Profile is after About Us
         adminAccordionToggleItem.href, // Position for the admin accordion toggle
-        // Actual admin links are handled separately if accordion is open
         '/login',
         '/signup'
     ];
