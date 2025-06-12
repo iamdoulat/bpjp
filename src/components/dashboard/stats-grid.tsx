@@ -1,10 +1,9 @@
-
 // src/components/dashboard/stats-grid.tsx
 "use client";
 
 import { useEffect, useState } from 'react';
 import { StatsCard } from './stats-card';
-import { DollarSign, Target, CalendarClock, Landmark, ListChecks, HeartPulse } from 'lucide-react';
+import { DollarSign, CalendarClock, Landmark, ListChecks, HeartPulse } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface PlatformStats {
   totalDonations: number;
   activeCampaigns: number;
+  upcomingCampaigns: number; // Added for upcoming campaigns count
 }
 
 function formatCurrency(amount: number) {
@@ -34,8 +34,9 @@ export function StatsGrid() {
         
         const totalDonations = campaigns.reduce((sum, campaign) => sum + (campaign.raisedAmount || 0), 0);
         const activeCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'active').length;
+        const upcomingCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'upcoming').length; // Calculate upcoming campaigns
         
-        setPlatformStats({ totalDonations, activeCampaigns });
+        setPlatformStats({ totalDonations, activeCampaigns, upcomingCampaigns }); // Include upcomingCampaigns
       } catch (e) {
         console.error("Failed to fetch platform stats:", e);
         setError(e instanceof Error ? e.message : "Could not load platform statistics.");
@@ -50,7 +51,7 @@ export function StatsGrid() {
   const userSpecificStats = [
     { title: "Your Total Donations", value: "$0", subtitle: "Track your contributions (coming soon!).", icon: <DollarSign className="h-5 w-5" /> },
     { title: "Campaigns You Support", value: "0", subtitle: "Impact you're making (coming soon!).", icon: <HeartPulse className="h-5 w-5" /> },
-    { title: "Your Upcoming Events", value: "0", subtitle: "Stay involved (coming soon!).", icon: <CalendarClock className="h-5 w-5" /> },
+    // Removed "Your Upcoming Events" from user-specific as platform "Upcoming Campaigns" is more general
   ];
 
   const baseStats = [
@@ -66,6 +67,13 @@ export function StatsGrid() {
       value: platformStats ? platformStats.activeCampaigns.toString() : <Skeleton className="h-7 w-12 inline-block" />, 
       subtitle: "Opportunities to make an impact.", 
       icon: <ListChecks className="h-5 w-5" />,
+      isLoading: loading && !platformStats
+    },
+    { 
+      title: "Upcoming Campaigns", 
+      value: platformStats ? platformStats.upcomingCampaigns.toString() : <Skeleton className="h-7 w-12 inline-block" />, 
+      subtitle: "Get ready for these causes.", 
+      icon: <CalendarClock className="h-5 w-5" />, // Added new stat card
       isLoading: loading && !platformStats
     },
   ];
