@@ -73,7 +73,7 @@ export function FeaturedCampaigns() {
 
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-headline font-semibold mb-2">
+      <h2 className="text-2xl font-headline font-semibold mb-2 dark:text-white">
         Featured Campaigns
       </h2>
       <p className="text-muted-foreground mb-6">

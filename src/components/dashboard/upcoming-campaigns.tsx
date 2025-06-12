@@ -64,7 +64,7 @@ export function UpcomingCampaigns() {
 
   return (
     <div className="mt-10"> {/* Added mt-10 for spacing */}
-      <h2 className="text-2xl font-headline font-semibold mb-2">
+      <h2 className="text-2xl font-headline font-semibold mb-2 dark:text-white">
         Upcoming Campaigns
       </h2>
       <p className="text-muted-foreground mb-6">
