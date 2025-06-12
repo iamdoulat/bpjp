@@ -2,6 +2,7 @@
 // src/components/dashboard/user-info.tsx
 "use client";
 
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +10,34 @@ import { Skeleton } from '../ui/skeleton';
 
 export function UserInfo() {
   const { user, loading } = useAuth();
+  const [greeting, setGreeting] = useState("Welcome"); // Default greeting
+
+  useEffect(() => {
+    const getBangladeshGreeting = (): string => {
+      const now = new Date();
+      // Get current time in UTC
+      const utcHours = now.getUTCHours();
+      const bstOffset = 6; // Bangladesh Standard Time is UTC+6
+      
+      let bstHours = utcHours + bstOffset;
+      
+      // Normalize bstHours to be within 0-23 range
+      bstHours = bstHours % 24;
+      if (bstHours < 0) {
+          bstHours += 24;
+      }
+
+      if (bstHours >= 4 && bstHours < 12) { // 4:00 AM to 11:59 AM
+        return "Good morning";
+      } else if (bstHours >= 12 && bstHours < 17) { // 12:00 PM to 4:59 PM
+        return "Good afternoon";
+      } else { // 5:00 PM to 3:59 AM (covers evening and night)
+        return "Good evening";
+      }
+    };
+    setGreeting(getBangladeshGreeting());
+  }, []); // Empty dependency array means this runs once on the client after mount
+
 
   if (loading) {
     return (
@@ -54,7 +83,7 @@ export function UserInfo() {
           <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
         </Avatar>
         <div>
-          <h2 className="text-2xl font-headline font-semibold">Good morning, {userName}!</h2>
+          <h2 className="text-2xl font-headline font-semibold">{greeting}, {userName}!</h2>
           <p className="text-sm text-muted-foreground">{userEmail}</p>
         </div>
       </div>
