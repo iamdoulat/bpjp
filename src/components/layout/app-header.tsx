@@ -10,7 +10,7 @@ import {
   LogIn,
   LogOut,
   UserPlus,
-  UserCircle2 // Added for profile icon
+  UserCircle2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -25,13 +25,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; // Added DropdownMenu components
-import { useRouter } from 'next/navigation'; // Added for navigation
+} from "@/components/ui/dropdown-menu";
+import { useRouter } from 'next/navigation';
+import { useAppContext } from '@/contexts/AppContext'; // Added useAppContext
 
 export function AppHeader() {
   const { user, loading, logout } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const router = useRouter(); // Initialize router
+  const { appName } = useAppContext(); // Get appName from context
+  const router = useRouter();
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
   const getInitials = (name?: string | null, email?: string | null) => {
@@ -58,14 +60,14 @@ export function AppHeader() {
             {appLogoUrl ? (
               <Link href="/" passHref>
                 <div className="flex items-center gap-2 cursor-pointer">
-                  <Image src={appLogoUrl} alt="BPJP Logo" width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />
-                  <span className="font-semibold text-lg text-foreground">BPJP</span>
+                  <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />
+                  <span className="font-semibold text-lg text-foreground">{appName}</span>
                 </div>
               </Link>
             ) : (
               <Link href="/" passHref>
                  <div className="flex items-center gap-2 cursor-pointer">
-                    <span className="font-semibold text-lg text-foreground">BPJP</span>
+                    <span className="font-semibold text-lg text-foreground">{appName}</span>
                  </div>
               </Link>
             )}

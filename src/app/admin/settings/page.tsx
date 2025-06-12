@@ -23,13 +23,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Settings, UploadCloud } from "lucide-react";
+import { useAppContext } from "@/contexts/AppContext"; // Added useAppContext
 // import { saveOrganizationSettings, type OrganizationSettingsData } from "@/services/organizationSettingsService"; // To be created
 
 const organizationSettingsSchema = z.object({
   organizationName: z.string().min(3, { message: "Organization name must be at least 3 characters." }),
   address: z.string().min(10, { message: "Address must be at least 10 characters." }),
   registrationNumber: z.string().optional().or(z.literal('')),
-  committeePeriod: z.string().optional().or(z.literal('')), // Added committee period
+  committeePeriod: z.string().optional().or(z.literal('')),
   contactPersonName: z.string().min(3, { message: "Contact person name must be at least 3 characters." }),
   contactPersonCell: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid contact person cell number." }).or(z.literal('')),
   contactEmail: z.string().email({ message: "Invalid contact email format." }),
@@ -37,6 +38,7 @@ const organizationSettingsSchema = z.object({
   presidentImageFile: z.instanceof(File).optional(),
   secretaryName: z.string().min(3, { message: "General Secretary's name must be at least 3 characters." }),
   secretaryImageFile: z.instanceof(File).optional(),
+  appName: z.string().min(1, { message: "App Name cannot be empty." }).max(50, { message: "App Name cannot exceed 50 characters."}), // Added appName
 });
 
 type OrganizationSettingsFormValues = z.infer<typeof organizationSettingsSchema>;
@@ -46,25 +48,36 @@ const defaultValues: OrganizationSettingsFormValues = {
   organizationName: "BPJP Placeholder Org",
   address: "123 Main Street, Anytown, AT 12345",
   registrationNumber: "REG12345XYZ",
-  committeePeriod: "2024-2026", // Added placeholder
+  committeePeriod: "2024-2026",
   contactPersonName: "John Doe",
   contactPersonCell: "+15551234567",
   contactEmail: "contact@bpjp.org",
   presidentName: "Alice Wonderland",
   secretaryName: "Bob The Builder",
+  appName: process.env.NEXT_PUBLIC_APP_NAME || "BPJP", // Initialize with current app name
 };
 
 export default function AdminSettingsPage() {
   const { toast } = useToast();
+  const { appName, setAppNameState } = useAppContext(); // Get appName and setter from context
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [presidentPreview, setPresidentPreview] = React.useState<string | null>(null);
   const [secretaryPreview, setSecretaryPreview] = React.useState<string | null>(null);
 
   const form = useForm<OrganizationSettingsFormValues>({
     resolver: zodResolver(organizationSettingsSchema),
-    defaultValues, // Load existing settings in useEffect in a real app
+    defaultValues: {
+        ...defaultValues,
+        appName: appName, // Ensure form initializes with appName from context
+    },
     mode: "onChange",
   });
+
+  // Effect to update form if appName in context changes from elsewhere (e.g., fetched from DB)
+  React.useEffect(() => {
+    form.setValue("appName", appName);
+  }, [appName, form]);
+
 
   // React.useEffect(() => {
   //   async function loadSettings() {
@@ -72,15 +85,17 @@ export default function AdminSettingsPage() {
   //     // if (settings) {
   //     //   form.reset({
   //     //     ...settings,
+  //     //     appName: settings.appName || appName, // Prioritize fetched, then context
   //     //     presidentImageFile: undefined, // Files are not part of fetched data
   //     //     secretaryImageFile: undefined,
   //     //   });
   //     //   if (settings.presidentImageURL) setPresidentPreview(settings.presidentImageURL);
   //     //   if (settings.secretaryImageURL) setSecretaryPreview(settings.secretaryImageURL);
+  //     //   if (settings.appName) setAppNameState(settings.appName); // Update context if fetched
   //     // }
   //   }
   //   loadSettings();
-  // }, [form]);
+  // }, [form, appName, setAppNameState]); // Added appName and setAppNameState to dependency array
 
   const handlePresidentImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -107,15 +122,22 @@ export default function AdminSettingsPage() {
   async function onSubmit(data: OrganizationSettingsFormValues) {
     setIsSubmitting(true);
     console.log("Form data submitted (not saved yet):", data);
+    
+    // Simulate saving to Firestore and then update context
     // In a real app:
     // const settingsToSave: OrganizationSettingsData = { ...data };
     // delete settingsToSave.presidentImageFile; // Handled separately
     // delete settingsToSave.secretaryImageFile;
     // await saveOrganizationSettings(settingsToSave, data.presidentImageFile, data.secretaryImageFile);
     
+    // Update appName in context for real-time UI update for the admin
+    if (data.appName) {
+      setAppNameState(data.appName);
+    }
+    
     toast({
       title: "Settings Submitted (Placeholder)",
-      description: "Organization settings have been submitted. (Saving not implemented yet)",
+      description: "Organization settings have been submitted. App Name updated in header for this session. (Saving not implemented yet)",
     });
     setIsSubmitting(false);
   }
@@ -128,7 +150,7 @@ export default function AdminSettingsPage() {
           <div>
             <h1 className="text-2xl font-headline font-semibold">Organization Settings</h1>
             <p className="text-muted-foreground text-sm">
-              Manage your organization's public information.
+              Manage your organization's public information and app settings.
             </p>
           </div>
         </div>
@@ -137,7 +159,7 @@ export default function AdminSettingsPage() {
           <CardHeader>
             <CardTitle>Configuration Details</CardTitle>
             <ShadCNCardDescription>
-              Update the general information for your organization.
+              Update the general information for your organization and application.
             </ShadCNCardDescription>
           </CardHeader>
           <CardContent>
@@ -148,7 +170,7 @@ export default function AdminSettingsPage() {
                   name="organizationName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Organization Name (App Name)</FormLabel>
+                      <FormLabel>Organization Name (for About Us)</FormLabel>
                       <FormControl>
                         <Input placeholder="Your Organization's Official Name" {...field} disabled={isSubmitting} />
                       </FormControl>
@@ -300,7 +322,29 @@ export default function AdminSettingsPage() {
                   </FormItem>
                 </div>
 
-                <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || !form.formState.isValid}>
+                {/* App Name Section */}
+                <div className="space-y-4 p-4 border rounded-md">
+                    <h3 className="text-lg font-medium">Application Settings</h3>
+                    <FormField
+                    control={form.control}
+                    name="appName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>App Name (for Header)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Your Application Name" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormDescription>
+                            This name will be displayed in the application header.
+                        </FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+
+
+                <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || !form.formState.isDirty && !form.getFieldState("appName").isDirty || !form.formState.isValid }>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   {isSubmitting ? "Saving..." : "Save Settings"}
                 </Button>
@@ -312,5 +356,3 @@ export default function AdminSettingsPage() {
     </AppShell>
   );
 }
-
-    

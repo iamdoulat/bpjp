@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAppContext } from '@/contexts/AppContext'; // Added useAppContext
 
 interface AppShellProps {
   children: ReactNode;
@@ -20,6 +21,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const { user, loading } = useAuth();
+  const { appName } = useAppContext(); // Get appName from context
   const router = useRouter();
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
@@ -47,23 +49,40 @@ export function AppShell({ children }: AppShellProps) {
         <Sidebar collapsible="icon">
           <SidebarHeader className="p-4 border-b border-sidebar-border">
             <div className="flex items-center justify-between w-full gap-3">
-              {/* Wrapper for Logo and App Name - hides when sidebar is collapsed */}
+              {/* Wrapper for Logo and App Name - hides when sidebar is collapsed on desktop */}
               <div className="flex items-center gap-2 group-data-[state=collapsed]:hidden">
                 <Link href="/" passHref>
                   <div className="flex items-center gap-2 cursor-pointer">
                     {appLogoUrl ? (
-                      <Image src={appLogoUrl} alt="BPJP Logo" width={28} height={28} className="h-7 w-7 rounded" data-ai-hint="logo company" />
+                      <Image src={appLogoUrl} alt={`${appName} Logo`} width={28} height={28} className="h-7 w-7 rounded" data-ai-hint="logo company" />
                     ) : (
                       <LayoutGrid className="h-7 w-7 text-sidebar-foreground" />
                     )}
                     <h1 className="text-xl font-headline font-semibold text-sidebar-foreground truncate">
-                      BPJP
+                      {appName}
                     </h1>
                   </div>
                 </Link>
               </div>
+               {/* Standalone Logo/Icon for collapsed state on desktop - always visible if logo URL exists */}
+               {appLogoUrl && (
+                <div className="hidden group-data-[state=collapsed]:flex items-center">
+                   <Link href="/" passHref>
+                     <Image src={appLogoUrl} alt={`${appName} Logo (collapsed)`} width={28} height={28} className="h-7 w-7 rounded" data-ai-hint="logo company" />
+                   </Link>
+                </div>
+               )}
+               {!appLogoUrl && (
+                 <div className="hidden group-data-[state=collapsed]:flex items-center">
+                   <Link href="/" passHref>
+                      <LayoutGrid className="h-7 w-7 text-sidebar-foreground" />
+                   </Link>
+                 </div>
+               )}
+
 
               {/* Sidebar Trigger Button for desktop - remains visible to toggle */}
+              {/* This button is part of the Sidebar component itself if used within, or can be a custom one */}
               <SidebarTrigger className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground p-1">
                 {/* PanelLeft icon is default from SidebarTrigger component */}
               </SidebarTrigger>

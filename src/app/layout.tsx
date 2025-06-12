@@ -3,9 +3,10 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from "@/components/layout/theme-provider";
+import { AppProvider } from '@/contexts/AppContext'; // Added AppProvider
 
 export const metadata: Metadata = {
-  title: 'BPJP',
+  title: 'BPJP', // This might be dynamically set later if appName from context is used for metadata
   description: 'Donor & Campaign Management Dashboard',
 };
 
@@ -28,10 +29,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
+          <AppProvider> {/* Added AppProvider */}
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </AppProvider>
         </ThemeProvider>
       </body>
     </html>
