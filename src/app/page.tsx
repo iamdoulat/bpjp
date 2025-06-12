@@ -28,7 +28,7 @@ export default function DashboardPage() {
   if (!user) {
     return (
       <AppShell> {/* AppShell will show login/signup in header */}
-        <main className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center space-y-4">
           <h1 className="text-3xl font-headline font-semibold">Welcome to BPJP</h1>
           <p className="text-muted-foreground max-w-md">
             Your platform for discovering and supporting impactful campaigns. Please log in or sign up to access your dashboard and manage your contributions.
@@ -53,7 +53,7 @@ export default function DashboardPage() {
   // User is logged in
   return (
     <AppShell>
-      <main className="flex-1 p-6 space-y-8 overflow-auto pb-20 md:pb-6">
+      <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 space-y-8 overflow-auto pb-20 md:pb-6">
         <UserInfo />
         <StatsGrid />
         <FeaturedCampaigns />
