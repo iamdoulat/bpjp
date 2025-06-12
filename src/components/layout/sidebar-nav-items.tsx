@@ -24,7 +24,7 @@ const navItems = [
   { href: '/admin/users', label: 'Manage Users', icon: Users }, // Example, adjust if needed
   { href: '/admin/payments', label: 'Track Payments', icon: CreditCard }, // Example, adjust if needed
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList }, // Example, adjust if needed
-  { href: '/new-campaign', label: 'New Campaign', icon: PlusCircle }, // Updated href
+  { href: '/new-campaign', label: 'New Campaign', icon: PlusCircle }, // Ensures this links to the new page
 ];
 
 export function SidebarNavItems() {
