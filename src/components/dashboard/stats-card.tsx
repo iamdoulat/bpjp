@@ -1,9 +1,10 @@
+
 import type { ReactNode } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 
 interface StatsCardProps {
   title: string;
-  value: string;
+  value: string | ReactNode; // Allow ReactNode for Skeleton support
   subtitle: string;
   icon?: ReactNode;
 }

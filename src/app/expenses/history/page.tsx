@@ -1,3 +1,4 @@
+
 // src/app/expenses/history/page.tsx
 "use client";
 
@@ -5,13 +6,14 @@ import * as React from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ReceiptText, Construction } from "lucide-react";
+import { PlatformDonationsCard } from "@/components/stats/platform-donations-card";
 
 export default function ExpensesHistoryPage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-grow">
             <ReceiptText className="h-8 w-8 text-primary" />
             <div>
               <h1 className="text-2xl font-headline font-semibold">Expenses History</h1>
@@ -20,7 +22,9 @@ export default function ExpensesHistoryPage() {
               </p>
             </div>
           </div>
-          {/* Add filter or export buttons here later */}
+          <div className="w-full md:w-auto md:min-w-[280px] md:max-w-xs mt-4 md:mt-0"> {/* Container for the card */}
+            <PlatformDonationsCard />
+          </div>
         </div>
 
         <Alert>
