@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Handshake,
   Moon,
+  Sun, // Added Sun icon
   Bell,
   LayoutGrid,
   LogIn,
@@ -16,9 +17,11 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTheme } from 'next-themes'; // Added useTheme
 
 export function AppHeader() {
   const { user, loading, logout } = useAuth();
+  const { theme, setTheme, resolvedTheme } = useTheme(); // Added theme context
 
   const getInitials = (email?: string | null) => {
     if (!email) return "U";
@@ -40,8 +43,14 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-3"> {/* Right items container */}
-          <Button variant="ghost" size="icon" aria-label="Toggle Theme" className="h-9 w-9">
-            <Moon className="h-5 w-5" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            aria-label="Toggle Theme" 
+            className="h-9 w-9"
+            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          >
+            {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
           {loading && (

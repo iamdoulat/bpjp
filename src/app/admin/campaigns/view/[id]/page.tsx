@@ -83,12 +83,13 @@ export default function ViewCampaignPage() {
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
-          <div className="max-w-3xl mx-auto">
+          {/* Removed max-w-3xl mx-auto from this div */}
+          <div>
             <Button variant="outline" size="sm" className="mb-4" disabled>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Loading...
             </Button>
-            <Card className="shadow-lg">
+            <Card className="shadow-lg max-w-3xl mx-auto">
               <CardHeader>
                 <Skeleton className="h-8 w-3/4 mb-2" />
                 <Skeleton className="h-6 w-1/4" />
@@ -164,12 +165,13 @@ export default function ViewCampaignPage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
-        <div className="max-w-3xl mx-auto">
+        {/* Removed max-w-3xl mx-auto from this div */}
+        <div> 
           <Button variant="outline" size="sm" onClick={() => router.push('/admin/campaigns')} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Manage Campaigns
           </Button>
-          <Card className="shadow-lg overflow-hidden">
+          <Card className="shadow-lg overflow-hidden max-w-3xl mx-auto">
             <CardHeader className="bg-muted/30 p-4 md:p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                 <CardTitle className="text-2xl font-headline">{campaign.campaignTitle}</CardTitle>
