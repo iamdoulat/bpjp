@@ -19,8 +19,10 @@ import {
   FilePlus2,
   CalendarCheck2, 
   CalendarPlus,
-  Settings, // Added for Admin Settings
-  Info,     // Added for About Us
+  Settings,
+  Info,
+  Target, // Added for Our Mission
+  FileEdit, // Added for Edit Mission Page
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -30,8 +32,9 @@ import { Skeleton } from '../ui/skeleton';
 const baseNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone, requiresAuth: false }, 
+  { href: '/our-mission', label: 'Our Mission', icon: Target, requiresAuth: false }, // Added Our Mission
   { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2, requiresAuth: false },
-  { href: '/about-us', label: 'About Us', icon: Info, requiresAuth: false }, // Added About Us
+  { href: '/about-us', label: 'About Us', icon: Info, requiresAuth: false },
 ];
 
 const authenticatedNavItems = [
@@ -48,7 +51,8 @@ const adminNavItems = [
   { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle, requiresAuth: true, isAdmin: true },
   { href: '/admin/expenses/create', label: 'Create Expense', icon: FilePlus2, requiresAuth: true, isAdmin: true },
   { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus, requiresAuth: true, isAdmin: true },
-  { href: '/admin/settings', label: 'Settings', icon: Settings, requiresAuth: true, isAdmin: true }, // Added Admin Settings
+  { href: '/admin/mission/edit', label: 'Edit Mission Page', icon: FileEdit, requiresAuth: true, isAdmin: true }, // Added Edit Mission Page
+  { href: '/admin/settings', label: 'Settings', icon: Settings, requiresAuth: true, isAdmin: true },
 ];
 
 const unauthenticatedNavItems = [
@@ -89,17 +93,34 @@ export function SidebarNavItems() {
       items = items.concat(unauthenticatedNavItems);
     }
 
+    // Define the desired order of navigation items
     const desiredOrder = [
-        '/', '/campaigns', '/upcoming-events', '/about-us', 
-        '/my-donations', '/expenses/history', '/profile', 
-        '/admin/overview', '/admin/users', '/admin/payments', '/admin/campaigns', 
-        '/new-campaign', '/admin/expenses/create', '/admin/events/create', '/admin/settings',
-        '/login', '/signup'
+        '/', 
+        '/campaigns', 
+        '/our-mission', // New position for Our Mission
+        '/upcoming-events', 
+        '/about-us', 
+        '/my-donations', 
+        '/expenses/history', 
+        '/profile', 
+        '/admin/overview', 
+        '/admin/users', 
+        '/admin/payments', 
+        '/admin/campaigns', 
+        '/new-campaign', 
+        '/admin/expenses/create', 
+        '/admin/events/create',
+        '/admin/mission/edit', // New position for Edit Mission Page
+        '/admin/settings',
+        '/login', 
+        '/signup'
     ];
     
     items.sort((a, b) => {
         const indexA = desiredOrder.indexOf(a.href);
         const indexB = desiredOrder.indexOf(b.href);
+        // Items not in desiredOrder go to the end
+        if (indexA === -1 && indexB === -1) return 0; // Keep original relative order if both not found
         if (indexA === -1) return 1; 
         if (indexB === -1) return -1;
         return indexA - indexB;
@@ -115,9 +136,7 @@ export function SidebarNavItems() {
             !item.requiresAuth || 
             item.href === '/login' || 
             item.href === '/signup' ||
-            item.href === '/campaigns' ||  // Already handled by initial filter
-            item.href === '/upcoming-events' || // Already handled
-            item.href === '/about-us' // Already handled
+            baseNavItems.some(baseItem => baseItem.href === item.href && !baseItem.requiresAuth) // Keep all non-auth base items
         );
     }
 
@@ -130,7 +149,7 @@ export function SidebarNavItems() {
   if (loading) {
     return (
       <SidebarMenu>
-        {[...Array(9)].map((_, i) => ( // Increased skeleton items for new links
+        {[...Array(11)].map((_, i) => ( // Increased skeleton items for new links
           <SidebarMenuItem key={i}>
              <div className="flex items-center gap-2 p-2 w-full">
                 <Skeleton className="h-6 w-6 rounded" />
@@ -162,6 +181,3 @@ export function SidebarNavItems() {
     </SidebarMenu>
   );
 }
-
-
-    
