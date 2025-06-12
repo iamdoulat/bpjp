@@ -2,6 +2,8 @@
 "use client";
 
 import type { ReactNode } from 'react';
+import Image from 'next/image'; // Import Image
+import Link from 'next/link'; // Import Link
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarNavItems } from './sidebar-nav-items';
 import { AppHeader } from './app-header';
@@ -19,15 +21,12 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
-  // Redirect to login if not authenticated and not loading,
-  // and current page is not login/signup
-  // This is a basic form of route protection. More robust solutions might use middleware.
   useEffect(() => {
     if (!loading && !user) {
       const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/signup') {
-         // Commenting out redirect for now to allow viewing public pages like /campaigns
+      if (currentPath !== '/login' && currentPath !== '/signup' && !currentPath.startsWith('/campaigns')) { // Allow /campaigns and its sub-paths
         // router.push('/login');
       }
     }
@@ -42,26 +41,31 @@ export function AppShell({ children }: AppShellProps) {
     );
   }
   
-  // If user is not logged in, we might render a simpler layout or just the children
-  // (e.g., for public campaign browsing page which shouldn't have full AppShell)
-  // For now, let's assume AppShell is primarily for authenticated users.
-  // Public pages might need a different layout structure.
-  // However, for simplicity, we render AppShell and rely on SidebarNavItems and AppHeader
-  // to show appropriate content. Some pages might still be accessible.
-
   return (
     <SidebarProvider defaultOpen>
       <div className="flex min-h-screen">
-        {/* Sidebar is conditionally rendered or its content is conditional based on auth */}
         <Sidebar collapsible="icon">
           <SidebarHeader className="p-4 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
                <SidebarTrigger className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground p-1">
-                 <LayoutGrid className="h-5 w-5" />
+                {/* Show LayoutGrid only if there's no app logo to avoid duplication when sidebar is collapsed */}
+                {!appLogoUrl && <LayoutGrid className="h-5 w-5" />}
+                {appLogoUrl && <span className="group-data-[state=collapsed]:hidden"><LayoutGrid className="h-5 w-5" /></span>}
                </SidebarTrigger>
-               <h1 className="text-xl font-headline font-semibold text-sidebar-foreground group-data-[state=collapsed]:hidden truncate">
-                 ImpactBoard
-               </h1>
+              {appLogoUrl ? (
+                <Link href="/" passHref>
+                  <div className="flex items-center gap-2 cursor-pointer group-data-[state=collapsed]:hidden">
+                    <Image src={appLogoUrl} alt="ImpactBoard Logo" width={28} height={28} className="h-7 w-7 rounded" data-ai-hint="logo company" />
+                    <h1 className="text-xl font-headline font-semibold text-sidebar-foreground truncate">
+                      ImpactBoard
+                    </h1>
+                  </div>
+                </Link>
+              ) : (
+                 <h1 className="text-xl font-headline font-semibold text-sidebar-foreground group-data-[state=collapsed]:hidden truncate">
+                   ImpactBoard
+                 </h1>
+              )}
             </div>
           </SidebarHeader>
           <SidebarContent>
@@ -72,7 +76,7 @@ export function AppShell({ children }: AppShellProps) {
           <AppHeader />
           {children}
         </SidebarInset>
-        {user && <MobileBottomNav /> } {/* Only show mobile nav if logged in */}
+        {user && <MobileBottomNav /> }
       </div>
     </SidebarProvider>
   );

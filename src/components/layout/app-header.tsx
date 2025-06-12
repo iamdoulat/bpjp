@@ -2,12 +2,13 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image'; // Import Image
 import {
-  Handshake,
+  // Handshake, // Removed Handshake
   Moon,
-  Sun, // Added Sun icon
+  Sun,
   Bell,
-  LayoutGrid,
+  // LayoutGrid, // LayoutGrid is used in AppShell, not directly here for the logo
   LogIn,
   LogOut,
   UserPlus
@@ -17,11 +18,12 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTheme } from 'next-themes'; // Added useTheme
+import { useTheme } from 'next-themes';
 
 export function AppHeader() {
   const { user, loading, logout } = useAuth();
-  const { theme, setTheme, resolvedTheme } = useTheme(); // Added theme context
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
   const getInitials = (email?: string | null) => {
     if (!email) return "U";
@@ -33,20 +35,32 @@ export function AppHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2"> {/* Left items container */}
-          {user && <SidebarTrigger className="md:hidden" /> } {/* Only show if user logged in for AppShell */}
+          {user && <SidebarTrigger className="md:hidden" /> }
           <div className="flex items-center gap-2 md:flex peer-data-[state=expanded]:md:hidden">
-            <Handshake className="h-6 w-6 text-primary" />
-            <Link href="/" passHref>
-              <span className="font-semibold text-lg text-foreground cursor-pointer">ImpactBoard</span>
-            </Link>
+            {appLogoUrl ? (
+              <Link href="/" passHref>
+                <div className="flex items-center gap-2 cursor-pointer">
+                  <Image src={appLogoUrl} alt="ImpactBoard Logo" width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />
+                  <span className="font-semibold text-lg text-foreground">ImpactBoard</span>
+                </div>
+              </Link>
+            ) : (
+              <Link href="/" passHref>
+                 <div className="flex items-center gap-2 cursor-pointer">
+                    {/* Fallback if no logo URL, or use a default icon like Handshake */}
+                    {/* For now, just show text if no logo */}
+                    <span className="font-semibold text-lg text-foreground">ImpactBoard</span>
+                 </div>
+              </Link>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-3"> {/* Right items container */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            aria-label="Toggle Theme" 
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle Theme"
             className="h-9 w-9"
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
           >
