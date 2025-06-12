@@ -139,12 +139,16 @@ export async function updateCampaign(id: string, campaignData: CampaignUpdateDat
       startDate: Timestamp.fromDate(campaignData.startDate),
       endDate: Timestamp.fromDate(campaignData.endDate),
     };
+    // Log the data being sent to Firestore for debugging
+    console.log(`[campaignService.updateCampaign] Attempting to update campaign ${id} with data:`, JSON.parse(JSON.stringify(dataToUpdate)));
     await updateDoc(docRef, dataToUpdate);
+    console.log(`[campaignService.updateCampaign] Successfully updated campaign ${id}.`);
   } catch (error) {
-    console.error("Error updating document in Firestore: ", error);
+    console.error(`[campaignService.updateCampaign] Error updating campaign ${id}:`, error);
     if (error instanceof Error) {
-      throw new Error(`Failed to update campaign: ${error.message}`);
+      throw new Error(`Failed to update campaign ${id}: ${error.message}`);
     }
-    throw new Error('An unknown error occurred while updating the campaign.');
+    throw new Error(`An unknown error occurred while updating campaign ${id}.`);
   }
 }
+
