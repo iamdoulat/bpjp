@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -12,22 +13,22 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-// import { usePathname } from 'next/navigation'; // For active state based on path
+import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, active: true }, // Assuming '/' is dashboard
-  { href: '#', label: 'Campaigns', icon: Megaphone },
-  { href: '#', label: 'My Donations', icon: HeartHandshake },
-  { href: '#', label: 'Profile', icon: UserCircle2 },
-  { href: '#', label: 'Admin Overview', icon: ShieldCheck },
-  { href: '#', label: 'Manage Users', icon: Users },
-  { href: '#', label: 'Track Payments', icon: CreditCard },
-  { href: '#', label: 'Manage Campaigns', icon: ClipboardList },
-  { href: '#', label: 'New Campaign', icon: PlusCircle },
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/campaigns', label: 'Campaigns', icon: Megaphone }, // Example, adjust if needed
+  { href: '/my-donations', label: 'My Donations', icon: HeartHandshake }, // Example, adjust if needed
+  { href: '/profile', label: 'Profile', icon: UserCircle2 }, // Example, adjust if needed
+  { href: '/admin/overview', label: 'Admin Overview', icon: ShieldCheck }, // Example, adjust if needed
+  { href: '/admin/users', label: 'Manage Users', icon: Users }, // Example, adjust if needed
+  { href: '/admin/payments', label: 'Track Payments', icon: CreditCard }, // Example, adjust if needed
+  { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList }, // Example, adjust if needed
+  { href: '/new-campaign', label: 'New Campaign', icon: PlusCircle }, // Updated href
 ];
 
 export function SidebarNavItems() {
-  // const pathname = usePathname(); // Example for dynamic active state
+  const pathname = usePathname();
 
   return (
     <SidebarMenu>
@@ -35,7 +36,7 @@ export function SidebarNavItems() {
         <SidebarMenuItem key={item.label}>
           <SidebarMenuButton
             href={item.href}
-            isActive={item.active} // Replace with dynamic logic if needed: pathname === item.href
+            isActive={pathname === item.href}
             tooltip={item.label}
           >
             <item.icon />
