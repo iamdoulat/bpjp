@@ -41,7 +41,7 @@ export function CampaignCard({ campaign, isPublicView = false }: CampaignCardPro
       </div>
       {/* Content Section */}
       <div className="p-4 bg-card flex flex-col flex-grow">
-        <CardTitle className="font-headline text-lg mb-3 leading-tight HIDE_TEXT_AFTER_TWO_LINES">
+        <CardTitle className="font-headline text-sm md:text-base mb-3 leading-tight truncate">
           {campaign.campaignTitle}
         </CardTitle>
         <div className="my-2 space-y-1">
@@ -80,16 +80,6 @@ export function CampaignCard({ campaign, isPublicView = false }: CampaignCardPro
           </div>
         </CardFooter>
       )}
-      <style jsx>{`
-        .HIDE_TEXT_AFTER_TWO_LINES {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          min-height: 2.5em; /* Approximate height for 2 lines, adjust as needed */
-        }
-      `}</style>
     </Card>
   );
 }
