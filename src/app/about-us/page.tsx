@@ -104,10 +104,10 @@ export default function AboutUsPage() {
     <AppShell>
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
         <div className="flex items-center gap-3 mb-4">
-          <Info className="h-10 w-10 text-primary" />
+          <Info className="h-8 w-8 text-primary" /> {/* Adjusted icon size */}
           <div>
-            <h1 className="text-4xl font-headline font-bold">About Us</h1>
-            <p className="text-muted-foreground text-lg">
+            <h1 className="text-3xl font-headline font-bold">About Us</h1> {/* Changed from text-4xl */}
+            <p className="text-muted-foreground text-md"> {/* Changed from text-lg */}
               Learn more about our organization and mission.
             </p>
           </div>
