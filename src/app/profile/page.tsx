@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
 import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon } from "lucide-react";
 import { format } from 'date-fns';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; // Added FormField
 
 const profileFormSchema = z.object({
   displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters.").optional().or(z.literal('')),
@@ -264,6 +265,7 @@ export default function ProfilePage() {
           </CardHeader>
 
           <CardContent className="mt-6 space-y-6">
+           <Form {...form}> {/* Ensure Form provider wraps form elements */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="flex items-center space-x-2 p-3 bg-muted/20 rounded-md">
                 <Mail className="h-5 w-5 text-primary" />
@@ -278,25 +280,28 @@ export default function ProfilePage() {
             {isEditing ? (
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                  <div className="space-y-2">
-                    <Label htmlFor="mobileNumber">Mobile Number</Label>
+                    {/* DisplayName field is handled above within CardHeader when isEditing */}
                     <FormField
                       control={form.control}
                       name="mobileNumber"
                       render={({ field }) => (
-                         <div className="flex items-center space-x-2">
-                           <Smartphone className="h-5 w-5 text-muted-foreground" />
-                           <Input
-                            id="mobileNumber"
-                            {...field}
-                            placeholder="e.g., +1 123 456 7890"
-                            disabled={isSubmitting}
-                          />
-                         </div>
+                        <FormItem>
+                          <FormLabel htmlFor="mobileNumber">Mobile Number</FormLabel>
+                          <div className="flex items-center space-x-2">
+                            <Smartphone className="h-5 w-5 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                id="mobileNumber"
+                                {...field}
+                                placeholder="e.g., +1 123 456 7890"
+                                disabled={isSubmitting}
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
                       )}
                     />
-                     {form.formState.errors.mobileNumber && (
-                      <p className="text-xs text-destructive">{form.formState.errors.mobileNumber.message}</p>
-                    )}
                   </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={handleEditToggle} disabled={isSubmitting}>
@@ -334,10 +339,11 @@ export default function ProfilePage() {
                     <p className="text-muted-foreground text-center py-8">Donation history feature will be available here.</p>
                 </CardContent>
             </Card>
-
+           </Form> {/* Closing Form provider */}
           </CardContent>
         </Card>
       </main>
     </AppShell>
   );
 }
+
