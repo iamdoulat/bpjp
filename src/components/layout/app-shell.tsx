@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarNavItems } from './sidebar-nav-items';
-import { Button } from '@/components/ui/button';
-import { PanelLeft } from 'lucide-react';
+import { AppHeader } from './app-header';
 
 interface AppShellProps {
   children: ReactNode;
@@ -23,10 +22,10 @@ export function AppShell({ children }: AppShellProps) {
             <SidebarNavItems />
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="flex-1">
-          <div className="md:hidden p-4"> 
-            <SidebarTrigger />
-          </div>
+        <SidebarInset className="flex-1 flex flex-col">
+          <AppHeader />
+          {/* The main page content (children) will be rendered below the AppHeader */}
+          {/* The AppHeader component itself contains the mobile sidebar trigger, so the one previously here was redundant. */}
           {children}
         </SidebarInset>
       </div>
