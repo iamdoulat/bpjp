@@ -1,3 +1,4 @@
+
 // src/contexts/AuthContext.tsx
 "use client";
 
@@ -10,6 +11,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updateProfile as updateAuthProfile, // For updating user's Firebase Auth profile
+  reload
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -19,6 +22,7 @@ interface AuthContextType {
   signup: (email: string, password: string) => Promise<User | AuthError | undefined>;
   login: (email: string, password: string) => Promise<User | AuthError | undefined>;
   logout: () => Promise<void>;
+  refreshAuthUser: () => Promise<void>; // Added to refresh user state
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,8 +44,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      setUser(userCredential.user);
-      return userCredential.user;
+      // Set default display name to part before @
+      await updateAuthProfile(userCredential.user, { displayName: email.split('@')[0] });
+      // Reload user to get the updated profile
+      await userCredential.user.reload();
+      const refreshedUser = auth.currentUser; // Get the most up-to-date user object
+      setUser(refreshedUser);
+      return refreshedUser ?? undefined;
     } catch (error) {
       console.error("Signup error:", error);
       return error as AuthError;
@@ -77,12 +86,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const refreshAuthUser = async () => {
+    if (auth.currentUser) {
+      try {
+        setLoading(true);
+        await reload(auth.currentUser);
+        setUser(auth.currentUser); // Update state with the reloaded user
+      } catch (error) {
+        console.error("Error refreshing auth user:", error);
+         if ((error as AuthError).code === 'auth/user-token-expired') {
+          // Handle token expiry, e.g., by logging out
+          await logout();
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const value = {
     user,
     loading,
     signup,
     login,
     logout,
+    refreshAuthUser, // Export refresh function
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
