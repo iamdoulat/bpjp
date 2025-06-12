@@ -22,13 +22,13 @@ import { Skeleton } from '../ui/skeleton';
 
 const baseNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
-  { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone, requiresAuth: false },
+  { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone, requiresAuth: false }, // Assuming browse campaigns is public
 ];
 
 const authenticatedNavItems = [
   { href: '/my-donations', label: 'My Donations', icon: HeartHandshake, requiresAuth: true },
   { href: '/profile', label: 'Profile', icon: UserCircle2, requiresAuth: true },
-  { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle, requiresAuth: true },
+  { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle, requiresAuth: true }, // Added this line
 ];
 
 const adminNavItems = [
@@ -63,6 +63,16 @@ export function SidebarNavItems() {
     } else {
       items = items.concat(unauthenticatedNavItems);
     }
+    // Filter out admin items if not admin, even if user is present (covers edge cases)
+    if (user && !isAdminUser) {
+        items = items.filter(item => !item.isAdmin);
+    }
+    // Ensure only truly public items or auth-related items show if no user
+    if (!user) {
+        items = items.filter(item => !item.requiresAuth || item.href === '/login' || item.href === '/signup');
+    }
+
+
     return items;
   };
 
@@ -103,3 +113,4 @@ export function SidebarNavItems() {
     </SidebarMenu>
   );
 }
+
