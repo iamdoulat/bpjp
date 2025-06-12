@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ClipboardList, Search, PlusCircle, MoreHorizontal, AlertCircle, Edit } from "lucide-react";
+import { ClipboardList, Search, PlusCircle, MoreHorizontal, AlertCircle, Edit, Eye } from "lucide-react";
 import { getCampaigns, type CampaignData } from "@/services/campaignService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -193,7 +193,8 @@ export default function ManageCampaignsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => alert(`View ${campaign.campaignTitle}`)}>
+                            <DropdownMenuItem onSelect={() => router.push(`/admin/campaigns/view/${campaign.id}`)}>
+                              <Eye className="mr-2 h-4 w-4" />
                               View
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => router.push(`/admin/campaigns/edit/${campaign.id}`)}>
