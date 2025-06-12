@@ -14,13 +14,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form"; // Removed Controller as it's not used directly here anymore.
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
-import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign } from "lucide-react"; // Added DollarSign
+import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign } from "lucide-react"; 
 import { format } from 'date-fns';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import DonationHistory from "@/components/profile/donation-history"; // Added import
 
 const profileFormSchema = z.object({
   displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters.").optional().or(z.literal('')),
@@ -153,7 +154,7 @@ export default function ProfilePage() {
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 space-y-6">
-          <Card className="shadow-xl">
+          <Card className="shadow-xl"> {/* Removed max-w-4xl mx-auto */}
             <CardHeader className="p-0">
               <Skeleton className="h-48 w-full rounded-t-md" />
               <div className="relative flex justify-center -mt-16">
@@ -211,7 +212,7 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
-        <Card className="shadow-xl">
+        <Card className="shadow-xl"> {/* Removed max-w-4xl mx-auto */}
           <CardHeader className="p-0">
             <div className="h-48 bg-muted/30 relative">
               <Image 
@@ -232,7 +233,7 @@ export default function ProfilePage() {
                 <Button
                     variant="outline"
                     size="sm"
-                    className="absolute top-16 right-4 sm:right-8 md:right-12 lg:right-20 bg-background/70 backdrop-blur-sm" 
+                    className="absolute top-16 right-4 sm:right-6 md:right-8 lg:right-10 xl:right-12 bg-background/70 backdrop-blur-sm p-2"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
                     aria-label="Upload profile picture"
@@ -356,6 +357,10 @@ export default function ProfilePage() {
            </Form>
           </CardContent>
         </Card>
+        
+        {/* Donation History Section */}
+        <DonationHistory />
+
       </main>
     </AppShell>
   );
