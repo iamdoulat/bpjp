@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 "use client";
 
@@ -5,6 +6,7 @@ import { AppShell } from '@/components/layout/app-shell';
 import { UserInfo } from '@/components/dashboard/user-info';
 import { StatsGrid } from '@/components/dashboard/stats-grid';
 import { FeaturedCampaigns } from '@/components/dashboard/featured-campaigns';
+import { UpcomingCampaigns } from '@/components/dashboard/upcoming-campaigns'; // Added import
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -39,9 +41,9 @@ export default function DashboardPage() {
               <Link href="/signup">Sign Up</Link>
             </Button>
           </div>
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-2">Or, explore public campaigns:</h2>
+          <div className="mt-8 w-full max-w-4xl"> {/* Ensure content width is managed */}
             <FeaturedCampaigns /> {/* Publicly viewable featured campaigns */}
+            <UpcomingCampaigns /> {/* Publicly viewable upcoming campaigns */}
           </div>
         </main>
       </AppShell>
@@ -55,6 +57,7 @@ export default function DashboardPage() {
         <UserInfo />
         <StatsGrid />
         <FeaturedCampaigns />
+        <UpcomingCampaigns /> {/* Added Upcoming Campaigns section */}
       </main>
     </AppShell>
   );
