@@ -28,6 +28,7 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getPaymentTransactions, type PaymentTransaction } from "@/services/paymentService"; // Updated import
+import { auth } from '@/lib/firebase'; // Import auth
 
 // Mock data removed as we are fetching from Firestore now
 
@@ -56,6 +57,8 @@ export default function PaymentTrackingPage() {
 
   React.useEffect(() => {
     async function fetchPayments() {
+      const currentUser = auth.currentUser;
+      console.log("[PaymentTrackingPage] Current auth user email:", currentUser?.email); // Added log
       console.log("[PaymentTrackingPage] Attempting to fetch payments...");
       setLoading(true);
       setError(null);
@@ -232,3 +235,4 @@ export default function PaymentTrackingPage() {
     </AppShell>
   );
 }
+
