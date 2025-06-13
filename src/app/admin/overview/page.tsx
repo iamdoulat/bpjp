@@ -78,7 +78,7 @@ export default function AdminOverviewPage() {
             title="Total Users"
             value={adminStats.totalUsers.toLocaleString()}
             subtitle="Manage users"
-            icon={<Users className="h-5 w-5 text-primary" />}
+            icon={<Users className="h-5 w-5 text-green-500" />}
           />
           <StatsCard
             title="Total Donations"

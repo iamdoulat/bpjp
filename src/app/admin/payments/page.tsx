@@ -239,7 +239,7 @@ export default function PaymentTrackingPage() {
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <DollarSign className="h-8 w-8 text-primary" />
+            <DollarSign className="h-8 w-8 text-green-600" />
             <div>
               <h1 className="text-2xl font-headline font-semibold">Payment Tracking</h1>
               <p className="text-muted-foreground text-sm">
