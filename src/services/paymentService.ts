@@ -287,3 +287,41 @@ export async function getTotalDonationsByUser(userId: string): Promise<number> {
   }
 }
 
+export async function getTotalRefundedByUser(userId: string): Promise<number> {
+  if (!userId) {
+    console.log('[paymentService.getTotalRefundedByUser] No userId provided, returning 0.');
+    return 0;
+  }
+  console.log(`[paymentService.getTotalRefundedByUser] Fetching total refunded donations for user: ${userId}`);
+  try {
+    const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
+    const q = query(
+      paymentTransactionsRef,
+      where("userId", "==", userId),
+      where("status", "==", "Refunded")
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log(`[paymentService.getTotalRefundedByUser] No "Refunded" transactions found for user ${userId}.`);
+      return 0;
+    }
+
+    let totalUserRefunds = 0;
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.amount && typeof data.amount === 'number') {
+        totalUserRefunds += data.amount;
+      }
+    });
+
+    console.log(`[paymentService.getTotalRefundedByUser] User ${userId} total refunded donations: ${totalUserRefunds}.`);
+    return totalUserRefunds;
+  } catch (error) {
+    console.error(`[paymentService.getTotalRefundedByUser] Error fetching total refunded for user ${userId}:`, error);
+    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
+        console.error(`[paymentService.getTotalRefundedByUser] PERMISSION DENIED. Check Firestore security rules for querying 'paymentTransactions' collection by userId and status.`);
+    }
+    return 0; 
+  }
+}

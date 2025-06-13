@@ -1,3 +1,4 @@
+
 // src/app/profile/page.tsx
 "use client";
 
@@ -16,7 +17,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
-import { getTotalDonationsByUser } from "@/services/paymentService"; // Added import
+import { getTotalDonationsByUser, getTotalRefundedByUser } from "@/services/paymentService"; // Added getTotalRefundedByUser
 import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet } from "lucide-react"; 
 import { format } from 'date-fns';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -42,16 +43,16 @@ export default function ProfilePage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [profileData, setProfileData] = React.useState<UserProfileData | null>(null);
-  const [totalUserDonations, setTotalUserDonations] = React.useState<number | null>(null); // New state for total donations
-  const [isLoadingTotalDonations, setIsLoadingTotalDonations] = React.useState(true); // New loading state
+  const [totalUserDonations, setTotalUserDonations] = React.useState<number | null>(null);
+  const [totalUserRefunds, setTotalUserRefunds] = React.useState<number | null>(null); // New state for refunds
+  const [isLoadingTotalDonations, setIsLoadingTotalDonations] = React.useState(true);
+  const [isLoadingTotalRefunds, setIsLoadingTotalRefunds] = React.useState(true); // New loading state for refunds
   const [isLoading, setIsLoading] = React.useState(true);
   const [isEditing, setIsEditing] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
 
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  const isUserAdmin = user?.email === adminEmail;
   const profileCoverUrl = process.env.NEXT_PUBLIC_PROFILE_COVER_URL || "https://placehold.co/1200x300.png";
 
 
@@ -65,9 +66,10 @@ export default function ProfilePage() {
 
   React.useEffect(() => {
     if (user) {
-      const fetchProfileAndDonations = async () => {
+      const fetchProfileAndFinancials = async () => {
         setIsLoading(true);
         setIsLoadingTotalDonations(true);
+        setIsLoadingTotalRefunds(true);
         setError(null);
         try {
           // Fetch profile data
@@ -90,18 +92,24 @@ export default function ProfilePage() {
           const donationsSum = await getTotalDonationsByUser(user.uid);
           setTotalUserDonations(donationsSum);
 
+          // Fetch total refunds
+          const refundsSum = await getTotalRefundedByUser(user.uid);
+          setTotalUserRefunds(refundsSum);
+
         } catch (e) {
-          console.error("Failed to fetch profile or donations:", e);
-          setError("Could not load profile data or donation sum.");
+          console.error("Failed to fetch profile or financial data:", e);
+          setError("Could not load profile or financial data.");
         } finally {
           setIsLoading(false);
           setIsLoadingTotalDonations(false);
+          setIsLoadingTotalRefunds(false);
         }
       };
-      fetchProfileAndDonations();
+      fetchProfileAndFinancials();
     } else if (!authLoading) {
       setIsLoading(false);
       setIsLoadingTotalDonations(false);
+      setIsLoadingTotalRefunds(false);
     }
   }, [user, authLoading, form]);
 
@@ -225,7 +233,10 @@ export default function ProfilePage() {
 
   const currentDisplayName = profileData?.displayName || user.displayName || "User";
   const currentPhotoURL = profileData?.photoURL || user.photoURL;
-
+  const currentUserRole = profileData?.role ? profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1) : "User";
+  const formattedRefunds = isLoadingTotalRefunds || totalUserRefunds === null
+    ? <Skeleton className="h-4 w-10 inline-block ml-1" />
+    : formatCurrency(totalUserRefunds);
 
   return (
     <AppShell>
@@ -287,7 +298,7 @@ export default function ProfilePage() {
                  {form.formState.errors.displayName && isEditing && (
                     <p className="text-xs text-destructive mt-1">{form.formState.errors.displayName.message}</p>
                   )}
-                <p className="text-sm text-muted-foreground">{isUserAdmin ? "Admin" : "User"}</p>
+                <p className="text-sm text-muted-foreground">{currentUserRole}</p>
               </div>
             </div>
           </CardHeader>
@@ -368,9 +379,15 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-start mt-6 gap-2">
-                   <Button variant="outline" onClick={() => toast({ title: "My Wallet Clicked", description: "Wallet functionality coming soon!"})}>
-                    <Wallet className="mr-2 h-4 w-4" /> My Wallet: $0.00
+                <div className="flex justify-between items-center mt-6">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => toast({ 
+                      title: "My Wallet", 
+                      description: `Total refunded amount: ${isLoadingTotalRefunds ? 'Loading...' : formatCurrency(totalUserRefunds)}` 
+                    })}
+                  >
+                    <Wallet className="mr-2 h-4 w-4" /> My Wallet: {formattedRefunds}
                   </Button>
                   <Button onClick={handleEditToggle}>
                     <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
