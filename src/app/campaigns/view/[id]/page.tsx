@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
 import { getCampaignById, type CampaignData } from '@/services/campaignService';
-import { Loader2, AlertCircle, ArrowLeft, CalendarDays, Users, DollarSign, Target as TargetIcon, HeartHandshake } from "lucide-react"
+import { Loader2, AlertCircle, ArrowLeft, CalendarDays, Users, DollarSign, Target as TargetIcon, HeartHandshake, Phone } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Dialog,
@@ -77,6 +77,7 @@ export default function PublicViewCampaignPage() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [donationAmount, setDonationAmount] = React.useState("");
   const [lastFourDigits, setLastFourDigits] = React.useState("");
+  const [receiverBkashNo, setReceiverBkashNo] = React.useState(""); // New state
   const [isSubmittingDonation, setIsSubmittingDonation] = React.useState(false);
 
 
@@ -118,10 +119,10 @@ export default function PublicViewCampaignPage() {
       return;
     }
 
-    if (!donationAmount || !lastFourDigits) {
+    if (!donationAmount || !lastFourDigits || !receiverBkashNo) {
       toast({
         title: "Missing Information",
-        description: "Please enter both amount and the last 4 digits.",
+        description: "Please enter amount, last 4 digits, and Receiver Bkash No.",
         variant: "destructive",
       });
       return;
@@ -142,6 +143,16 @@ export default function PublicViewCampaignPage() {
         });
         return;
     }
+     // Basic Bkash number validation (example: starts with 01 and is 11 digits)
+    if (!/^01[3-9]\d{8}$/.test(receiverBkashNo)) {
+        toast({
+            title: "Invalid Bkash Number",
+            description: "Please enter a valid 11-digit Bkash number starting with 01.",
+            variant: "destructive",
+        });
+        return;
+    }
+
 
     setIsSubmittingDonation(true);
     
@@ -162,6 +173,7 @@ export default function PublicViewCampaignPage() {
         campaignName: campaign.campaignTitle,
         amount: parseFloat(donationAmount),
         lastFourDigits: lastFourDigits,
+        receiverBkashNo: receiverBkashNo, // Include Bkash number
     };
 
     try {
@@ -172,6 +184,7 @@ export default function PublicViewCampaignPage() {
         });
         setDonationAmount("");
         setLastFourDigits("");
+        setReceiverBkashNo(""); // Clear Bkash number field
         setIsDialogOpen(false);
     } catch (e) {
         console.error("Failed to submit donation:", e);
@@ -339,7 +352,7 @@ export default function PublicViewCampaignPage() {
                     <DialogHeader>
                       <DialogTitle>Make a Donation</DialogTitle>
                       <DialogDescription>
-                        Support "{campaign.campaignTitle}". Every contribution makes a difference. Enter amount and last 4 digits of your transaction reference.
+                        Support "{campaign.campaignTitle}". Enter amount, last 4 transaction digits, and Receiver Bkash No.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -371,6 +384,20 @@ export default function PublicViewCampaignPage() {
                           disabled={isSubmittingDonation}
                         />
                       </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="bkashNo" className="text-right">
+                          Bkash No.
+                        </Label>
+                        <Input
+                          id="bkashNo"
+                          value={receiverBkashNo}
+                          onChange={(e) => setReceiverBkashNo(e.target.value)}
+                          className="col-span-3"
+                          placeholder="Receiver's Bkash No."
+                          maxLength={11}
+                          disabled={isSubmittingDonation}
+                        />
+                      </div>
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
@@ -378,7 +405,11 @@ export default function PublicViewCampaignPage() {
                           Cancel
                         </Button>
                       </DialogClose>
-                      <Button type="button" onClick={handleDonationSubmit} disabled={isSubmittingDonation || !donationAmount || !lastFourDigits || lastFourDigits.length !== 4}>
+                      <Button 
+                        type="button" 
+                        onClick={handleDonationSubmit} 
+                        disabled={isSubmittingDonation || !donationAmount || !lastFourDigits || lastFourDigits.length !== 4 || !receiverBkashNo}
+                      >
                         {isSubmittingDonation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Submit Donation
                       </Button>

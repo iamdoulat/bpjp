@@ -15,6 +15,7 @@ export interface PaymentTransaction {
   campaignId?: string;
   campaignName?: string;
   lastFourDigits?: string; // For verification
+  receiverBkashNo?: string; // New field
   transactionReference?: string; // Optional field for a full reference if available
 }
 
@@ -26,6 +27,7 @@ export interface NewPaymentTransactionInput {
   campaignName: string;
   amount: number;
   lastFourDigits: string;
+  receiverBkashNo?: string; // New field
 }
 
 
@@ -82,6 +84,7 @@ export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
           campaignId: data.campaignId,
           campaignName: data.campaignName,
           lastFourDigits: data.lastFourDigits,
+          receiverBkashNo: data.receiverBkashNo, // New field
           transactionReference: data.transactionReference,
         };
         transactions.push(transaction);
@@ -122,3 +125,4 @@ export async function updatePaymentTransactionStatus(
 }
 
 // Future functions like getPaymentTransactionById can be added here if needed.
+

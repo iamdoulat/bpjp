@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Search, ListFilter, MoreHorizontal, Eye, RefreshCw, AlertCircle, UserCircle, Loader2, Save } from "lucide-react";
+import { DollarSign, Search, ListFilter, MoreHorizontal, Eye, RefreshCw, AlertCircle, UserCircle, Loader2, Save, Phone } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -115,7 +115,8 @@ export default function PaymentTrackingPage() {
     (payment.userEmail && payment.userEmail.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (payment.campaignName && payment.campaignName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (payment.method && payment.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (payment.status && payment.status.toLowerCase().includes(searchTerm.toLowerCase()))
+    (payment.status && payment.status.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (payment.receiverBkashNo && payment.receiverBkashNo.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusBadgeVariant = (status?: PaymentTransaction["status"]) => {
@@ -358,6 +359,12 @@ export default function PaymentTrackingPage() {
                 <Label className="text-sm text-muted-foreground col-span-1">Last 4 Digits:</Label>
                 <p className="text-sm col-span-2">{paymentToViewOrUpdate.lastFourDigits || 'N/A'}</p>
               </div>
+              {paymentToViewOrUpdate.receiverBkashNo && (
+                <div className="grid grid-cols-3 items-center gap-2">
+                  <Label className="text-sm text-muted-foreground col-span-1">Bkash No.:</Label>
+                  <p className="text-sm col-span-2">{paymentToViewOrUpdate.receiverBkashNo}</p>
+                </div>
+              )}
                <div className="grid grid-cols-3 items-center gap-2">
                 <Label htmlFor="status-select" className="text-sm text-muted-foreground col-span-1">Current Status:</Label>
                  <Badge 
@@ -406,3 +413,4 @@ export default function PaymentTrackingPage() {
     </AppShell>
   );
 }
+
