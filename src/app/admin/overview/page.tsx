@@ -8,8 +8,8 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { StatsCard } from "@/components/dashboard/stats-card"; // Reusing StatsCard
-import { Skeleton } from "@/components/ui/skeleton"; // For chart placeholder
+import { StatsCard } from "@/components/dashboard/stats-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users,
@@ -18,29 +18,69 @@ import {
   AlertTriangle,
   PlusCircle,
   BarChart3,
-  Wand2, // Or Settings
-  ShieldCheck, // For Moderate Campaigns
-  RefreshCw, // For Process Refunds
-  FileText,  // For View System Logs
-  LineChart // Alternative for analytics
+  Wand2,
+  ShieldCheck,
+  RefreshCw,
+  FileText,
+  AlertCircle as AlertIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
+import { getSucceededPlatformDonationsTotal, getPendingPaymentsCount } from "@/services/paymentService";
+import { getCampaigns, type CampaignData } from "@/services/campaignService";
+import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
 
-// Mock data - replace with actual data fetching
-const adminStats = {
-  totalUsers: 1250,
-  totalDonations: 75800,
-  activeCampaigns: 15,
-  pendingPayments: 5,
-};
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+interface AdminStatsData {
+  totalUsers: number;
+  totalDonations: number;
+  activeCampaigns: number;
+  pendingPayments: number;
+}
+
 export default function AdminOverviewPage() {
   const router = useRouter();
   const { toast } = useToast();
+
+  const [stats, setStats] = React.useState<AdminStatsData | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    async function fetchAdminStats() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [userProfiles, succeededDonations, allCampaigns, pendingCount] = await Promise.all([
+          getAllUserProfiles(),
+          getSucceededPlatformDonationsTotal(),
+          getCampaigns(),
+          getPendingPaymentsCount(),
+        ]);
+
+        const activeCampaignsCount = allCampaigns.filter(c => c.initialStatus === 'active').length;
+
+        setStats({
+          totalUsers: userProfiles.length,
+          totalDonations: succeededDonations,
+          activeCampaigns: activeCampaignsCount,
+          pendingPayments: pendingCount,
+        });
+
+      } catch (e) {
+        console.error("Failed to fetch admin overview stats:", e);
+        setError(e instanceof Error ? e.message : "An unknown error occurred while fetching statistics.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAdminStats();
+  }, []);
+
 
   const handleQuickAction = (actionName: string, path?: string) => {
     if (path) {
@@ -52,6 +92,25 @@ export default function AdminOverviewPage() {
       });
     }
   };
+
+  if (error) {
+    return (
+      <AppShell>
+        <main className="flex-1 p-4 md:p-6 flex items-center justify-center">
+          <Alert variant="destructive" className="max-w-lg">
+            <AlertIcon className="h-4 w-4" />
+            <ShadCNAlertTitle>Error Loading Statistics</ShadCNAlertTitle>
+            <ShadCNAlertDescription>
+              {error}
+              <br />
+              Please check the console for more details and ensure Firestore security rules allow admin access.
+            </ShadCNAlertDescription>
+             <Button onClick={() => window.location.reload()} className="mt-4">Refresh Page</Button>
+          </Alert>
+        </main>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -74,34 +133,47 @@ export default function AdminOverviewPage() {
 
         {/* Stats Cards Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard
-            title="Total Users"
-            value={adminStats.totalUsers.toLocaleString()}
-            subtitle="Manage users"
-            icon={<Users className="h-5 w-5 text-green-500" />}
-          />
-          <StatsCard
-            title="Total Donations"
-            value={formatCurrency(adminStats.totalDonations)}
-            subtitle="View payment history"
-            icon={<DollarSign className="h-5 w-5 text-green-500" />}
-          />
-          <StatsCard
-            title="Active Campaigns"
-            value={adminStats.activeCampaigns.toString()}
-            subtitle="Manage campaigns"
-            icon={<ListChecks className="h-5 w-5 text-blue-500" />}
-          />
-          <Card className="shadow-lg border-destructive border-2">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium font-headline text-destructive-foreground">Pending Payments</CardTitle>
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-headline text-destructive">{adminStats.pendingPayments}</div>
-              <p className="text-xs text-destructive/80 pt-1">Review pending payments</p>
-            </CardContent>
-          </Card>
+          {loading || !stats ? (
+            <>
+              <StatsCardSkeleton />
+              <StatsCardSkeleton />
+              <StatsCardSkeleton />
+              <StatsCardSkeleton variant="destructive" />
+            </>
+          ) : (
+            <>
+              <StatsCard
+                title="Total Users"
+                value={stats.totalUsers.toLocaleString()}
+                subtitle="Manage users"
+                icon={<Users className="h-5 w-5 text-green-600" />}
+              />
+              <StatsCard
+                title="Total Donations"
+                value={formatCurrency(stats.totalDonations)}
+                subtitle="Succeeded donations"
+                icon={<DollarSign className="h-5 w-5 text-green-600" />}
+              />
+              <StatsCard
+                title="Active Campaigns"
+                value={stats.activeCampaigns.toString()}
+                subtitle="Manage campaigns"
+                icon={<ListChecks className="h-5 w-5 text-green-600" />}
+              />
+              <Card className={cn("shadow-lg", stats.pendingPayments > 0 ? "border-destructive border-2" : "")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className={cn("text-sm font-medium font-headline", stats.pendingPayments > 0 ? "text-destructive-foreground" : "")}>Pending Payments</CardTitle>
+                  <AlertTriangle className={cn("h-5 w-5", stats.pendingPayments > 0 ? "text-destructive" : "text-muted-foreground")} />
+                </CardHeader>
+                <CardContent>
+                  <div className={cn("text-3xl font-bold font-headline", stats.pendingPayments > 0 ? "text-destructive" : "")}>{stats.pendingPayments}</div>
+                  <p className={cn("text-xs pt-1", stats.pendingPayments > 0 ? "text-destructive/80" : "text-muted-foreground")}>
+                    {stats.pendingPayments > 0 ? "Review pending payments" : "No pending payments"}
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         {/* Platform Analytics and Quick Actions Section */}
@@ -116,11 +188,11 @@ export default function AdminOverviewPage() {
               <CardDescription>Key performance indicators and trends.</CardDescription>
             </CardHeader>
             <CardContent className="h-[250px] md:h-[300px] flex items-center justify-center bg-muted/30 rounded-md">
-              <p className="text-muted-foreground">Analytics chart will be displayed here.</p>
-              {/* Placeholder for chart component */}
+              {/* Placeholder for chart component or loading state for chart */}
+              {loading ? <Skeleton className="h-full w-full" /> : <p className="text-muted-foreground">Analytics chart will be displayed here.</p>}
             </CardContent>
             <div className="p-4 border-t">
-              <Button variant="outline" onClick={() => handleQuickAction("View Detailed Reports")}>
+              <Button variant="outline" onClick={() => handleQuickAction("View Detailed Reports")} disabled={loading}>
                 View Detailed Reports
               </Button>
             </div>
@@ -136,19 +208,19 @@ export default function AdminOverviewPage() {
               <CardDescription>Common administrative tasks.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start text-left h-auto py-3" onClick={() => handleQuickAction("Manage User Roles", "/admin/users")}>
+              <Button variant="outline" className="w-full justify-start text-left h-auto py-3" onClick={() => handleQuickAction("Manage User Roles", "/admin/users")} disabled={loading}>
                 <Users className="mr-3 h-5 w-5" />
                 Manage User Roles
               </Button>
-              <Button variant="outline" className="w-full justify-start text-left h-auto py-3" onClick={() => handleQuickAction("Moderate Campaigns", "/admin/campaigns")}>
+              <Button variant="outline" className="w-full justify-start text-left h-auto py-3" onClick={() => handleQuickAction("Moderate Campaigns", "/admin/campaigns")} disabled={loading}>
                 <ShieldCheck className="mr-3 h-5 w-5" />
                 Moderate Campaigns
               </Button>
-              <Button variant="outline" className="w-full justify-start text-left h-auto py-3" onClick={() => handleQuickAction("Process Refunds", "/admin/payments")}>
+              <Button variant="outline" className="w-full justify-start text-left h-auto py-3" onClick={() => handleQuickAction("Process Refunds", "/admin/payments")} disabled={loading}>
                 <RefreshCw className="mr-3 h-5 w-5" />
                 Process Refunds
               </Button>
-              <Button variant="outline" className="w-full justify-start text-left h-auto py-3" onClick={() => handleQuickAction("View System Logs")}>
+              <Button variant="outline" className="w-full justify-start text-left h-auto py-3" onClick={() => handleQuickAction("View System Logs")} disabled={loading}>
                 <FileText className="mr-3 h-5 w-5" />
                 View System Logs
               </Button>
@@ -157,6 +229,21 @@ export default function AdminOverviewPage() {
         </div>
       </main>
     </AppShell>
+  );
+}
+
+function StatsCardSkeleton({ variant }: { variant?: "destructive" }) {
+  return (
+    <Card className={cn("shadow-lg", variant === "destructive" ? "border-destructive border-2" : "")}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-5 w-5 rounded-full" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-12 mb-1" />
+        <Skeleton className="h-3 w-28" />
+      </CardContent>
+    </Card>
   );
 }
 

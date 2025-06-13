@@ -1,7 +1,7 @@
 
 // src/services/paymentService.ts
 import { db, auth } from '@/lib/firebase'; // Added auth
-import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc } from 'firebase/firestore'; // Added deleteDoc and getDoc
+import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer } from 'firebase/firestore'; // Added deleteDoc and getDoc, getCountFromServer
 
 // Interface for data stored and retrieved from Firestore
 export interface PaymentTransaction {
@@ -392,3 +392,22 @@ export async function getTotalRefundedByUser(userId: string): Promise<number> {
     return 0; 
   }
 }
+
+export async function getPendingPaymentsCount(): Promise<number> {
+  console.log('[paymentService.getPendingPaymentsCount] Attempting to count Pending payments.');
+  try {
+    const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
+    const q = query(paymentTransactionsRef, where("status", "==", "Pending"));
+    const snapshot = await getCountFromServer(q);
+    const count = snapshot.data().count;
+    console.log(`[paymentService.getPendingPaymentsCount] Found ${count} pending payments.`);
+    return count;
+  } catch (error) {
+    console.error("[paymentService.getPendingPaymentsCount] Error counting pending payments:", error);
+    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
+        console.error("[paymentService.getPendingPaymentsCount] PERMISSION DENIED. Check Firestore security rules.");
+    }
+    return 0; // Return 0 on error
+  }
+}
+
