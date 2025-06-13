@@ -28,6 +28,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/AuthContext"; // Added useAuth
+import { addPaymentTransaction, type NewPaymentTransactionInput } from "@/services/paymentService"; // Added payment service
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -65,6 +67,8 @@ export default function PublicViewCampaignPage() {
   const params = useParams();
   const router = useRouter();
   const campaignId = params.id as string;
+  const { user } = useAuth(); // Get user from AuthContext
+  const { toast } = useToast();
 
   const [campaign, setCampaign] = React.useState<CampaignData | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -74,7 +78,7 @@ export default function PublicViewCampaignPage() {
   const [donationAmount, setDonationAmount] = React.useState("");
   const [lastFourDigits, setLastFourDigits] = React.useState("");
   const [isSubmittingDonation, setIsSubmittingDonation] = React.useState(false);
-  const { toast } = useToast();
+
 
   React.useEffect(() => {
     if (campaignId) {
@@ -103,6 +107,17 @@ export default function PublicViewCampaignPage() {
   }, [campaignId]);
 
   const handleDonationSubmit = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to make a donation.",
+        variant: "destructive",
+      });
+      setIsDialogOpen(false); // Close dialog if user not logged in
+      router.push("/login"); // Redirect to login
+      return;
+    }
+
     if (!donationAmount || !lastFourDigits) {
       toast({
         title: "Missing Information",
@@ -129,24 +144,45 @@ export default function PublicViewCampaignPage() {
     }
 
     setIsSubmittingDonation(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    if (!campaign || !campaign.id) {
+        toast({
+            title: "Error",
+            description: "Campaign details are missing. Cannot process donation.",
+            variant: "destructive",
+        });
+        setIsSubmittingDonation(false);
+        return;
+    }
 
-    console.log("Donation Submitted:", {
-      campaignId: campaign?.id,
-      campaignTitle: campaign?.campaignTitle,
-      amount: parseFloat(donationAmount),
-      lastFour: lastFourDigits,
-    });
+    const transactionInput: NewPaymentTransactionInput = {
+        userId: user.uid,
+        userEmail: user.email || undefined,
+        campaignId: campaign.id,
+        campaignName: campaign.campaignTitle,
+        amount: parseFloat(donationAmount),
+        lastFourDigits: lastFourDigits,
+    };
 
-    toast({
-      title: "Donation Submitted!",
-      description: "Your donation is pending verification by an admin. Thank you for your support!",
-    });
-    setDonationAmount("");
-    setLastFourDigits("");
-    setIsSubmittingDonation(false);
-    setIsDialogOpen(false); // Close dialog on successful submission
+    try {
+        await addPaymentTransaction(transactionInput);
+        toast({
+          title: "Donation Submitted!",
+          description: "Your donation is pending verification by an admin. Thank you for your support!",
+        });
+        setDonationAmount("");
+        setLastFourDigits("");
+        setIsDialogOpen(false);
+    } catch (e) {
+        console.error("Failed to submit donation:", e);
+        toast({
+            title: "Donation Failed",
+            description: (e instanceof Error ? e.message : "Could not submit donation. Please try again."),
+            variant: "destructive",
+        });
+    } finally {
+        setIsSubmittingDonation(false);
+    }
   };
 
   if (isLoading) {
