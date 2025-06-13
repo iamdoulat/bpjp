@@ -56,17 +56,19 @@ export default function PaymentTrackingPage() {
 
   React.useEffect(() => {
     async function fetchPayments() {
+      console.log("[PaymentTrackingPage] Attempting to fetch payments...");
       setLoading(true);
       setError(null);
       try {
         const fetchedPayments = await getPaymentTransactions();
-        // The service now handles sorting by date descending
+        console.log("[PaymentTrackingPage] Fetched payments from service:", fetchedPayments);
         setPayments(fetchedPayments);
       } catch (e) {
-        console.error("Failed to fetch payments:", e);
-        setError(e instanceof Error ? e.message : "An unknown error occurred.");
+        console.error("[PaymentTrackingPage] Error caught in page while fetching payments:", e);
+        setError(e instanceof Error ? e.message : "An unknown error occurred while fetching payments.");
       } finally {
         setLoading(false);
+        console.log("[PaymentTrackingPage] Fetching complete. Loading set to false.");
       }
     }
     fetchPayments();
