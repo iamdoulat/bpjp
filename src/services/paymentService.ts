@@ -188,7 +188,6 @@ export async function getSucceededPlatformDonationsTotal(): Promise<number> {
     return total;
   } catch (error) {
     console.error("[paymentService.getSucceededPlatformDonationsTotal] Error fetching total succeeded donations:", error);
-    // It's crucial to understand the type of error. If it's a permission error, the rules are the problem.
     if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
         console.error("[paymentService.getSucceededPlatformDonationsTotal] PERMISSION DENIED. Check Firestore security rules for reading 'paymentTransactions' collection, especially for admins performing collection queries.");
     }
@@ -232,5 +231,44 @@ export async function getUniqueCampaignsSupportedByUser(userId: string): Promise
         console.error(`[paymentService.getUniqueCampaignsSupportedByUser] PERMISSION DENIED. Check Firestore security rules for querying 'paymentTransactions' collection by userId and status.`);
     }
     return 0; // Return 0 on error or if permissions fail
+  }
+}
+
+export async function getTotalDonationsByUser(userId: string): Promise<number> {
+  if (!userId) {
+    console.log('[paymentService.getTotalDonationsByUser] No userId provided, returning 0.');
+    return 0;
+  }
+  console.log(`[paymentService.getTotalDonationsByUser] Fetching total succeeded donations for user: ${userId}`);
+  try {
+    const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
+    const q = query(
+      paymentTransactionsRef,
+      where("userId", "==", userId),
+      where("status", "==", "Succeeded")
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log(`[paymentService.getTotalDonationsByUser] No "Succeeded" transactions found for user ${userId}.`);
+      return 0;
+    }
+
+    let totalUserDonations = 0;
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.amount && typeof data.amount === 'number') {
+        totalUserDonations += data.amount;
+      }
+    });
+
+    console.log(`[paymentService.getTotalDonationsByUser] User ${userId} total succeeded donations: ${totalUserDonations}.`);
+    return totalUserDonations;
+  } catch (error) {
+    console.error(`[paymentService.getTotalDonationsByUser] Error fetching total donations for user ${userId}:`, error);
+     if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
+        console.error(`[paymentService.getTotalDonationsByUser] PERMISSION DENIED. Check Firestore security rules for querying 'paymentTransactions' collection by userId and status.`);
+    }
+    return 0; 
   }
 }

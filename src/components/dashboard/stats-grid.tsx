@@ -6,7 +6,7 @@ import { StatsCard } from './stats-card';
 import { DollarSign, CalendarClock, Landmark, ListChecks, HeartPulse } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
-import { getSucceededPlatformDonationsTotal, getUniqueCampaignsSupportedByUser } from '@/services/paymentService'; 
+import { getSucceededPlatformDonationsTotal, getUniqueCampaignsSupportedByUser, getTotalDonationsByUser } from '@/services/paymentService'; 
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PlatformStats {
@@ -17,7 +17,7 @@ interface PlatformStats {
 
 interface UserFetchedStats {
   campaignsSupportedCount: number | null;
-  // Add other user-specific fetched stats here, e.g., totalDonatedByUser
+  totalDonatedByUser: number | null;
 }
 
 function formatCurrency(amount: number) {
@@ -27,7 +27,7 @@ function formatCurrency(amount: number) {
 export function StatsGrid() {
   const { user } = useAuth();
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
-  const [userFetchedStats, setUserFetchedStats] = useState<UserFetchedStats>({ campaignsSupportedCount: null });
+  const [userFetchedStats, setUserFetchedStats] = useState<UserFetchedStats>({ campaignsSupportedCount: null, totalDonatedByUser: null });
   
   const [loadingPlatformStats, setLoadingPlatformStats] = useState(true);
   const [loadingUserStats, setLoadingUserStats] = useState(true);
@@ -59,16 +59,21 @@ export function StatsGrid() {
         setLoadingUserStats(true);
         try {
           const campaignsSupported = await getUniqueCampaignsSupportedByUser(user.uid);
-          setUserFetchedStats(prev => ({ ...prev, campaignsSupportedCount: campaignsSupported }));
+          const userTotalDonations = await getTotalDonationsByUser(user.uid);
+          setUserFetchedStats(prev => ({ 
+            ...prev, 
+            campaignsSupportedCount: campaignsSupported,
+            totalDonatedByUser: userTotalDonations,
+          }));
         } catch (e) {
-          console.error("Failed to fetch campaigns supported by user:", e);
-          setUserFetchedStats(prev => ({ ...prev, campaignsSupportedCount: 0 }));
+          console.error("Failed to fetch user-specific stats:", e);
+          setUserFetchedStats(prev => ({ ...prev, campaignsSupportedCount: 0, totalDonatedByUser: 0 }));
         } finally {
           setLoadingUserStats(false);
         }
       } else {
         // Reset user stats if no user or user logs out
-        setUserFetchedStats({ campaignsSupportedCount: null });
+        setUserFetchedStats({ campaignsSupportedCount: null, totalDonatedByUser: null });
         setLoadingUserStats(false);
       }
     }
@@ -78,14 +83,14 @@ export function StatsGrid() {
   const userSpecificStats = user ? [
     { 
       title: "Your Total Donations", 
-      value: "$0", // Placeholder, implement fetching for this similar to campaignsSupportedCount
-      subtitle: "Track your contributions (coming soon!).", 
+      value: loadingUserStats || userFetchedStats.totalDonatedByUser === null ? <Skeleton className="h-7 w-16 inline-block" /> : formatCurrency(userFetchedStats.totalDonatedByUser),
+      subtitle: "Total amount of your successful donations.", 
       icon: <DollarSign className="h-5 w-5" />,
-      isLoading: loadingUserStats // Or a more specific loading state if fetched separately
+      isLoading: loadingUserStats
     },
     { 
       title: "Campaigns You Support", 
-      value: loadingUserStats ? <Skeleton className="h-7 w-10 inline-block" /> : (userFetchedStats.campaignsSupportedCount?.toString() ?? "0"),
+      value: loadingUserStats || userFetchedStats.campaignsSupportedCount === null ? <Skeleton className="h-7 w-10 inline-block" /> : (userFetchedStats.campaignsSupportedCount?.toString() ?? "0"),
       subtitle: "Unique campaigns with successful donations.", 
       icon: <HeartPulse className="h-5 w-5" />,
       isLoading: loadingUserStats
