@@ -3,7 +3,6 @@
 "use client";
 
 import * as React from "react";
-import Link from 'next/link';
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,24 +23,62 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent as ShadCNAlertDialogContent,
+  AlertDialogDescription as ShadCNAlertDialogDescription,
+  AlertDialogFooter as ShadCNAlertDialogFooter,
+  AlertDialogHeader as ShadCNAlertDialogHeader,
+  AlertDialogTitle as ShadCNAlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Users, Search, PlusCircle, MoreHorizontal, Edit2, UserX, ShieldAlert, MailWarning, Trash2, UserCircle2, UserCheck, Loader2, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
-import type { VariantProps } from "class-variance-authority"; // For Badge variant type
+import { getAllUserProfiles, updateUserProfileAdmin, deleteUserProfileDocument, type UserProfileData } from "@/services/userService";
+import type { VariantProps } from "class-variance-authority";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 export interface UserData {
-  id: string; // uid from Firestore doc id
+  id: string;
   uid: string;
-  name?: string | null; // displayName
+  name?: string | null;
   email: string;
-  avatarUrl?: string | null; // photoURL
-  role: 'Admin' | 'User'; // Capitalized for UI
+  avatarUrl?: string | null;
+  role: 'Admin' | 'User';
   mobileNumber?: string | null;
-  joinedDate?: Date; // Converted to Date for UI
-  lastLoginDate?: Date; // Converted to Date for UI
+  joinedDate?: Date;
+  lastLoginDate?: Date;
   status: 'Active' | 'Suspended' | 'Pending Verification';
 }
 
@@ -64,6 +101,11 @@ function getInitials(name?: string | null, email?: string): string {
   return "U";
 }
 
+const editUserFormSchema = z.object({
+  displayName: z.string().min(2, "Name must be at least 2 characters.").max(50).optional().or(z.literal('')),
+  mobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid mobile number.").optional().or(z.literal('')),
+});
+type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
 export default function ManageUsersPage() {
   const [users, setUsers] = React.useState<UserData[]>([]);
@@ -72,35 +114,47 @@ export default function ManageUsersPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const { toast } = useToast();
 
-  React.useEffect(() => {
-    async function fetchUsers() {
-      try {
-        setLoading(true);
-        setError(null);
-        const fetchedProfiles: UserProfileData[] = await getAllUserProfiles();
-        
-        const mappedUsers: UserData[] = fetchedProfiles.map(profile => ({
-          id: profile.uid,
-          uid: profile.uid,
-          name: profile.displayName || null,
-          email: profile.email || 'No email provided',
-          avatarUrl: profile.photoURL || null,
-          role: profile.role === 'admin' ? 'Admin' : 'User',
-          mobileNumber: profile.mobileNumber || null,
-          joinedDate: profile.joinedDate ? profile.joinedDate.toDate() : undefined,
-          lastLoginDate: profile.lastLoginDate ? profile.lastLoginDate.toDate() : undefined,
-          status: profile.status || 'Active',
-        }));
-        setUsers(mappedUsers);
-      } catch (e) {
-        console.error("Failed to fetch users:", e);
-        setError(e instanceof Error ? e.message : "An unknown error occurred while fetching user data.");
-      } finally {
-        setLoading(false);
-      }
+  const [currentUserForAction, setCurrentUserForAction] = React.useState<UserData | null>(null);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = React.useState(false);
+  const [isChangeRoleDialogOpen, setIsChangeRoleDialogOpen] = React.useState(false);
+  const [isSuspendConfirmOpen, setIsSuspendConfirmOpen] = React.useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [selectedNewRole, setSelectedNewRole] = React.useState<'admin' | 'user'>('user');
+
+  const editUserForm = useForm<EditUserFormValues>({
+    resolver: zodResolver(editUserFormSchema),
+  });
+
+  const fetchUsersData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedProfiles: UserProfileData[] = await getAllUserProfiles();
+      const mappedUsers: UserData[] = fetchedProfiles.map(profile => ({
+        id: profile.uid,
+        uid: profile.uid,
+        name: profile.displayName || null,
+        email: profile.email || 'No email provided',
+        avatarUrl: profile.photoURL || null,
+        role: profile.role === 'admin' ? 'Admin' : 'User',
+        mobileNumber: profile.mobileNumber || null,
+        joinedDate: profile.joinedDate ? profile.joinedDate.toDate() : undefined,
+        lastLoginDate: profile.lastLoginDate ? profile.lastLoginDate.toDate() : undefined,
+        status: profile.status || 'Active',
+      }));
+      setUsers(mappedUsers);
+    } catch (e) {
+      console.error("Failed to fetch users:", e);
+      setError(e instanceof Error ? e.message : "An unknown error occurred.");
+    } finally {
+      setLoading(false);
     }
-    fetchUsers();
   }, []);
+
+  React.useEffect(() => {
+    fetchUsersData();
+  }, [fetchUsersData]);
 
   const filteredUsers = users.filter(user =>
     (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -127,14 +181,96 @@ export default function ManageUsersPage() {
     }
   };
 
-  const handleAction = (action: string, userId: string, userName?: string | null) => {
-    // Placeholder for actual actions (e.g., opening a dialog for edit/role change)
-    toast({
-      title: `${action} Clicked`,
-      description: `Action: ${action} for user ${userName || userId}. (Functionality to be implemented)`,
+  const handleOpenEditUserDialog = (user: UserData) => {
+    setCurrentUserForAction(user);
+    editUserForm.reset({
+      displayName: user.name || "",
+      mobileNumber: user.mobileNumber || "",
     });
-    // Example: if (action === "Edit User") router.push(`/admin/users/edit/${userId}`);
+    setIsEditUserDialogOpen(true);
   };
+
+  const handleEditUserSubmit = async (values: EditUserFormValues) => {
+    if (!currentUserForAction) return;
+    setIsSubmitting(true);
+    try {
+      await updateUserProfileAdmin(currentUserForAction.uid, {
+        displayName: values.displayName,
+        mobileNumber: values.mobileNumber,
+      });
+      toast({ title: "User Updated", description: `${currentUserForAction.name || currentUserForAction.email}'s profile has been updated.` });
+      fetchUsersData(); // Re-fetch to reflect changes
+      setIsEditUserDialogOpen(false);
+    } catch (e) {
+      toast({ title: "Update Failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenChangeRoleDialog = (user: UserData) => {
+    setCurrentUserForAction(user);
+    setSelectedNewRole(user.role.toLowerCase() as 'admin' | 'user');
+    setIsChangeRoleDialogOpen(true);
+  };
+
+  const handleChangeRoleSubmit = async () => {
+    if (!currentUserForAction) return;
+    setIsSubmitting(true);
+    try {
+      await updateUserProfileAdmin(currentUserForAction.uid, { role: selectedNewRole });
+      toast({ title: "Role Updated", description: `${currentUserForAction.name || currentUserForAction.email}'s role changed to ${selectedNewRole}.` });
+      fetchUsersData();
+      setIsChangeRoleDialogOpen(false);
+    } catch (e) {
+      toast({ title: "Role Update Failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleOpenSuspendConfirm = (user: UserData) => {
+    setCurrentUserForAction(user);
+    setIsSuspendConfirmOpen(true);
+  };
+
+  const handleSuspendToggle = async () => {
+    if (!currentUserForAction) return;
+    setIsSubmitting(true);
+    const newStatus = currentUserForAction.status === 'Active' ? 'Suspended' : 'Active';
+    try {
+      await updateUserProfileAdmin(currentUserForAction.uid, { status: newStatus });
+      toast({ title: `User ${newStatus === 'Suspended' ? 'Suspended' : 'Unsuspended'}`, description: `${currentUserForAction.name || currentUserForAction.email} is now ${newStatus.toLowerCase()}.` });
+      fetchUsersData();
+      setIsSuspendConfirmOpen(false);
+    } catch (e) {
+      toast({ title: "Action Failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenDeleteConfirm = (user: UserData) => {
+    setCurrentUserForAction(user);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!currentUserForAction) return;
+    setIsSubmitting(true);
+    try {
+      await deleteUserProfileDocument(currentUserForAction.uid);
+      // Note: This does NOT delete the Firebase Auth user.
+      toast({ title: "User Profile Deleted", description: `Firestore profile for ${currentUserForAction.name || currentUserForAction.email} deleted.` });
+      fetchUsersData();
+      setIsDeleteConfirmOpen(false);
+    } catch (e) {
+      toast({ title: "Deletion Failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   return (
     <AppShell>
@@ -160,7 +296,7 @@ export default function ManageUsersPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button onClick={() => handleAction("Add User", "")}>
+            <Button onClick={() => toast({ title: "Add User Clicked", description: "Functionality to add new users will be implemented here."})}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add User
             </Button>
@@ -173,15 +309,15 @@ export default function ManageUsersPage() {
               <div key={i} className="flex items-center space-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="flex-1 space-y-1.5">
-                  <Skeleton className="h-4 w-1/2" /> {/* For name */}
-                  <Skeleton className="h-3 w-1/3" /> {/* For mobile */}
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-1/3" />
                 </div>
-                <Skeleton className="h-4 w-1/4" /> {/* Email */}
-                <Skeleton className="h-4 w-[80px]" /> {/* Role */}
-                <Skeleton className="h-4 w-[70px]" /> {/* Joined */}
-                <Skeleton className="h-4 w-[70px]" /> {/* Last Login */}
-                <Skeleton className="h-6 w-24 rounded-full" /> {/* Status */}
-                <Skeleton className="h-8 w-8 rounded-md" /> {/* Actions */}
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-4 w-[80px]" />
+                <Skeleton className="h-4 w-[70px]" />
+                <Skeleton className="h-4 w-[70px]" />
+                <Skeleton className="h-6 w-24 rounded-full" />
+                <Skeleton className="h-8 w-8 rounded-md" />
               </div>
             ))}
           </div>
@@ -252,32 +388,30 @@ export default function ManageUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleAction("View Profile", user.id, user.name)}>
+                          <DropdownMenuItem onSelect={() => toast({title: "View Profile Clicked", description: `Viewing profile for ${user.name || user.email}. (Functionality for specific user profile page to be implemented)`})}>
                             <UserCircle2 className="mr-2 h-4 w-4" /> View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction("Edit User", user.id, user.name)}>
+                          <DropdownMenuItem onSelect={() => handleOpenEditUserDialog(user)}>
                             <Edit2 className="mr-2 h-4 w-4" /> Edit User
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                           <DropdownMenuItem onSelect={() => handleAction("Change Role", user.id, user.name)}>
+                           <DropdownMenuItem onSelect={() => handleOpenChangeRoleDialog(user)}>
                             <ShieldAlert className="mr-2 h-4 w-4" /> Change Role
                           </DropdownMenuItem>
                           {user.status === "Pending Verification" && (
-                             <DropdownMenuItem onSelect={() => handleAction("Resend Verification", user.id, user.name)}>
+                             <DropdownMenuItem onSelect={() => toast({title: "Resend Verification Clicked", description: `Resending verification for ${user.name || user.email}. (Functionality to be implemented)`})}>
                               <MailWarning className="mr-2 h-4 w-4" /> Resend Verification
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
-                          {user.status !== "Suspended" ? (
-                            <DropdownMenuItem className="text-yellow-600 focus:text-yellow-700 focus:bg-yellow-500/10" onSelect={() => handleAction("Suspend User", user.id, user.name)}>
-                              <UserX className="mr-2 h-4 w-4" /> Suspend User
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem className="text-green-600 focus:text-green-700 focus:bg-green-500/10" onSelect={() => handleAction("Unsuspend User", user.id, user.name)}>
-                               <UserCheck className="mr-2 h-4 w-4" /> Unsuspend User
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={() => handleAction("Delete User", user.id, user.name)}>
+                          <DropdownMenuItem
+                            className={cn(user.status === 'Suspended' ? "text-green-600 focus:text-green-700 focus:bg-green-500/10" : "text-yellow-600 focus:text-yellow-700 focus:bg-yellow-500/10")}
+                            onSelect={() => handleOpenSuspendConfirm(user)}
+                          >
+                            {user.status === 'Suspended' ? <UserCheck className="mr-2 h-4 w-4" /> : <UserX className="mr-2 h-4 w-4" />}
+                            {user.status === 'Suspended' ? 'Unsuspend User' : 'Suspend User'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={() => handleOpenDeleteConfirm(user)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete User
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -293,6 +427,140 @@ export default function ManageUsersPage() {
           </div>
         )}
       </main>
+
+      {/* Edit User Dialog */}
+      {currentUserForAction && (
+        <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit User: {currentUserForAction.name || currentUserForAction.email}</DialogTitle>
+              <DialogDescription>Make changes to the user's profile information.</DialogDescription>
+            </DialogHeader>
+            <Form {...editUserForm}>
+              <form onSubmit={editUserForm.handleSubmit(handleEditUserSubmit)} className="space-y-4 py-4">
+                <FormField
+                  control={editUserForm.control}
+                  name="displayName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Display Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="User's display name" {...field} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editUserForm.control}
+                  name="mobileNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mobile Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="User's mobile number" {...field} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button></DialogClose>
+                  <Button type="submit" disabled={isSubmitting || !editUserForm.formState.isDirty || !editUserForm.formState.isValid}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Change Role Dialog */}
+      {currentUserForAction && (
+        <Dialog open={isChangeRoleDialogOpen} onOpenChange={setIsChangeRoleDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Change Role: {currentUserForAction.name || currentUserForAction.email}</DialogTitle>
+              <DialogDescription>Current role: {currentUserForAction.role}. Select a new role.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-2">
+              <Label htmlFor="role-select">New Role</Label>
+              <Select value={selectedNewRole} onValueChange={(value: 'admin' | 'user') => setSelectedNewRole(value)}>
+                <SelectTrigger id="role-select">
+                  <SelectValue placeholder="Select new role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button></DialogClose>
+              <Button onClick={handleChangeRoleSubmit} disabled={isSubmitting || selectedNewRole === currentUserForAction.role.toLowerCase()}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Confirm Role Change
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Suspend/Unsuspend Confirmation Dialog */}
+      {currentUserForAction && (
+        <AlertDialog open={isSuspendConfirmOpen} onOpenChange={setIsSuspendConfirmOpen}>
+          <ShadCNAlertDialogContent>
+            <ShadCNAlertDialogHeader>
+              <ShadCNAlertDialogTitle>
+                Are you sure you want to {currentUserForAction.status === 'Active' ? 'suspend' : 'unsuspend'} this user?
+              </ShadCNAlertDialogTitle>
+              <ShadCNAlertDialogDescription>
+                User: {currentUserForAction.name || currentUserForAction.email}. 
+                This will change their status to {currentUserForAction.status === 'Active' ? 'Suspended' : 'Active'}.
+              </ShadCNAlertDialogDescription>
+            </ShadCNAlertDialogHeader>
+            <ShadCNAlertDialogFooter>
+              <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSuspendToggle}
+                className={currentUserForAction.status === 'Active' ? "bg-yellow-500 hover:bg-yellow-600 text-black" : "bg-green-600 hover:bg-green-700 text-white"}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {currentUserForAction.status === 'Active' ? 'Suspend' : 'Unsuspend'}
+              </AlertDialogAction>
+            </ShadCNAlertDialogFooter>
+          </ShadCNAlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Delete User Confirmation Dialog */}
+      {currentUserForAction && (
+         <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+          <ShadCNAlertDialogContent>
+            <ShadCNAlertDialogHeader>
+              <ShadCNAlertDialogTitle>Are you sure you want to delete this user's profile?</ShadCNAlertDialogTitle>
+              <ShadCNAlertDialogDescription>
+                This action cannot be undone. This will permanently delete the Firestore profile for 
+                <span className="font-semibold"> {currentUserForAction.name || currentUserForAction.email}</span>.
+                This does not delete their Firebase Authentication account.
+              </ShadCNAlertDialogDescription>
+            </ShadCNAlertDialogHeader>
+            <ShadCNAlertDialogFooter>
+              <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteUser}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete Profile
+              </AlertDialogAction>
+            </ShadCNAlertDialogFooter>
+          </ShadCNAlertDialogContent>
+        </AlertDialog>
+      )}
+
     </AppShell>
   );
 }

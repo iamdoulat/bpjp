@@ -1,7 +1,7 @@
 
 // src/services/userService.ts
 import { db, auth, storage } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, type QueryDocumentSnapshot, type DocumentData, deleteDoc } from 'firebase/firestore';
 import { updateProfile as updateAuthProfile, type User as AuthUser } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -61,8 +61,6 @@ export async function getAllUserProfiles(): Promise<UserProfileData[]> {
         photoURL: data.photoURL || null,
         role: data.role || 'user',
         status: data.status || 'Active',
-        // Convert Timestamps to JS Dates directly in the service if needed by components,
-        // but UserProfileData keeps them as Timestamps for consistency with Firestore model
         joinedDate: data.joinedDate as Timestamp || null,
         lastLoginDate: data.lastLoginDate as Timestamp || null,
         lastUpdated: data.lastUpdated as Timestamp || null,
@@ -79,7 +77,7 @@ export async function getAllUserProfiles(): Promise<UserProfileData[]> {
 }
 
 
-// Function to create or update user profile in Firestore and Firebase Auth
+// Function for a user to update their own profile
 export async function updateUserProfileService(
   authUser: AuthUser,
   profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber'>>
@@ -91,7 +89,7 @@ export async function updateUserProfileService(
 
   const dataToStore: Partial<UserProfileData> = {
     uid: authUser.uid,
-    email: authUser.email, 
+    email: authUser.email,
     lastUpdated: serverTimestamp() as Timestamp,
   };
 
@@ -103,22 +101,18 @@ export async function updateUserProfileService(
   }
 
   try {
-    // Update Firebase Auth profile (displayName)
     if (profileUpdates.displayName !== undefined && profileUpdates.displayName !== authUser.displayName) {
       await updateAuthProfile(authUser, { displayName: profileUpdates.displayName });
     }
 
-    // Update Firestore document
     if (currentProfile) {
       await updateDoc(userDocRef, dataToStore);
     } else {
-      // If profile doesn't exist, create it including joinedDate
       dataToStore.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
-      // Also store lastSignInTime as lastLoginDate
       dataToStore.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
-      dataToStore.photoURL = authUser.photoURL; 
-      dataToStore.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user'; // Set role on creation
-      dataToStore.status = 'Active'; // Default status
+      dataToStore.photoURL = authUser.photoURL;
+      dataToStore.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
+      dataToStore.status = 'Active';
       await setDoc(userDocRef, dataToStore);
     }
   } catch (error) {
@@ -126,6 +120,27 @@ export async function updateUserProfileService(
     throw error;
   }
 }
+
+// Function for an admin to update any user's profile in Firestore
+export async function updateUserProfileAdmin(
+  userId: string,
+  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'role' | 'status'>>
+): Promise<void> {
+  if (!userId) throw new Error("User ID is required.");
+  const userDocRef = doc(db, 'userProfiles', userId);
+  const dataToUpdate: Partial<UserProfileData> & { lastUpdated: Timestamp } = {
+    ...profileUpdates,
+    lastUpdated: serverTimestamp() as Timestamp,
+  };
+
+  try {
+    await updateDoc(userDocRef, dataToUpdate);
+  } catch (error) {
+    console.error(`Error updating profile for user ${userId}:`, error);
+    throw error;
+  }
+}
+
 
 // Function to upload profile picture and update Auth & Firestore
 export async function uploadProfilePictureAndUpdate(
@@ -167,6 +182,20 @@ export async function uploadProfilePictureAndUpdate(
     return downloadURL;
   } catch (error) {
     console.error("Error uploading profile picture:", error);
+    throw error;
+  }
+}
+
+// Function to delete a user's profile document from Firestore
+export async function deleteUserProfileDocument(userId: string): Promise<void> {
+  if (!userId) throw new Error("User ID is required for deletion.");
+  try {
+    const userDocRef = doc(db, 'userProfiles', userId);
+    await deleteDoc(userDocRef);
+  } catch (error) {
+    console.error(`Error deleting Firestore profile for user ${userId}:`, error);
+    // Note: This does not delete the Firebase Auth user.
+    // Deleting Firebase Auth users typically requires Admin SDK on a backend.
     throw error;
   }
 }
