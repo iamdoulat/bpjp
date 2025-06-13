@@ -21,6 +21,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -32,6 +33,16 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent as ShadCNAlertDialogContent,
+  AlertDialogDescription as ShadCNAlertDialogDescription,
+  AlertDialogFooter as ShadCNAlertDialogFooter,
+  AlertDialogHeader as ShadCNAlertDialogHeader,
+  AlertDialogTitle as ShadCNAlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -39,13 +50,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Search, ListFilter, MoreHorizontal, Eye, AlertCircle, Loader2 } from "lucide-react";
+import { DollarSign, Search, ListFilter, MoreHorizontal, Eye, AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { getPaymentTransactions, updatePaymentTransactionStatus, type PaymentTransaction } from "@/services/paymentService";
-import { getAllUserProfiles, type UserProfileData } from "@/services/userService"; // Added
+import { getPaymentTransactions, updatePaymentTransactionStatus, deletePaymentTransaction, type PaymentTransaction } from "@/services/paymentService";
+import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
 import { auth } from '@/lib/firebase';
 
 function formatCurrency(amount: number) {
@@ -64,7 +75,6 @@ function formatDisplayDateTime(date: Date | undefined) {
   }).format(new Date(date));
 }
 
-// Updated getInitials function, similar to ManageUsersPage
 function getInitials(name?: string | null, email?: string | null): string {
   if (name) {
     const parts = name.split(" ");
@@ -82,7 +92,7 @@ function getInitials(name?: string | null, email?: string | null): string {
 
 export default function PaymentTrackingPage() {
   const [payments, setPayments] = React.useState<PaymentTransaction[]>([]);
-  const [userProfilesMap, setUserProfilesMap] = React.useState<Map<string, UserProfileData>>(new Map()); // Added
+  const [userProfilesMap, setUserProfilesMap] = React.useState<Map<string, UserProfileData>>(new Map());
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -92,6 +102,10 @@ export default function PaymentTrackingPage() {
   const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = React.useState(false);
   const [selectedNewStatusForUpdate, setSelectedNewStatusForUpdate] = React.useState<PaymentTransaction['status'] | ''>('');
   const [isSubmittingStatusUpdate, setIsSubmittingStatusUpdate] = React.useState(false);
+
+  const [transactionToDelete, setTransactionToDelete] = React.useState<PaymentTransaction | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
 
   React.useEffect(() => {
     async function fetchData() {
@@ -192,6 +206,33 @@ export default function PaymentTrackingPage() {
   
   const paymentStatusOptions: PaymentTransaction['status'][] = ["Pending", "Succeeded", "Failed", "Refunded"];
 
+  const handleDeleteConfirmation = (payment: PaymentTransaction) => {
+    setTransactionToDelete(payment);
+  };
+
+  const executeDeleteTransaction = async () => {
+    if (!transactionToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deletePaymentTransaction(transactionToDelete.id);
+      setPayments(prev => prev.filter(p => p.id !== transactionToDelete.id));
+      toast({
+        title: "Transaction Deleted",
+        description: `Transaction ID ${transactionToDelete.id} has been successfully deleted.`,
+      });
+      setTransactionToDelete(null); // Close dialog
+    } catch (e) {
+      console.error("Failed to delete transaction:", e);
+      toast({
+        title: "Deletion Failed",
+        description: e instanceof Error ? e.message : "Could not delete transaction.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
   return (
     <AppShell>
@@ -271,7 +312,7 @@ export default function PaymentTrackingPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px] min-w-[180px]">User</TableHead>
+                  <TableHead className="w-[200px] min-w-[200px]">User</TableHead>
                   <TableHead className="w-[150px] min-w-[150px]">Date</TableHead>
                   <TableHead className="min-w-[150px]">Campaign</TableHead>
                   <TableHead className="w-[130px] min-w-[130px]">Rece. Bkash No.</TableHead>
@@ -331,6 +372,14 @@ export default function PaymentTrackingPage() {
                             <DropdownMenuItem onSelect={() => handleOpenViewDetailsModal(payment)}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Details / Change Status
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                              onSelect={() => handleDeleteConfirmation(payment)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -431,6 +480,33 @@ export default function PaymentTrackingPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+
+      {transactionToDelete && (
+        <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
+          <ShadCNAlertDialogContent>
+            <ShadCNAlertDialogHeader>
+              <ShadCNAlertDialogTitle>Are you sure you want to delete this transaction?</ShadCNAlertDialogTitle>
+              <ShadCNAlertDialogDescription>
+                This action cannot be undone. This will permanently delete the transaction
+                with ID <span className="font-semibold">"{transactionToDelete.id}"</span> for campaign 
+                <span className="font-semibold"> "{transactionToDelete.campaignName || 'N/A'}"</span> of amount 
+                <span className="font-semibold"> {formatCurrency(transactionToDelete.amount)}</span>.
+              </ShadCNAlertDialogDescription>
+            </ShadCNAlertDialogHeader>
+            <ShadCNAlertDialogFooter>
+              <AlertDialogCancel onClick={() => setTransactionToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={executeDeleteTransaction}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                disabled={isDeleting}
+              >
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete Transaction
+              </AlertDialogAction>
+            </ShadCNAlertDialogFooter>
+          </ShadCNAlertDialogContent>
+        </AlertDialog>
       )}
     </AppShell>
   );

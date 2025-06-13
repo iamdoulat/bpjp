@@ -1,7 +1,7 @@
 
 // src/services/paymentService.ts
 import { db, auth } from '@/lib/firebase'; // Added auth
-import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where } from 'firebase/firestore'; // Added doc, updateDoc, where
+import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc } from 'firebase/firestore'; // Added deleteDoc
 
 // Interface for data stored and retrieved from Firestore
 export interface PaymentTransaction {
@@ -120,6 +120,20 @@ export async function updatePaymentTransactionStatus(
       throw new Error(`Failed to update payment status: ${error.message}`);
     }
     throw new Error('An unknown error occurred while updating payment status.');
+  }
+}
+
+export async function deletePaymentTransaction(transactionId: string): Promise<void> {
+  try {
+    const transactionDocRef = doc(db, PAYMENT_TRANSACTIONS_COLLECTION, transactionId);
+    await deleteDoc(transactionDocRef);
+    console.log(`[paymentService.deletePaymentTransaction] Successfully deleted transaction ${transactionId}.`);
+  } catch (error) {
+    console.error(`[paymentService.deletePaymentTransaction] Error deleting transaction ${transactionId}:`, error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to delete payment transaction: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while deleting the payment transaction.');
   }
 }
 
@@ -272,3 +286,4 @@ export async function getTotalDonationsByUser(userId: string): Promise<number> {
     return 0; 
   }
 }
+
