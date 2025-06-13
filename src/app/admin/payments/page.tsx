@@ -145,11 +145,6 @@ export default function PaymentTrackingPage() {
     setIsViewDetailsModalOpen(true);
   };
 
-  const handleProcessRefund = (paymentId: string) => {
-    // This can be a specific action or integrated into status change to "Refunded"
-    toast({ title: "Process Refund (Action)", description: `Initiating refund process for payment ID: ${paymentId}. This is a placeholder.` });
-  };
-
   const handleSaveStatusUpdate = async () => {
     if (!paymentToViewOrUpdate || !selectedNewStatusForUpdate) return;
 
@@ -309,15 +304,6 @@ export default function PaymentTrackingPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details / Change Status
                           </DropdownMenuItem>
-                          {(payment.status === "Succeeded" || payment.status === "Pending") && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onSelect={() => handleProcessRefund(payment.id)}>
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Process Refund
-                              </DropdownMenuItem>
-                            </>
-                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
