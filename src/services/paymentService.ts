@@ -75,12 +75,12 @@ export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
       try {
         const transaction: PaymentTransaction = {
           id: docSnap.id,
-          userId: data.userId || 'N/A', 
+          userId: data.userId || 'N/A',
           userEmail: data.userEmail,
-          date: data.date ? (data.date as Timestamp).toDate() : new Date(0), 
-          method: data.method || 'Unknown', 
-          amount: data.amount || 0, 
-          status: data.status || 'Pending', 
+          date: data.date ? (data.date as Timestamp).toDate() : new Date(0),
+          method: data.method || 'Unknown',
+          amount: data.amount || 0,
+          status: data.status || 'Pending',
           campaignId: data.campaignId,
           campaignName: data.campaignName,
           lastFourDigits: data.lastFourDigits,
@@ -161,27 +161,37 @@ export async function getPaymentTransactionsByUserId(userId: string): Promise<Pa
 }
 
 export async function getSucceededPlatformDonationsTotal(): Promise<number> {
-  console.log('[paymentService.getSucceededPlatformDonationsTotal] Fetching succeeded transactions total.');
+  console.log('[paymentService.getSucceededPlatformDonationsTotal] Attempting to fetch total for Succeeded donations.');
+  console.log(`[paymentService.getSucceededPlatformDonationsTotal] Current auth user for query: ${auth.currentUser?.email} (UID: ${auth.currentUser?.uid})`);
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
-    // Firestore rules will determine if this query is allowed.
-    // For admins, it should work. For public users, it might return 0 documents if rules are restrictive.
     const q = query(paymentTransactionsRef, where("status", "==", "Succeeded"));
     const querySnapshot = await getDocs(q);
-    
+
+    console.log(`[paymentService.getSucceededPlatformDonationsTotal] Query for 'Succeeded' status returned ${querySnapshot.size} documents.`);
+    if (querySnapshot.empty) {
+      console.log('[paymentService.getSucceededPlatformDonationsTotal] No "Succeeded" transactions found.');
+    }
+
     let total = 0;
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
+      console.log(`[paymentService.getSucceededPlatformDonationsTotal] Processing doc ID ${docSnap.id}:`, data);
       if (data.amount && typeof data.amount === 'number') {
         total += data.amount;
+        console.log(`[paymentService.getSucceededPlatformDonationsTotal] Added ${data.amount} to total. Current total: ${total}`);
+      } else {
+        console.warn(`[paymentService.getSucceededPlatformDonationsTotal] Document ID ${docSnap.id} has missing or invalid amount:`, data.amount);
       }
     });
-    console.log(`[paymentService.getSucceededPlatformDonationsTotal] Calculated total: ${total}`);
+    console.log(`[paymentService.getSucceededPlatformDonationsTotal] Final calculated total for Succeeded donations: ${total}`);
     return total;
   } catch (error) {
     console.error("[paymentService.getSucceededPlatformDonationsTotal] Error fetching total succeeded donations:", error);
-    // Return 0 in case of error (e.g., permission denied for non-admin users)
-    // This allows the UI to gracefully display $0 instead of breaking.
-    return 0; 
+    // It's crucial to understand the type of error. If it's a permission error, the rules are the problem.
+    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
+        console.error("[paymentService.getSucceededPlatformDonationsTotal] PERMISSION DENIED. Check Firestore security rules for reading 'paymentTransactions' collection, especially for admins performing collection queries.");
+    }
+    return 0;
   }
 }
