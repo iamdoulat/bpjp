@@ -27,37 +27,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getPaymentTransactions, type PaymentTransaction } from "@/services/paymentService"; // Updated import
 
-// Define the PaymentTransaction interface based on the design
-export interface PaymentTransaction {
-  id: string; // Transaction ID
-  userId: string;
-  date: Date;
-  method: "Card" | "PayPal" | "Bank Transfer" | string; // Allow other string for flexibility
-  amount: number;
-  status: "Succeeded" | "Pending" | "Failed" | "Refunded";
-  // Optional campaign context
-  campaignId?: string;
-  campaignName?: string;
-}
-
-// Mock data for initial UI development - replace with Firestore fetching
-const mockPayments: PaymentTransaction[] = [
-  { id: "pay_1", userId: "usr_1", date: new Date("2024-07-15T10:30:00"), method: "Card", amount: 75.00, status: "Succeeded" },
-  { id: "pay_2", userId: "usr_2", date: new Date("2024-06-20T14:00:00"), method: "PayPal", amount: 120.50, status: "Succeeded" },
-  { id: "pay_3", userId: "usr_3", date: new Date("2024-05-01T09:15:00"), method: "Card", amount: 30.00, status: "Pending" },
-  { id: "pay_4", userId: "usr_4", date: new Date("2024-03-10T17:45:00"), method: "Card", amount: 200.00, status: "Failed" },
-  { id: "pay_5", userId: "usr_5", date: new Date("2024-02-28T11:00:00"), method: "Card", amount: 50.00, status: "Refunded" },
-  { id: "pay_6", userId: "usr_1", date: new Date("2024-07-18T16:20:00"), method: "Card", amount: 25.00, status: "Succeeded" },
-  { id: "pay_7", userId: "usr_6", date: new Date("2024-07-19T09:00:00"), method: "Bank Transfer", amount: 500.00, status: "Pending" },
-  { id: "pay_8", userId: "usr_7", date: new Date("2024-07-01T12:00:00"), method: "PayPal", amount: 15.00, status: "Succeeded" },
-];
+// Mock data removed as we are fetching from Firestore now
+// const mockPayments: PaymentTransaction[] = [ ... ];
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-function formatDisplayDateTime(date: Date) {
+function formatDisplayDateTime(date: Date | undefined) {
+  if (!date) return "N/A";
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "numeric",
@@ -65,7 +45,7 @@ function formatDisplayDateTime(date: Date) {
     hour: "numeric",
     minute: "numeric",
     hour12: true,
-  }).format(date);
+  }).format(new Date(date)); // Ensure it's a Date object
 }
 
 export default function PaymentTrackingPage() {
@@ -75,20 +55,29 @@ export default function PaymentTrackingPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const { toast } = useToast();
 
-  // Simulate fetching data
   React.useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setPayments(mockPayments.sort((a,b) => b.date.getTime() - a.date.getTime())); // Sort by most recent
-      setLoading(false);
-    }, 1000); // Simulate network delay
+    async function fetchPayments() {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedPayments = await getPaymentTransactions();
+        // The service now handles sorting by date descending
+        setPayments(fetchedPayments);
+      } catch (e) {
+        console.error("Failed to fetch payments:", e);
+        setError(e instanceof Error ? e.message : "An unknown error occurred.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPayments();
   }, []);
 
   const filteredPayments = payments.filter(payment =>
     payment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     payment.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.status.toLowerCase().includes(searchTerm.toLowerCase())
+    (payment.method && payment.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (payment.status && payment.status.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusBadgeVariant = (status: PaymentTransaction["status"]) => {
@@ -96,15 +85,14 @@ export default function PaymentTrackingPage() {
       case "Succeeded": return "default";
       case "Pending": return "secondary";
       case "Failed": return "destructive";
-      case "Refunded": return "outline"; // Using outline for refunded, can be customized
+      case "Refunded": return "outline";
       default: return "secondary";
     }
   };
 
   const getStatusBadgeClassName = (status: PaymentTransaction["status"]) => {
-    // Custom background colors for badges matching the design
     if (status === "Succeeded") return "bg-green-500 hover:bg-green-600 border-green-500 text-white";
-    if (status === "Pending") return "bg-yellow-400 hover:bg-yellow-500 border-yellow-400 text-black"; // Darker text for yellow
+    if (status === "Pending") return "bg-yellow-400 hover:bg-yellow-500 border-yellow-400 text-black";
     if (status === "Failed") return "bg-red-500 hover:bg-red-600 border-red-500 text-white";
     if (status === "Refunded") return "bg-blue-500 hover:bg-blue-600 border-blue-500 text-white";
     return "";
@@ -112,12 +100,10 @@ export default function PaymentTrackingPage() {
 
   const handleViewDetails = (paymentId: string) => {
     toast({ title: "View Details", description: `Viewing details for payment ID: ${paymentId}` });
-    // Placeholder: Implement actual view details logic (e.g., open a modal or navigate to a details page)
   };
 
   const handleProcessRefund = (paymentId: string) => {
     toast({ title: "Process Refund", description: `Processing refund for payment ID: ${paymentId}` });
-    // Placeholder: Implement actual refund processing logic
   };
 
   return (
@@ -172,7 +158,7 @@ export default function PaymentTrackingPage() {
              <AlertCircle className="h-4 w-4" />
             <ShadCNAlertTitle>No Transactions Found</ShadCNAlertTitle>
             <AlertDescription>
-              {searchTerm ? "No transactions match your search term." : "There are no payment transactions to display yet."}
+              {searchTerm ? "No transactions match your search term." : "There are no payment transactions to display yet. Ensure the 'paymentTransactions' collection exists in Firestore with data."}
             </AlertDescription>
           </Alert>
         )}
@@ -220,7 +206,7 @@ export default function PaymentTrackingPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          {(payment.status === "Succeeded" || payment.status === "Pending") && ( // Only allow refund for certain statuses
+                          {(payment.status === "Succeeded" || payment.status === "Pending") && (
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onSelect={() => handleProcessRefund(payment.id)}>
@@ -245,4 +231,3 @@ export default function PaymentTrackingPage() {
     </AppShell>
   );
 }
-
