@@ -39,10 +39,12 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
       status: "Pending" as const, // Default status
       method: "Manual Verification", // Default method for popup submissions
     };
+    console.log('[paymentService.addPaymentTransaction] Saving transaction:', dataToSave);
     const docRef = await addDoc(collection(db, PAYMENT_TRANSACTIONS_COLLECTION), dataToSave);
+    console.log('[paymentService.addPaymentTransaction] Transaction saved with ID:', docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error("Error adding payment transaction to Firestore: ", error);
+    console.error("[paymentService.addPaymentTransaction] Error adding payment transaction to Firestore: ", error);
     if (error instanceof Error) {
       throw new Error(`Failed to add payment transaction: ${error.message}`);
     }
@@ -52,31 +54,46 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
 
 
 export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
+  console.log(`[paymentService.getPaymentTransactions] Fetching from collection: ${PAYMENT_TRANSACTIONS_COLLECTION}`);
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
     const q = query(paymentTransactionsRef, orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
 
+    console.log(`[paymentService.getPaymentTransactions] Query snapshot size: ${querySnapshot.size}`);
+    if (querySnapshot.empty) {
+      console.log('[paymentService.getPaymentTransactions] No documents found in paymentTransactions collection.');
+    }
+
     const transactions: PaymentTransaction[] = [];
     querySnapshot.forEach((docSnap: QueryDocumentSnapshot<DocumentData>) => {
       const data = docSnap.data();
-      transactions.push({
-        id: docSnap.id,
-        userId: data.userId || 'N/A',
-        userEmail: data.userEmail,
-        date: (data.date as Timestamp)?.toDate() || new Date(),
-        method: data.method || 'Unknown',
-        amount: data.amount || 0,
-        status: data.status || 'Pending',
-        campaignId: data.campaignId,
-        campaignName: data.campaignName,
-        lastFourDigits: data.lastFourDigits,
-        transactionReference: data.transactionReference,
-      } as PaymentTransaction);
+      console.log(`[paymentService.getPaymentTransactions] Processing document ID: ${docSnap.id}, Data:`, JSON.parse(JSON.stringify(data)));
+      try {
+        const transaction: PaymentTransaction = {
+          id: docSnap.id,
+          userId: data.userId || 'N/A', // Default to 'N/A' if userId is missing
+          userEmail: data.userEmail,
+          date: data.date ? (data.date as Timestamp).toDate() : new Date(0), // Default to epoch if date is missing
+          method: data.method || 'Unknown', // Default if method is missing
+          amount: data.amount || 0, // Default if amount is missing
+          status: data.status || 'Pending', // Default if status is missing
+          campaignId: data.campaignId,
+          campaignName: data.campaignName,
+          lastFourDigits: data.lastFourDigits,
+          transactionReference: data.transactionReference,
+        };
+        transactions.push(transaction);
+        console.log(`[paymentService.getPaymentTransactions] Successfully mapped document ID: ${docSnap.id}`);
+      } catch (mappingError) {
+        console.error(`[paymentService.getPaymentTransactions] Error mapping document ID ${docSnap.id}:`, mappingError, "Raw data:", JSON.parse(JSON.stringify(data)));
+        // Optionally, you could push a partially mapped object or skip it
+      }
     });
+    console.log('[paymentService.getPaymentTransactions] Returning transactions:', transactions);
     return transactions;
   } catch (error) {
-    console.error("Error fetching payment transactions from Firestore: ", error);
+    console.error("[paymentService.getPaymentTransactions] Error fetching payment transactions from Firestore: ", error);
     if (error instanceof Error) {
       throw new Error(`Failed to fetch payment transactions: ${error.message}`);
     }
