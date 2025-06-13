@@ -171,7 +171,7 @@ export function CampaignCard({ campaign, isPublicView = false }: CampaignCardPro
               variant="default"
               className={cn(
                 "w-full mt-auto text-sm py-2 h-auto",
-                "bg-accent hover:bg-accent/90 text-accent-foreground dark:bg-accent dark:hover:bg-accent/90 dark:text-accent-foreground"
+                "bg-green-600 hover:bg-green-700 text-white"
               )}
             >
               <HeartHandshake className="mr-2 h-4 w-4" /> Donate Now
@@ -270,4 +270,3 @@ export function CampaignCard({ campaign, isPublicView = false }: CampaignCardPro
     </Card>
   );
 }
-

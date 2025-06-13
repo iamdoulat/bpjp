@@ -298,7 +298,7 @@ export default function PublicViewCampaignPage() {
               )}
 
               <div>
-                <h3 className="text-xl font-semibold mb-3 text-primary border-b pb-2">About this Campaign</h3>
+                <h3 className="text-xl font-semibold mb-3 text-foreground border-b pb-2">About this Campaign</h3>
                 <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{campaign.description}</p>
               </div>
 
@@ -340,10 +340,13 @@ export default function PublicViewCampaignPage() {
               </div>
 
             </CardContent>
-             <CardFooter className="bg-card p-4 md:p-6 border-t">
+             <CardFooter className="bg-card p-4 md:p-6 border-t flex justify-center">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button size="lg" className="w-full sm:w-auto text-lg py-3 px-8 bg-accent hover:bg-accent/90 text-accent-foreground">
+                    <Button 
+                        size="lg" 
+                        className="w-full sm:w-auto text-lg py-3 px-8 bg-green-600 hover:bg-green-700 text-white"
+                    >
                       <HeartHandshake className="mr-2 h-5 w-5" /> Donate Now
                     </Button>
                   </DialogTrigger>
