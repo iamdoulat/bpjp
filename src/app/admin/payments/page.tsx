@@ -21,7 +21,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -40,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Search, ListFilter, MoreHorizontal, Eye, RefreshCw, AlertCircle, UserCircle, Loader2, Save, Phone } from "lucide-react";
+import { DollarSign, Search, ListFilter, MoreHorizontal, Eye, AlertCircle, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -210,12 +209,11 @@ export default function PaymentTrackingPage() {
         {loading && (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-               <div key={i} className="grid grid-cols-[minmax(180px,1fr)_150px_minmax(150px,1fr)_120px_100px_120px_100px_100px_80px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
-                <div className="flex items-center space-x-2">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="flex-1 space-y-1.5">
-                        <Skeleton className="h-4 w-3/4" /> 
-                        <Skeleton className="h-3 w-1/2" /> 
+               <div key={i} className="grid grid-cols-[minmax(180px,1fr)_150px_minmax(150px,1fr)_130px_100px_120px_100px_100px_80px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                    <div>
+                        <Skeleton className="h-4 w-24" /> 
                     </div>
                 </div>
                 <Skeleton className="h-4 w-full" /> {/* Date */}
@@ -269,12 +267,16 @@ export default function PaymentTrackingPage() {
                 {filteredPayments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
                           <AvatarImage src={undefined} alt={payment.userEmail || payment.userId} data-ai-hint="profile person"/>
                           <AvatarFallback>{getInitials(payment.userEmail, payment.userId)}</AvatarFallback>
                         </Avatar>
-                        <span className="text-xs font-medium truncate">{payment.userEmail || payment.userId}</span>
+                        <div>
+                          <span className="font-medium truncate block text-sm">
+                            {payment.userEmail ? payment.userEmail.split('@')[0] : payment.userId}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-xs">{formatDisplayDateTime(payment.date as Date)}</TableCell>
