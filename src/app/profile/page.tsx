@@ -32,9 +32,9 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 function formatCurrency(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) {
-    return "$0"; // Or "N/A" or some other placeholder
+    return "$0.00"; 
   }
-  return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function ProfilePage() {
@@ -44,9 +44,9 @@ export default function ProfilePage() {
 
   const [profileData, setProfileData] = React.useState<UserProfileData | null>(null);
   const [totalUserDonations, setTotalUserDonations] = React.useState<number | null>(null);
-  const [totalUserRefunds, setTotalUserRefunds] = React.useState<number | null>(null); // New state for refunds
+  const [totalUserRefunds, setTotalUserRefunds] = React.useState<number | null>(null); 
   const [isLoadingTotalDonations, setIsLoadingTotalDonations] = React.useState(true);
-  const [isLoadingTotalRefunds, setIsLoadingTotalRefunds] = React.useState(true); // New loading state for refunds
+  const [isLoadingTotalRefunds, setIsLoadingTotalRefunds] = React.useState(true); 
   const [isLoading, setIsLoading] = React.useState(true);
   const [isEditing, setIsEditing] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
