@@ -1,7 +1,7 @@
 
 // src/services/userService.ts
 import { db, auth, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore'; // Corrected import
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import { updateProfile as updateAuthProfile, type User as AuthUser } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -11,8 +11,10 @@ export interface UserProfileData {
   email?: string | null;
   mobileNumber?: string | null;
   photoURL?: string | null;
-  role?: 'admin' | 'user';
-  joinedDate?: Date | Timestamp | null;
+  role?: 'admin' | 'user'; // Lowercase as typically stored in Firestore
+  status?: 'Active' | 'Suspended' | 'Pending Verification';
+  joinedDate?: Timestamp | null; // Firestore Timestamp
+  lastLoginDate?: Timestamp | null; // Firestore Timestamp
   lastUpdated?: Timestamp;
 }
 
@@ -26,11 +28,13 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
       return {
         uid,
         displayName: data.displayName || null,
-        email: data.email || null, // Email is usually from Auth, but can be stored
+        email: data.email || null,
         mobileNumber: data.mobileNumber || null,
         photoURL: data.photoURL || null,
         role: data.role || 'user',
-        joinedDate: data.joinedDate ? (data.joinedDate as Timestamp).toDate() : null,
+        status: data.status || 'Active',
+        joinedDate: data.joinedDate || null,
+        lastLoginDate: data.lastLoginDate || null,
         lastUpdated: data.lastUpdated || null,
       } as UserProfileData;
     }
@@ -40,6 +44,40 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
     throw error;
   }
 }
+
+// Function to fetch all user profiles from Firestore
+export async function getAllUserProfiles(): Promise<UserProfileData[]> {
+  try {
+    const usersCollectionRef = collection(db, 'userProfiles');
+    const querySnapshot = await getDocs(usersCollectionRef);
+    const profiles: UserProfileData[] = [];
+    querySnapshot.forEach((docSnap: QueryDocumentSnapshot<DocumentData>) => {
+      const data = docSnap.data();
+      profiles.push({
+        uid: docSnap.id,
+        displayName: data.displayName || null,
+        email: data.email || null,
+        mobileNumber: data.mobileNumber || null,
+        photoURL: data.photoURL || null,
+        role: data.role || 'user',
+        status: data.status || 'Active',
+        // Convert Timestamps to JS Dates directly in the service if needed by components,
+        // but UserProfileData keeps them as Timestamps for consistency with Firestore model
+        joinedDate: data.joinedDate as Timestamp || null,
+        lastLoginDate: data.lastLoginDate as Timestamp || null,
+        lastUpdated: data.lastUpdated as Timestamp || null,
+      });
+    });
+    return profiles;
+  } catch (error) {
+    console.error("Error fetching all user profiles:", error);
+    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
+        console.error("[userService.getAllUserProfiles] PERMISSION DENIED. Check Firestore security rules for reading 'userProfiles' collection by admin.");
+    }
+    throw error;
+  }
+}
+
 
 // Function to create or update user profile in Firestore and Firebase Auth
 export async function updateUserProfileService(
@@ -53,7 +91,7 @@ export async function updateUserProfileService(
 
   const dataToStore: Partial<UserProfileData> = {
     uid: authUser.uid,
-    email: authUser.email, // Store email for consistency if needed
+    email: authUser.email, 
     lastUpdated: serverTimestamp() as Timestamp,
   };
 
@@ -75,8 +113,12 @@ export async function updateUserProfileService(
       await updateDoc(userDocRef, dataToStore);
     } else {
       // If profile doesn't exist, create it including joinedDate
-      dataToStore.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp();
-      dataToStore.photoURL = authUser.photoURL; // Initial photoURL from auth
+      dataToStore.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
+      // Also store lastSignInTime as lastLoginDate
+      dataToStore.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
+      dataToStore.photoURL = authUser.photoURL; 
+      dataToStore.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user'; // Set role on creation
+      dataToStore.status = 'Active'; // Default status
       await setDoc(userDocRef, dataToStore);
     }
   } catch (error) {
@@ -97,14 +139,11 @@ export async function uploadProfilePictureAndUpdate(
   const storageRef = ref(storage, filePath);
 
   try {
-    // Upload file to Firebase Storage
     const snapshot = await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(snapshot.ref);
 
-    // Update Firebase Auth profile
     await updateAuthProfile(authUser, { photoURL: downloadURL });
 
-    // Update Firestore document
     const userDocRef = doc(db, 'userProfiles', authUser.uid);
     const currentProfile = await getUserProfile(authUser.uid);
     const dataToUpdate: Partial<UserProfileData> = {
@@ -115,11 +154,13 @@ export async function uploadProfilePictureAndUpdate(
     if (currentProfile) {
         await updateDoc(userDocRef, dataToUpdate);
     } else {
-        // If profile doesn't exist, create it
         dataToUpdate.uid = authUser.uid;
         dataToUpdate.email = authUser.email;
         dataToUpdate.displayName = authUser.displayName;
         dataToUpdate.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
+        dataToUpdate.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
+        dataToUpdate.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
+        dataToUpdate.status = 'Active';
         await setDoc(userDocRef, dataToUpdate);
     }
 
@@ -129,4 +170,3 @@ export async function uploadProfilePictureAndUpdate(
     throw error;
   }
 }
-
