@@ -106,7 +106,7 @@ export default function AboutUsPage() {
         <div className="flex items-center gap-3 mb-4">
           <Info className="h-8 w-8 text-green-600" /> {/* Adjusted icon size and color */}
           <div>
-            <h1 className="text-3xl font-headline font-bold">About Us</h1> {/* Changed from text-4xl */}
+            <h1 className="text-2xl font-headline font-bold">About Us</h1> {/* Changed from text-4xl */}
             <p className="text-muted-foreground text-md"> {/* Changed from text-lg */}
               Learn more about our organization and mission.
             </p>

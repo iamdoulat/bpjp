@@ -42,7 +42,7 @@ export default function OurMissionPage() {
     <AppShell>
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
         <div className="flex items-center gap-3 mb-4">
-          <Target className="h-8 w-8 text-primary" />
+          <Target className="h-8 w-8 text-green-600" />
           <div>
             <h1 className="text-3xl font-headline font-bold">
               {loading ? <Skeleton className="h-8 w-48" /> : missionData?.title || "Our Mission"}
