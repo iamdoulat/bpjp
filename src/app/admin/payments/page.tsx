@@ -14,6 +14,7 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Added Avatar imports
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -22,15 +23,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { DollarSign, Search, ListFilter, MoreHorizontal, Eye, RefreshCw, AlertCircle } from "lucide-react";
+import { DollarSign, Search, ListFilter, MoreHorizontal, Eye, RefreshCw, AlertCircle, UserCircle } from "lucide-react"; // Added UserCircle
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { getPaymentTransactions, type PaymentTransaction } from "@/services/paymentService"; // Updated import
-import { auth } from '@/lib/firebase'; // Import auth
-
-// Mock data removed as we are fetching from Firestore now
+import { getPaymentTransactions, type PaymentTransaction } from "@/services/paymentService";
+import { auth } from '@/lib/firebase';
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -45,8 +44,21 @@ function formatDisplayDateTime(date: Date | undefined) {
     hour: "numeric",
     minute: "numeric",
     hour12: true,
-  }).format(new Date(date)); // Ensure it's a Date object
+  }).format(new Date(date));
 }
+
+// Helper function to get initials from email or userId
+function getInitials(email?: string, userId?: string): string {
+  if (email) {
+    const namePart = email.split('@')[0];
+    return namePart.substring(0, 2).toUpperCase();
+  }
+  if (userId) {
+    return userId.substring(0, 2).toUpperCase();
+  }
+  return "U";
+}
+
 
 export default function PaymentTrackingPage() {
   const [payments, setPayments] = React.useState<PaymentTransaction[]>([]);
@@ -58,7 +70,7 @@ export default function PaymentTrackingPage() {
   React.useEffect(() => {
     async function fetchPayments() {
       const currentUser = auth.currentUser;
-      console.log("[PaymentTrackingPage] Current auth user email:", currentUser?.email); // Added log
+      console.log("[PaymentTrackingPage] Current auth user email:", currentUser?.email);
       console.log("[PaymentTrackingPage] Attempting to fetch payments...");
       setLoading(true);
       setError(null);
@@ -80,6 +92,8 @@ export default function PaymentTrackingPage() {
   const filteredPayments = payments.filter(payment =>
     payment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     payment.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (payment.userEmail && payment.userEmail.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (payment.campaignName && payment.campaignName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (payment.method && payment.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (payment.status && payment.status.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -144,7 +158,18 @@ export default function PaymentTrackingPage() {
         {loading && (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-14 w-full rounded-md" />
+               <div key={i} className="flex items-center space-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-1">
+                  <Skeleton className="h-4 w-1/4" /> {/* Date */}
+                  <Skeleton className="h-3 w-2/4" /> {/* Campaign */}
+                </div>
+                <Skeleton className="h-4 w-1/12" /> {/* Last 4 */}
+                <Skeleton className="h-4 w-1/12" /> {/* Method */}
+                <Skeleton className="h-4 w-1/12" /> {/* Amount */}
+                <Skeleton className="h-6 w-20 rounded-full" /> {/* Status */}
+                <Skeleton className="h-6 w-8 rounded-md" /> {/* Actions */}
+              </div>
             ))}
           </div>
         )}
@@ -172,27 +197,38 @@ export default function PaymentTrackingPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[120px]">Transaction ID</TableHead>
-                  <TableHead className="w-[100px]">User ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="w-[180px]">User</TableHead>
+                  <TableHead className="w-[150px]">Date</TableHead>
+                  <TableHead>Campaign</TableHead>
+                  <TableHead className="w-[100px]">Last 4</TableHead>
+                  <TableHead className="w-[120px]">Method</TableHead>
+                  <TableHead className="text-right w-[100px]">Amount</TableHead>
+                  <TableHead className="text-center w-[100px]">Status</TableHead>
                   <TableHead className="text-right w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPayments.map((payment) => (
                   <TableRow key={payment.id}>
-                    <TableCell className="font-mono text-xs">{payment.id}</TableCell>
-                    <TableCell className="font-mono text-xs">{payment.userId}</TableCell>
-                    <TableCell className="text-sm">{formatDisplayDateTime(payment.date)}</TableCell>
-                    <TableCell>{payment.method}</TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(payment.amount)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          {/* In a real app, payment.user?.avatarUrl would be ideal */}
+                          <AvatarImage src={undefined} alt={payment.userEmail || payment.userId} data-ai-hint="profile person"/>
+                          <AvatarFallback>{getInitials(payment.userEmail, payment.userId)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium truncate">{payment.userEmail || payment.userId}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs">{formatDisplayDateTime(payment.date)}</TableCell>
+                    <TableCell className="text-xs font-medium truncate max-w-[150px]">{payment.campaignName || 'N/A'}</TableCell>
+                    <TableCell className="text-xs">{payment.lastFourDigits || 'N/A'}</TableCell>
+                    <TableCell className="text-xs">{payment.method}</TableCell>
+                    <TableCell className="text-xs text-right font-medium">{formatCurrency(payment.amount)}</TableCell>
                     <TableCell className="text-center">
                       <Badge 
                         variant={getStatusBadgeVariant(payment.status)} 
-                        className={cn("text-xs px-2 py-1", getStatusBadgeClassName(payment.status))}
+                        className={cn("text-xs px-2 py-0.5", getStatusBadgeClassName(payment.status))}
                       >
                         {payment.status}
                       </Badge>
