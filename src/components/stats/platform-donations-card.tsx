@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { StatsCard } from '@/components/dashboard/stats-card';
 import { Landmark } from 'lucide-react';
-import { getCampaigns } from '@/services/campaignService';
+import { getSucceededPlatformDonationsTotal } from '@/services/paymentService'; // Updated import
 import { Skeleton } from '@/components/ui/skeleton';
 
 function formatCurrency(amount: number) {
@@ -13,28 +13,27 @@ function formatCurrency(amount: number) {
 }
 
 export function PlatformDonationsCard() {
-  const [totalDonations, setTotalDonations] = useState<number | null>(null);
+  const [totalSucceededDonations, setTotalSucceededDonations] = useState<number | null>(null); // Renamed for clarity
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchPlatformDonations() {
+    async function fetchPlatformSucceededDonations() {
       try {
         setLoading(true);
         setError(null);
-        const campaigns = await getCampaigns();
-        const sum = campaigns.reduce((acc, campaign) => acc + (campaign.raisedAmount || 0), 0);
-        setTotalDonations(sum);
+        const sum = await getSucceededPlatformDonationsTotal(); // Use the new service function
+        setTotalSucceededDonations(sum);
       } catch (e) {
-        console.error("Failed to fetch platform donations:", e);
+        console.error("Failed to fetch platform succeeded donations:", e);
         setError(e instanceof Error ? e.message : "Could not load platform donation statistics.");
-        setTotalDonations(0); // Display $0 on error
+        setTotalSucceededDonations(0); // Display $0 on error
       } finally {
         setLoading(false);
       }
     }
-    fetchPlatformDonations();
+    fetchPlatformSucceededDonations();
   }, []);
 
   if (loading) {
@@ -42,7 +41,7 @@ export function PlatformDonationsCard() {
       <StatsCard
         title="Platform Donations"
         value={<Skeleton className="h-7 w-24 inline-block" />}
-        subtitle="Total funds raised across all campaigns."
+        subtitle="Total Succeeded Donations." // Updated subtitle
         icon={<Landmark className="h-5 w-5" />}
       />
     );
@@ -51,8 +50,8 @@ export function PlatformDonationsCard() {
   return (
     <StatsCard
       title="Platform Donations"
-      value={formatCurrency(totalDonations ?? 0)}
-      subtitle="Total funds raised across all campaigns."
+      value={formatCurrency(totalSucceededDonations ?? 0)}
+      subtitle="Total Succeeded Donations." // Updated subtitle
       icon={<Landmark className="h-5 w-5" />}
     />
   );

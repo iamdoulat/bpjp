@@ -1,7 +1,7 @@
 
 // src/services/paymentService.ts
 import { db, auth } from '@/lib/firebase'; // Added auth
-import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc } from 'firebase/firestore'; // Added doc, updateDoc
+import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where } from 'firebase/firestore'; // Added doc, updateDoc, where
 
 // Interface for data stored and retrieved from Firestore
 export interface PaymentTransaction {
@@ -15,7 +15,7 @@ export interface PaymentTransaction {
   campaignId?: string;
   campaignName?: string;
   lastFourDigits?: string; // For verification
-  receiverBkashNo?: string; // New field
+  receiverBkashNo?: string;
   transactionReference?: string; // Optional field for a full reference if available
 }
 
@@ -27,7 +27,7 @@ export interface NewPaymentTransactionInput {
   campaignName: string;
   amount: number;
   lastFourDigits: string;
-  receiverBkashNo?: string; // New field
+  receiverBkashNo?: string;
 }
 
 
@@ -56,7 +56,8 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
 
 
 export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
-  console.log(`[paymentService.getPaymentTransactions] auth.currentUser?.email from SDK: ${auth.currentUser?.email}`);
+  console.log(`[paymentService.getPaymentTransactions] Current auth.currentUser from SDK:`, auth.currentUser);
+  console.log(`[paymentService.getPaymentTransactions] User Email from SDK: ${auth.currentUser?.email}`);
   console.log(`[paymentService.getPaymentTransactions] Fetching from collection: ${PAYMENT_TRANSACTIONS_COLLECTION}`);
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
@@ -71,7 +72,6 @@ export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
     const transactions: PaymentTransaction[] = [];
     querySnapshot.forEach((docSnap: QueryDocumentSnapshot<DocumentData>) => {
       const data = docSnap.data();
-      // console.log(`[paymentService.getPaymentTransactions] Processing document ID: ${docSnap.id}, Data:`, JSON.parse(JSON.stringify(data)));
       try {
         const transaction: PaymentTransaction = {
           id: docSnap.id,
@@ -84,11 +84,10 @@ export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
           campaignId: data.campaignId,
           campaignName: data.campaignName,
           lastFourDigits: data.lastFourDigits,
-          receiverBkashNo: data.receiverBkashNo, // New field
+          receiverBkashNo: data.receiverBkashNo,
           transactionReference: data.transactionReference,
         };
         transactions.push(transaction);
-        // console.log(`[paymentService.getPaymentTransactions] Successfully mapped document ID: ${docSnap.id}`);
       } catch (mappingError) {
         console.error(`[paymentService.getPaymentTransactions] Error mapping document ID ${docSnap.id}:`, mappingError, "Raw data:", JSON.parse(JSON.stringify(data)));
       }
@@ -124,5 +123,65 @@ export async function updatePaymentTransactionStatus(
   }
 }
 
-// Future functions like getPaymentTransactionById can be added here if needed.
+export async function getPaymentTransactionsByUserId(userId: string): Promise<PaymentTransaction[]> {
+  try {
+    const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
+    const q = query(
+      paymentTransactionsRef,
+      where("userId", "==", userId),
+      orderBy("date", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    const transactions: PaymentTransaction[] = [];
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      transactions.push({
+        id: docSnap.id,
+        userId: data.userId,
+        userEmail: data.userEmail,
+        date: (data.date as Timestamp).toDate(),
+        method: data.method,
+        amount: data.amount,
+        status: data.status as PaymentTransaction["status"],
+        campaignId: data.campaignId,
+        campaignName: data.campaignName,
+        lastFourDigits: data.lastFourDigits,
+        receiverBkashNo: data.receiverBkashNo,
+        transactionReference: data.transactionReference,
+      });
+    });
+    return transactions;
+  } catch (error) {
+    console.error(`[paymentService.getPaymentTransactionsByUserId] Error fetching transactions for user ${userId}:`, error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch transactions for user ${userId}: ${error.message}`);
+    }
+    throw new Error(`An unknown error occurred while fetching transactions for user ${userId}.`);
+  }
+}
 
+export async function getSucceededPlatformDonationsTotal(): Promise<number> {
+  console.log('[paymentService.getSucceededPlatformDonationsTotal] Fetching succeeded transactions total.');
+  try {
+    const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
+    // Firestore rules will determine if this query is allowed.
+    // For admins, it should work. For public users, it might return 0 documents if rules are restrictive.
+    const q = query(paymentTransactionsRef, where("status", "==", "Succeeded"));
+    const querySnapshot = await getDocs(q);
+    
+    let total = 0;
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.amount && typeof data.amount === 'number') {
+        total += data.amount;
+      }
+    });
+    console.log(`[paymentService.getSucceededPlatformDonationsTotal] Calculated total: ${total}`);
+    return total;
+  } catch (error) {
+    console.error("[paymentService.getSucceededPlatformDonationsTotal] Error fetching total succeeded donations:", error);
+    // Return 0 in case of error (e.g., permission denied for non-admin users)
+    // This allows the UI to gracefully display $0 instead of breaking.
+    return 0; 
+  }
+}
