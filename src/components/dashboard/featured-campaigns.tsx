@@ -30,15 +30,13 @@ export function FeaturedCampaigns() {
         setError(null);
         
         const fetchedCampaigns = await getCampaigns();
-        const activeOrUpcomingCampaigns = fetchedCampaigns.filter(
-          campaign => campaign.initialStatus === 'active' || campaign.initialStatus === 'upcoming'
+        // Filter for only active campaigns
+        const activeCampaigns = fetchedCampaigns.filter(
+          campaign => campaign.initialStatus === 'active'
         );
 
-        const sortedCampaigns = [...activeOrUpcomingCampaigns].sort((a, b) => {
-            const statusOrder = { active: 0, upcoming: 1 }; // Draft and completed are filtered out
-            const statusDiff = statusOrder[a.initialStatus as 'active' | 'upcoming'] - statusOrder[b.initialStatus as 'active' | 'upcoming'];
-            if (statusDiff !== 0) return statusDiff;
-            
+        // Sort active campaigns by newest first
+        const sortedCampaigns = [...activeCampaigns].sort((a, b) => {
             const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toMillis();
             const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toMillis();
             return dateB - dateA; // Most recent first
@@ -77,7 +75,7 @@ export function FeaturedCampaigns() {
         Featured Campaigns
       </h2>
       <p className="text-muted-foreground mb-6">
-        Discover campaigns you can support.
+        Discover active campaigns you can support right now.
       </p>
 
       {loading && (
@@ -135,9 +133,9 @@ export function FeaturedCampaigns() {
 
       {!loading && !error && allCampaigns.length === 0 && (
          <Alert className="bg-card">
-           <AlertTitle>No Campaigns Found</AlertTitle>
+           <AlertTitle>No Active Campaigns Found</AlertTitle>
            <AlertDescription>
-             No featured campaigns available at the moment. Please check back later or create a new campaign!
+             No active featured campaigns available at the moment. Please check back later or create a new campaign!
            </AlertDescription>
          </Alert>
       )}
@@ -158,3 +156,4 @@ function CardSkeleton() {
     </div>
   );
 }
+
