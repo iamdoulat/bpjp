@@ -304,28 +304,28 @@ export default function PublicViewCampaignPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 bg-muted/30 p-6 rounded-lg border">
                 <div className="flex items-center space-x-3">
-                  <TargetIcon className="h-6 w-6 text-primary flex-shrink-0" />
+                  <TargetIcon className="h-6 w-6 text-green-600 flex-shrink-0" />
                   <div>
                     <p className="text-sm text-muted-foreground">Goal Amount</p>
                     <p className="text-xl font-semibold">{formatCurrency(campaign.goalAmount)}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <DollarSign className="h-6 w-6 text-green-500 flex-shrink-0" />
+                  <DollarSign className="h-6 w-6 text-green-600 flex-shrink-0" />
                   <div>
                     <p className="text-sm text-muted-foreground">Amount Raised</p>
                     <p className="text-xl font-semibold">{formatCurrency(campaign.raisedAmount)}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <CalendarDays className="h-6 w-6 text-primary flex-shrink-0" />
+                  <CalendarDays className="h-6 w-6 text-green-600 flex-shrink-0" />
                   <div>
                     <p className="text-sm text-muted-foreground">Start Date</p>
                     <p className="text-lg font-semibold">{formatDisplayDate(new Date(campaign.startDate as Date))}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                   <CalendarDays className="h-6 w-6 text-primary flex-shrink-0" />
+                   <CalendarDays className="h-6 w-6 text-green-600 flex-shrink-0" />
                   <div>
                     <p className="text-sm text-muted-foreground">End Date</p>
                     <p className="text-lg font-semibold">{formatDisplayDate(new Date(campaign.endDate as Date))}</p>
@@ -424,3 +424,4 @@ export default function PublicViewCampaignPage() {
     </AppShell>
   )
 }
+
