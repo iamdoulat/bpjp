@@ -85,14 +85,14 @@ export function StatsGrid() {
       title: "Your Total Donations", 
       value: loadingUserStats || userFetchedStats.totalDonatedByUser === null ? <Skeleton className="h-7 w-16 inline-block" /> : formatCurrency(userFetchedStats.totalDonatedByUser),
       subtitle: "Total amount of your successful donations.", 
-      icon: <DollarSign className="h-5 w-5" />,
+      icon: <DollarSign className="h-5 w-5 text-green-600" />,
       isLoading: loadingUserStats
     },
     { 
       title: "Campaigns You Support", 
       value: loadingUserStats || userFetchedStats.campaignsSupportedCount === null ? <Skeleton className="h-7 w-10 inline-block" /> : (userFetchedStats.campaignsSupportedCount?.toString() ?? "0"),
       subtitle: "Unique campaigns with successful donations.", 
-      icon: <HeartPulse className="h-5 w-5" />,
+      icon: <HeartPulse className="h-5 w-5 text-green-600" />,
       isLoading: loadingUserStats
     },
   ] : [];
@@ -102,21 +102,21 @@ export function StatsGrid() {
       title: "Platform Donations", 
       value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-24 inline-block" /> : formatCurrency(platformStats.totalSucceededDonations),
       subtitle: "Total Succeeded Donations.", 
-      icon: <Landmark className="h-5 w-5" />,
+      icon: <Landmark className="h-5 w-5 text-green-600" />,
       isLoading: loadingPlatformStats || !platformStats
     },
     { 
       title: "Active Campaigns", 
       value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-12 inline-block" /> : platformStats.activeCampaigns.toString(), 
       subtitle: "Opportunities to make an impact.", 
-      icon: <ListChecks className="h-5 w-5" />,
+      icon: <ListChecks className="h-5 w-5 text-green-600" />,
       isLoading: loadingPlatformStats || !platformStats
     },
     { 
       title: "Upcoming Campaigns", 
       value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-12 inline-block" /> : platformStats.upcomingCampaigns.toString(), 
       subtitle: "Get ready for these causes.", 
-      icon: <CalendarClock className="h-5 w-5" />,
+      icon: <CalendarClock className="h-5 w-5 text-green-600" />,
       isLoading: loadingPlatformStats || !platformStats
     },
   ];
