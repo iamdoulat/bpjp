@@ -1,7 +1,7 @@
 
 // src/services/paymentService.ts
 import { db, auth } from '@/lib/firebase'; // Added auth
-import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc } from 'firebase/firestore'; // Added deleteDoc
+import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc } from 'firebase/firestore'; // Added deleteDoc and getDoc
 
 // Interface for data stored and retrieved from Firestore
 export interface PaymentTransaction {
@@ -32,6 +32,7 @@ export interface NewPaymentTransactionInput {
 
 
 const PAYMENT_TRANSACTIONS_COLLECTION = 'paymentTransactions';
+const CAMPAIGNS_COLLECTION = 'campaigns';
 
 export async function addPaymentTransaction(transactionInput: NewPaymentTransactionInput): Promise<string> {
   try {
@@ -107,13 +108,57 @@ export async function updatePaymentTransactionStatus(
   transactionId: string,
   newStatus: PaymentTransaction["status"]
 ): Promise<void> {
+  const transactionDocRef = doc(db, PAYMENT_TRANSACTIONS_COLLECTION, transactionId);
+  
   try {
-    const transactionDocRef = doc(db, PAYMENT_TRANSACTIONS_COLLECTION, transactionId);
+    const transactionSnap = await getDoc(transactionDocRef);
+    if (!transactionSnap.exists()) {
+      throw new Error(`Transaction ${transactionId} not found.`);
+    }
+    // Explicitly cast to PaymentTransaction or a suitable type that includes all necessary fields
+    const currentTransactionData = transactionSnap.data() as Omit<PaymentTransaction, 'id' | 'date'> & { date: Timestamp }; // Adjust if 'date' is stored as Date
+    
+    const oldStatus = currentTransactionData.status;
+    const amount = currentTransactionData.amount;
+    const campaignId = currentTransactionData.campaignId;
+
+    // Update campaign's raisedAmount if status change affects it
+    if (campaignId && typeof amount === 'number' && amount > 0) {
+      const campaignDocRef = doc(db, CAMPAIGNS_COLLECTION, campaignId);
+      const campaignSnap = await getDoc(campaignDocRef);
+
+      if (campaignSnap.exists()) {
+        let currentRaisedAmount = campaignSnap.data().raisedAmount || 0;
+        let newRaisedAmount = currentRaisedAmount;
+        let campaignUpdateNeeded = false;
+
+        if (newStatus === "Succeeded" && oldStatus !== "Succeeded") {
+          // Becoming Succeeded from a non-Succeeded state
+          newRaisedAmount = currentRaisedAmount + amount;
+          campaignUpdateNeeded = true;
+        } else if (oldStatus === "Succeeded" && newStatus !== "Succeeded") {
+          // Changing from Succeeded to a non-Succeeded state (e.g., Refunded, Failed)
+          newRaisedAmount = currentRaisedAmount - amount;
+          newRaisedAmount = Math.max(0, newRaisedAmount); // Ensure it doesn't go below zero
+          campaignUpdateNeeded = true;
+        }
+
+        if (campaignUpdateNeeded) {
+          await updateDoc(campaignDocRef, { raisedAmount: newRaisedAmount });
+          console.log(`[paymentService.updatePaymentTransactionStatus] Campaign ${campaignId} raisedAmount updated to ${newRaisedAmount}.`);
+        }
+      } else {
+        console.warn(`[paymentService.updatePaymentTransactionStatus] Campaign ${campaignId} not found. Cannot update raisedAmount.`);
+      }
+    }
+
+    // Now update the payment transaction status
     await updateDoc(transactionDocRef, {
       status: newStatus,
       lastUpdated: Timestamp.now(), // Optional: track when the status was last updated
     });
     console.log(`[paymentService.updatePaymentTransactionStatus] Successfully updated status for transaction ${transactionId} to ${newStatus}.`);
+
   } catch (error) {
     console.error(`[paymentService.updatePaymentTransactionStatus] Error updating status for transaction ${transactionId}:`, error);
     if (error instanceof Error) {
@@ -123,9 +168,31 @@ export async function updatePaymentTransactionStatus(
   }
 }
 
+
 export async function deletePaymentTransaction(transactionId: string): Promise<void> {
+  const transactionDocRef = doc(db, PAYMENT_TRANSACTIONS_COLLECTION, transactionId);
   try {
-    const transactionDocRef = doc(db, PAYMENT_TRANSACTIONS_COLLECTION, transactionId);
+    const transactionSnap = await getDoc(transactionDocRef);
+    if (!transactionSnap.exists()) {
+      console.warn(`[paymentService.deletePaymentTransaction] Transaction ${transactionId} not found for deletion.`);
+      return; // Or throw error if preferred
+    }
+    const transactionData = transactionSnap.data() as Omit<PaymentTransaction, 'id' | 'date'> & { date: Timestamp };
+
+    // If the transaction being deleted was 'Succeeded', adjust campaign's raisedAmount
+    if (transactionData.status === "Succeeded" && transactionData.campaignId && typeof transactionData.amount === 'number' && transactionData.amount > 0) {
+      const campaignDocRef = doc(db, CAMPAIGNS_COLLECTION, transactionData.campaignId);
+      const campaignSnap = await getDoc(campaignDocRef);
+      if (campaignSnap.exists()) {
+        let currentRaisedAmount = campaignSnap.data().raisedAmount || 0;
+        let newRaisedAmount = Math.max(0, currentRaisedAmount - transactionData.amount);
+        await updateDoc(campaignDocRef, { raisedAmount: newRaisedAmount });
+        console.log(`[paymentService.deletePaymentTransaction] Campaign ${transactionData.campaignId} raisedAmount reduced by ${transactionData.amount} due to deletion of succeeded transaction. New raisedAmount: ${newRaisedAmount}.`);
+      } else {
+         console.warn(`[paymentService.deletePaymentTransaction] Campaign ${transactionData.campaignId} not found. Cannot adjust raisedAmount upon deletion of transaction ${transactionId}.`);
+      }
+    }
+
     await deleteDoc(transactionDocRef);
     console.log(`[paymentService.deletePaymentTransaction] Successfully deleted transaction ${transactionId}.`);
   } catch (error) {
