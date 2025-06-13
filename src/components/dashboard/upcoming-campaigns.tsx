@@ -128,7 +128,7 @@ export function UpcomingCampaigns() {
       {/* Conditionally show "Explore All Campaigns" button if there are any upcoming campaigns, or always show it */}
       {(allUpcomingCampaigns.length > 0 || !loading && !error) && (
           <div className="mt-8 flex justify-center">
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="default" size="lg">
               <Link href="/campaigns">
                 <Search className="mr-2 h-5 w-5" />
                 Explore All Campaigns
@@ -153,3 +153,4 @@ function CardSkeleton() {
     </div>
   );
 }
+
