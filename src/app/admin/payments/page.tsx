@@ -30,7 +30,6 @@ import { cn } from "@/lib/utils";
 import { getPaymentTransactions, type PaymentTransaction } from "@/services/paymentService"; // Updated import
 
 // Mock data removed as we are fetching from Firestore now
-// const mockPayments: PaymentTransaction[] = [ ... ];
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -158,7 +157,7 @@ export default function PaymentTrackingPage() {
              <AlertCircle className="h-4 w-4" />
             <ShadCNAlertTitle>No Transactions Found</ShadCNAlertTitle>
             <AlertDescription>
-              {searchTerm ? "No transactions match your search term." : "There are no payment transactions to display yet. Ensure the 'paymentTransactions' collection exists in Firestore with data."}
+              {searchTerm ? "No transactions match your search term." : "There are no payment transactions to display yet. Ensure the 'paymentTransactions' collection exists in Firestore with data and appropriate security rules."}
             </AlertDescription>
           </Alert>
         )}
