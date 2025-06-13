@@ -104,7 +104,7 @@ export default function AboutUsPage() {
     <AppShell>
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
         <div className="flex items-center gap-3 mb-4">
-          <Info className="h-8 w-8 text-primary" /> {/* Adjusted icon size */}
+          <Info className="h-8 w-8 text-green-600" /> {/* Adjusted icon size and color */}
           <div>
             <h1 className="text-3xl font-headline font-bold">About Us</h1> {/* Changed from text-4xl */}
             <p className="text-muted-foreground text-md"> {/* Changed from text-lg */}
@@ -126,7 +126,7 @@ export default function AboutUsPage() {
           </div>
           <CardHeader className="bg-muted/20 border-b border-t"> {/* Added border-t for separation */}
             <div className="flex items-center gap-3">
-              <Building className="h-7 w-7 text-primary" />
+              <Building className="h-7 w-7 text-green-600" />
               <CardTitle className="text-2xl font-headline">{settings.organizationName}</CardTitle>
             </div>
              {settings.registrationNumber && (
@@ -142,10 +142,10 @@ export default function AboutUsPage() {
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="space-y-4">
-              <InfoItem icon={<MapPin />} label="Address" value={settings.address} />
-              <InfoItem icon={<Mail />} label="Contact Email" value={<a href={`mailto:${settings.contactEmail}`} className="text-primary hover:underline">{settings.contactEmail}</a>} />
-              <InfoItem icon={<UserCircle />} label="Contact Person" value={settings.contactPersonName} />
-              <InfoItem icon={<Phone />} label="Contact Cell" value={settings.contactPersonCell || "Not Provided"} />
+              <InfoItem icon={<MapPin className="text-green-600"/>} label="Address" value={settings.address} />
+              <InfoItem icon={<Mail className="text-green-600"/>} label="Contact Email" value={<a href={`mailto:${settings.contactEmail}`} className="text-primary hover:underline">{settings.contactEmail}</a>} />
+              <InfoItem icon={<UserCircle className="text-green-600"/>} label="Contact Person" value={settings.contactPersonName} />
+              <InfoItem icon={<Phone className="text-green-600"/>} label="Contact Cell" value={settings.contactPersonCell || "Not Provided"} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t mt-8">
@@ -177,7 +177,7 @@ interface InfoItemProps {
 
 const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (
   <div className="flex items-start space-x-3">
-    <span className="text-primary mt-1 flex-shrink-0 w-5 h-5">{icon}</span>
+    <span className="mt-1 flex-shrink-0 w-5 h-5">{icon}</span> {/* Removed text-green-600 from here */}
     <div>
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <p className="text-md">{value}</p>
@@ -203,7 +203,7 @@ const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imag
         data-ai-hint={dataAiHint || "person portrait"}
       />
     </div>
-    <h3 className="text-xl font-semibold text-primary">{name}</h3>
+    <h3 className="text-xl font-semibold text-foreground">{name}</h3> {/* Changed text-green-600 to text-foreground */}
     <p className="text-muted-foreground">{title}</p>
   </div>
 );
