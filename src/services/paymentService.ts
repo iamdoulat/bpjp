@@ -195,3 +195,42 @@ export async function getSucceededPlatformDonationsTotal(): Promise<number> {
     return 0;
   }
 }
+
+export async function getUniqueCampaignsSupportedByUser(userId: string): Promise<number> {
+  if (!userId) {
+    console.log('[paymentService.getUniqueCampaignsSupportedByUser] No userId provided, returning 0.');
+    return 0;
+  }
+  console.log(`[paymentService.getUniqueCampaignsSupportedByUser] Fetching campaigns supported by user: ${userId}`);
+  try {
+    const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
+    const q = query(
+      paymentTransactionsRef,
+      where("userId", "==", userId),
+      where("status", "==", "Succeeded")
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log(`[paymentService.getUniqueCampaignsSupportedByUser] No "Succeeded" transactions found for user ${userId}.`);
+      return 0;
+    }
+
+    const supportedCampaignIds = new Set<string>();
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.campaignId) {
+        supportedCampaignIds.add(data.campaignId);
+      }
+    });
+
+    console.log(`[paymentService.getUniqueCampaignsSupportedByUser] User ${userId} supported ${supportedCampaignIds.size} unique campaigns.`);
+    return supportedCampaignIds.size;
+  } catch (error) {
+    console.error(`[paymentService.getUniqueCampaignsSupportedByUser] Error fetching campaigns supported by user ${userId}:`, error);
+    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
+        console.error(`[paymentService.getUniqueCampaignsSupportedByUser] PERMISSION DENIED. Check Firestore security rules for querying 'paymentTransactions' collection by userId and status.`);
+    }
+    return 0; // Return 0 on error or if permissions fail
+  }
+}

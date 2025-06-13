@@ -6,13 +6,18 @@ import { StatsCard } from './stats-card';
 import { DollarSign, CalendarClock, Landmark, ListChecks, HeartPulse } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
-import { getSucceededPlatformDonationsTotal } from '@/services/paymentService'; // Added import
+import { getSucceededPlatformDonationsTotal, getUniqueCampaignsSupportedByUser } from '@/services/paymentService'; 
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PlatformStats {
-  totalSucceededDonations: number; // Renamed for clarity
+  totalSucceededDonations: number;
   activeCampaigns: number;
   upcomingCampaigns: number;
+}
+
+interface UserFetchedStats {
+  campaignsSupportedCount: number | null;
+  // Add other user-specific fetched stats here, e.g., totalDonatedByUser
 }
 
 function formatCurrency(amount: number) {
@@ -22,24 +27,21 @@ function formatCurrency(amount: number) {
 export function StatsGrid() {
   const { user } = useAuth();
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [userFetchedStats, setUserFetchedStats] = useState<UserFetchedStats>({ campaignsSupportedCount: null });
+  
+  const [loadingPlatformStats, setLoadingPlatformStats] = useState(true);
+  const [loadingUserStats, setLoadingUserStats] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null); 
 
   useEffect(() => {
-    async function fetchPlatformStats() {
+    async function fetchAllStats() {
+      setLoadingPlatformStats(true);
       try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch total succeeded donations from paymentTransactions
         const succeededDonationsTotal = await getSucceededPlatformDonationsTotal();
-        
-        // Fetch campaign counts
         const campaigns = await getCampaigns();
         const activeCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'active').length;
         const upcomingCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'upcoming').length;
-        
         setPlatformStats({ 
           totalSucceededDonations: succeededDonationsTotal, 
           activeCampaigns, 
@@ -48,47 +50,73 @@ export function StatsGrid() {
       } catch (e) {
         console.error("Failed to fetch platform stats:", e);
         setError(e instanceof Error ? e.message : "Could not load platform statistics.");
-        // Set defaults in case of error to avoid breaking UI
         setPlatformStats({ totalSucceededDonations: 0, activeCampaigns: 0, upcomingCampaigns: 0 });
       } finally {
-        setLoading(false);
+        setLoadingPlatformStats(false);
+      }
+
+      if (user) {
+        setLoadingUserStats(true);
+        try {
+          const campaignsSupported = await getUniqueCampaignsSupportedByUser(user.uid);
+          setUserFetchedStats(prev => ({ ...prev, campaignsSupportedCount: campaignsSupported }));
+        } catch (e) {
+          console.error("Failed to fetch campaigns supported by user:", e);
+          setUserFetchedStats(prev => ({ ...prev, campaignsSupportedCount: 0 }));
+        } finally {
+          setLoadingUserStats(false);
+        }
+      } else {
+        // Reset user stats if no user or user logs out
+        setUserFetchedStats({ campaignsSupportedCount: null });
+        setLoadingUserStats(false);
       }
     }
-    fetchPlatformStats();
-  }, []);
+    fetchAllStats();
+  }, [user]); // Rerun effect if user changes
 
-  // Placeholder user-specific stats
-  const userSpecificStats = [
-    { title: "Your Total Donations", value: "$0", subtitle: "Track your contributions (coming soon!).", icon: <DollarSign className="h-5 w-5" /> },
-    { title: "Campaigns You Support", value: "0", subtitle: "Impact you're making (coming soon!).", icon: <HeartPulse className="h-5 w-5" /> },
-  ];
+  const userSpecificStats = user ? [
+    { 
+      title: "Your Total Donations", 
+      value: "$0", // Placeholder, implement fetching for this similar to campaignsSupportedCount
+      subtitle: "Track your contributions (coming soon!).", 
+      icon: <DollarSign className="h-5 w-5" />,
+      isLoading: loadingUserStats // Or a more specific loading state if fetched separately
+    },
+    { 
+      title: "Campaigns You Support", 
+      value: loadingUserStats ? <Skeleton className="h-7 w-10 inline-block" /> : (userFetchedStats.campaignsSupportedCount?.toString() ?? "0"),
+      subtitle: "Unique campaigns with successful donations.", 
+      icon: <HeartPulse className="h-5 w-5" />,
+      isLoading: loadingUserStats
+    },
+  ] : [];
 
   const baseStats = [
     { 
       title: "Platform Donations", 
-      value: platformStats ? formatCurrency(platformStats.totalSucceededDonations) : <Skeleton className="h-7 w-24 inline-block" />,
+      value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-24 inline-block" /> : formatCurrency(platformStats.totalSucceededDonations),
       subtitle: "Total Succeeded Donations.", 
       icon: <Landmark className="h-5 w-5" />,
-      isLoading: loading && !platformStats
+      isLoading: loadingPlatformStats || !platformStats
     },
     { 
       title: "Active Campaigns", 
-      value: platformStats ? platformStats.activeCampaigns.toString() : <Skeleton className="h-7 w-12 inline-block" />, 
+      value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-12 inline-block" /> : platformStats.activeCampaigns.toString(), 
       subtitle: "Opportunities to make an impact.", 
       icon: <ListChecks className="h-5 w-5" />,
-      isLoading: loading && !platformStats
+      isLoading: loadingPlatformStats || !platformStats
     },
     { 
       title: "Upcoming Campaigns", 
-      value: platformStats ? platformStats.upcomingCampaigns.toString() : <Skeleton className="h-7 w-12 inline-block" />, 
+      value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-12 inline-block" /> : platformStats.upcomingCampaigns.toString(), 
       subtitle: "Get ready for these causes.", 
       icon: <CalendarClock className="h-5 w-5" />,
-      isLoading: loading && !platformStats
+      isLoading: loadingPlatformStats || !platformStats
     },
   ];
 
   const statsToDisplay = user ? [...userSpecificStats, ...baseStats] : baseStats;
-
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -99,7 +127,7 @@ export function StatsGrid() {
           <StatsCard
             key={stat.title}
             title={stat.title}
-            value={typeof stat.value === 'string' || typeof stat.value === 'number' ? String(stat.value) : stat.value}
+            value={stat.value}
             subtitle={stat.subtitle}
             icon={stat.icon}
           />
