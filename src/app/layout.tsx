@@ -1,12 +1,15 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from "@/components/layout/theme-provider";
-import { AppProvider } from '@/contexts/AppContext'; // Added AppProvider
+import { AppProvider } from '@/contexts/AppContext';
 
+// Metadata can be dynamic if we use generateMetadata with AppContext
+// For now, it's static or uses environment variables if needed before context is ready client-side
 export const metadata: Metadata = {
-  title: 'BPJP', // This might be dynamically set later if appName from context is used for metadata
+  title: process.env.NEXT_PUBLIC_APP_NAME || 'ImpactBoard', // Use env var or default
   description: 'Donor & Campaign Management Dashboard',
 };
 
@@ -29,7 +32,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppProvider> {/* Added AppProvider */}
+          <AppProvider> {/* AppProvider wraps AuthProvider now */}
             <AuthProvider>
               {children}
               <Toaster />

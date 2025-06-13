@@ -1,40 +1,58 @@
+
 // src/contexts/AppContext.tsx
 "use client";
 
 import type { ReactNode } from 'react';
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { getOrganizationSettings, type OrganizationSettingsData } from '@/services/organizationSettingsService'; // Import the service
 
 interface AppContextType {
   appName: string;
   setAppNameState: (name: string) => void;
-  // Potentially add other global app settings here in the future
+  organizationSettings: OrganizationSettingsData | null; // Add organization settings to context
+  isLoadingAppSettings: boolean; // Add loading state
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  // Initialize with environment variable, then fallback to "BPJP"
-  // This initial state could later be overridden by fetching from Firestore
   const [appName, setAppName] = useState<string>(process.env.NEXT_PUBLIC_APP_NAME || "BPJP");
+  const [organizationSettings, setOrganizationSettings] = useState<OrganizationSettingsData | null>(null);
+  const [isLoadingAppSettings, setIsLoadingAppSettings] = useState(true);
 
-  // Example: Fetch initial appName from localStorage or a service on mount
-  // useEffect(() => {
-  //   const storedAppName = localStorage.getItem('appName');
-  //   if (storedAppName) {
-  //     setAppName(storedAppName);
-  //   }
-  //   // Or fetch from Firestore here if settings are global and not user-specific
-  // }, []);
+  useEffect(() => {
+    async function fetchInitialAppSettings() {
+      setIsLoadingAppSettings(true);
+      try {
+        const settings = await getOrganizationSettings();
+        if (settings) {
+          setOrganizationSettings(settings);
+          if (settings.appName) {
+            setAppName(settings.appName);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching initial app settings from Firestore:", error);
+        // Fallback to defaults or environment variables if fetch fails
+        setAppName(process.env.NEXT_PUBLIC_APP_NAME || "BPJP");
+      } finally {
+        setIsLoadingAppSettings(false);
+      }
+    }
+    fetchInitialAppSettings();
+  }, []);
 
   const setAppNameState = (name: string) => {
     setAppName(name);
-    // Optionally persist to localStorage for non-critical persistence
-    // localStorage.setItem('appName', name);
+    // Update appName within the organizationSettings state as well if it exists
+    setOrganizationSettings(prevSettings => prevSettings ? { ...prevSettings, appName: name } : null);
   };
 
   const value = {
     appName,
     setAppNameState,
+    organizationSettings,
+    isLoadingAppSettings,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
