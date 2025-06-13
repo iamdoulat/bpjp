@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signup: (email: string, password: string) => Promise<User | AuthError | undefined>;
+  signup: (email: string, password: string, displayName?: string) => Promise<User | AuthError | undefined>;
   login: (email: string, password: string) => Promise<User | AuthError | undefined>;
   logout: () => Promise<void>;
   refreshAuthUser: () => Promise<void>; // Added to refresh user state
@@ -40,16 +40,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const signup = async (email: string, password: string): Promise<User | AuthError | undefined> => {
+  const signup = async (email: string, password: string, displayName?: string): Promise<User | AuthError | undefined> => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Set default display name to part before @
-      await updateAuthProfile(userCredential.user, { displayName: email.split('@')[0] });
+      // Use provided displayName, or default to part before @
+      const nameToSet = displayName || email.split('@')[0];
+      await updateAuthProfile(userCredential.user, { displayName: nameToSet });
       // Reload user to get the updated profile
       await userCredential.user.reload();
       const refreshedUser = auth.currentUser; // Get the most up-to-date user object
-      setUser(refreshedUser);
+      setUser(refreshedUser); // This setUser is for the AuthContext, will be the new user
       return refreshedUser ?? undefined;
     } catch (error) {
       console.error("Signup error:", error);

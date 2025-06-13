@@ -18,6 +18,18 @@ export interface UserProfileData {
   lastUpdated?: Timestamp;
 }
 
+export interface NewUserProfileFirestoreData {
+  email: string | null;
+  displayName: string | null;
+  mobileNumber?: string | null;
+  role: 'admin' | 'user';
+  status: 'Active' | 'Suspended' | 'Pending Verification';
+  joinedDate: Timestamp;
+  lastLoginDate?: Timestamp | null; // Can be set on first login by new user
+  photoURL?: string | null;
+}
+
+
 // Function to get user profile from Firestore
 export async function getUserProfile(uid: string): Promise<UserProfileData | null> {
   try {
@@ -108,12 +120,16 @@ export async function updateUserProfileService(
     if (currentProfile) {
       await updateDoc(userDocRef, dataToStore);
     } else {
+      // This case handles creating a Firestore profile if one doesn't exist yet for the authUser
       dataToStore.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
       dataToStore.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
-      dataToStore.photoURL = authUser.photoURL;
+      dataToStore.photoURL = authUser.photoURL; // Capture initial photoURL from Auth if any
       dataToStore.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
       dataToStore.status = 'Active';
-      await setDoc(userDocRef, dataToStore);
+      await setDoc(userDocRef, {
+        ...dataToStore, // contains displayName, mobileNumber if provided, uid, email, lastUpdated
+        displayName: dataToStore.displayName || authUser.displayName, // ensure displayName is set
+      });
     }
   } catch (error) {
     console.error("Error updating user profile:", error);
@@ -169,9 +185,10 @@ export async function uploadProfilePictureAndUpdate(
     if (currentProfile) {
         await updateDoc(userDocRef, dataToUpdate);
     } else {
+        // Create profile if it doesn't exist (e.g., user updated pic before any other profile action)
         dataToUpdate.uid = authUser.uid;
         dataToUpdate.email = authUser.email;
-        dataToUpdate.displayName = authUser.displayName;
+        dataToUpdate.displayName = authUser.displayName; // from Auth
         dataToUpdate.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
         dataToUpdate.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
         dataToUpdate.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
@@ -196,6 +213,24 @@ export async function deleteUserProfileDocument(userId: string): Promise<void> {
     console.error(`Error deleting Firestore profile for user ${userId}:`, error);
     // Note: This does not delete the Firebase Auth user.
     // Deleting Firebase Auth users typically requires Admin SDK on a backend.
+    throw error;
+  }
+}
+
+// Function to create the Firestore user profile document for a new user
+export async function createUserProfileDocument(
+  uid: string,
+  profileData: NewUserProfileFirestoreData
+): Promise<void> {
+  try {
+    const userDocRef = doc(db, 'userProfiles', uid);
+    await setDoc(userDocRef, {
+      uid, // Explicitly set uid in the document
+      ...profileData,
+      lastUpdated: serverTimestamp() as Timestamp,
+    });
+  } catch (error) {
+    console.error("Error creating user profile document:", error);
     throw error;
   }
 }

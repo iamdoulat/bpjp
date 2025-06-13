@@ -31,6 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogClose,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -53,6 +54,7 @@ import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -63,11 +65,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { getAllUserProfiles, updateUserProfileAdmin, deleteUserProfileDocument, type UserProfileData } from "@/services/userService";
+import { getAllUserProfiles, updateUserProfileAdmin, deleteUserProfileDocument, createUserProfileDocument, type UserProfileData, type NewUserProfileFirestoreData } from "@/services/userService";
 import type { VariantProps } from "class-variance-authority";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useAuth } from "@/contexts/AuthContext"; // For signup
+import { Timestamp } from "firebase/firestore";
+import type { User as AuthUserType, AuthError } from 'firebase/auth'; // For type hints
 
 export interface UserData {
   id: string;
@@ -107,14 +112,30 @@ const editUserFormSchema = z.object({
 });
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
+const addUserFormSchema = z.object({
+  displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
+  email: z.string().email("Invalid email address."),
+  password: z.string().min(6, "Password must be at least 6 characters."),
+  confirmPassword: z.string(),
+  mobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid mobile number.").optional().or(z.literal('')),
+  role: z.enum(['user', 'admin']),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match.",
+  path: ["confirmPassword"],
+});
+type AddUserFormValues = z.infer<typeof addUserFormSchema>;
+
+
 export default function ManageUsersPage() {
   const [users, setUsers] = React.useState<UserData[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const { toast } = useToast();
+  const { signup: signupUserFromContext } = useAuth(); // Renamed to avoid conflict with local var
 
   const [currentUserForAction, setCurrentUserForAction] = React.useState<UserData | null>(null);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = React.useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = React.useState(false);
   const [isChangeRoleDialogOpen, setIsChangeRoleDialogOpen] = React.useState(false);
   const [isSuspendConfirmOpen, setIsSuspendConfirmOpen] = React.useState(false);
@@ -124,6 +145,18 @@ export default function ManageUsersPage() {
 
   const editUserForm = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
+  });
+
+  const addUserForm = useForm<AddUserFormValues>({
+    resolver: zodResolver(addUserFormSchema),
+    defaultValues: {
+        displayName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        mobileNumber: "",
+        role: "user",
+    }
   });
 
   const fetchUsersData = React.useCallback(async () => {
@@ -199,7 +232,7 @@ export default function ManageUsersPage() {
         mobileNumber: values.mobileNumber,
       });
       toast({ title: "User Updated", description: `${currentUserForAction.name || currentUserForAction.email}'s profile has been updated.` });
-      fetchUsersData(); // Re-fetch to reflect changes
+      fetchUsersData(); 
       setIsEditUserDialogOpen(false);
     } catch (e) {
       toast({ title: "Update Failed", description: (e as Error).message, variant: "destructive" });
@@ -260,12 +293,57 @@ export default function ManageUsersPage() {
     setIsSubmitting(true);
     try {
       await deleteUserProfileDocument(currentUserForAction.uid);
-      // Note: This does NOT delete the Firebase Auth user.
       toast({ title: "User Profile Deleted", description: `Firestore profile for ${currentUserForAction.name || currentUserForAction.email} deleted.` });
       fetchUsersData();
       setIsDeleteConfirmOpen(false);
     } catch (e) {
       toast({ title: "Deletion Failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddUserSubmit = async (data: AddUserFormValues) => {
+    setIsSubmitting(true);
+    try {
+      // Create Firebase Auth user
+      const newUserAuth = await signupUserFromContext(data.email, data.password, data.displayName) as AuthUserType | AuthError | undefined;
+
+      if (newUserAuth && 'uid' in newUserAuth) { // Check if it's a User object
+        const profileData: NewUserProfileFirestoreData = {
+          displayName: newUserAuth.displayName, // displayName from Auth profile
+          email: newUserAuth.email,
+          mobileNumber: data.mobileNumber || null,
+          role: data.role,
+          status: 'Active',
+          joinedDate: Timestamp.now(),
+          photoURL: newUserAuth.photoURL || null,
+        };
+        await createUserProfileDocument(newUserAuth.uid, profileData);
+        
+        toast({
+          title: "User Created Successfully!",
+          description: `User ${data.displayName} (${data.email}) created. IMPORTANT: You are now logged in as this new user. Please log out and log back in with your admin account to continue managing users.`,
+          duration: 10000, // Longer duration for important message
+        });
+        setIsAddUserDialogOpen(false);
+        addUserForm.reset();
+        // The admin will be logged out, so fetching users here might not reflect admin view until re-login.
+        // fetchUsersData(); // Consider if this makes sense if admin is logged out
+      } else {
+        const authError = newUserAuth as AuthError;
+        let errorMessage = "Failed to create Auth user.";
+        if (authError?.code === 'auth/email-already-in-use') {
+          errorMessage = "This email is already registered.";
+        } else if (authError?.code === 'auth/invalid-email') {
+          errorMessage = "Invalid email format.";
+        } else if (authError?.code === 'auth/weak-password') {
+          errorMessage = "Password is too weak.";
+        }
+        throw new Error(errorMessage);
+      }
+    } catch (e) {
+      toast({ title: "Add User Failed", description: (e as Error).message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -296,7 +374,7 @@ export default function ManageUsersPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button onClick={() => toast({ title: "Add User Clicked", description: "Functionality to add new users will be implemented here."})}>
+            <Button onClick={() => setIsAddUserDialogOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add User
             </Button>
@@ -365,7 +443,7 @@ export default function ManageUsersPage() {
                            <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <span className="font-medium truncate block">{user.name || user.email.split('@')[0]}</span>
+                          <span className="font-medium truncate block text-sm">{user.name || user.email.split('@')[0]}</span>
                           {user.mobileNumber && <span className="text-xs text-muted-foreground block">Mobile: {user.mobileNumber}</span>}
                         </div>
                       </div>
@@ -428,6 +506,99 @@ export default function ManageUsersPage() {
         )}
       </main>
 
+      {/* Add User Dialog */}
+      <Dialog open={isAddUserDialogOpen} onOpenChange={(isOpen) => { setIsAddUserDialogOpen(isOpen); if (!isOpen) addUserForm.reset(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>Create a new user account and Firestore profile.</DialogDescription>
+          </DialogHeader>
+          <Form {...addUserForm}>
+            <form onSubmit={addUserForm.handleSubmit(handleAddUserSubmit)} className="space-y-4 py-2 pb-4">
+              <FormField
+                control={addUserForm.control}
+                name="displayName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Display Name</FormLabel>
+                    <FormControl><Input placeholder="Full Name" {...field} disabled={isSubmitting} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addUserForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl><Input type="email" placeholder="user@example.com" {...field} disabled={isSubmitting} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addUserForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl><Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addUserForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl><Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addUserForm.control}
+                name="mobileNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mobile Number (Optional)</FormLabel>
+                    <FormControl><Input placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addUserForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button></DialogClose>
+                <Button type="submit" disabled={isSubmitting || !addUserForm.formState.isValid}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create User
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+
       {/* Edit User Dialog */}
       {currentUserForAction && (
         <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
@@ -458,7 +629,7 @@ export default function ManageUsersPage() {
                     <FormItem>
                       <FormLabel>Mobile Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="User's mobile number" {...field} disabled={isSubmitting} />
+                        <Input placeholder="User's mobile number" {...field} value={field.value ?? ""} disabled={isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
