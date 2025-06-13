@@ -1,5 +1,5 @@
 
-"use client"; // Required for useState, useEffect, and event handlers
+"use client";
 
 import * as React from 'react';
 import Image from 'next/image';
@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Card, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import type { CampaignData } from '@/services/campaignService';
+import type { CampaignData, ReactionType } from '@/services/campaignService';
 import { cn } from '@/lib/utils';
 import { Heart, ThumbsUp, Eye, HeartHandshake, Loader2, Phone } from 'lucide-react';
 import {
@@ -23,10 +23,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext"; // Added useAuth
-import { addPaymentTransaction, type NewPaymentTransactionInput } from "@/services/paymentService"; // Added payment service
+import { useAuth } from "@/contexts/AuthContext";
+import { addPaymentTransaction, type NewPaymentTransactionInput } from "@/services/paymentService";
+import { toggleCampaignReaction, getUserReactionsForCampaign } from '@/services/campaignService'; // Import reaction services
 import { useRouter } from 'next/navigation';
-
 
 interface CampaignCardProps {
   campaign: CampaignData;
@@ -43,18 +43,53 @@ function getCampaignImageHint(title: string, description: string): string {
   return 'community help';
 }
 
+function formatCount(count: number): string {
+  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  return count.toString();
+}
+
 export function CampaignCard({ campaign, isPublicView = false }: CampaignCardProps) {
   const progressPercentage = campaign.goalAmount > 0 ? (campaign.raisedAmount / campaign.goalAmount) * 100 : 0;
   
-  const { user } = useAuth(); // Get user from AuthContext
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [donationAmount, setDonationAmount] = React.useState("");
   const [lastFourDigits, setLastFourDigits] = React.useState("");
-  const [receiverBkashNo, setReceiverBkashNo] = React.useState(""); // New state
+  const [receiverBkashNo, setReceiverBkashNo] = React.useState("");
   const [isSubmittingDonation, setIsSubmittingDonation] = React.useState(false);
+
+  // State for reactions
+  const [likeCount, setLikeCount] = React.useState(campaign.likeCount || 0);
+  const [supportCount, setSupportCount] = React.useState(campaign.supportCount || 0);
+  const [userLiked, setUserLiked] = React.useState(false);
+  const [userSupported, setUserSupported] = React.useState(false);
+  const [loadingReactions, setLoadingReactions] = React.useState(true);
+  const [isTogglingReaction, setIsTogglingReaction] = React.useState(false);
+
+  React.useEffect(() => {
+    setLikeCount(campaign.likeCount || 0);
+    setSupportCount(campaign.supportCount || 0);
+
+    if (user && campaign.id) {
+      setLoadingReactions(true);
+      getUserReactionsForCampaign(campaign.id, user.uid)
+        .then(reactions => {
+          setUserLiked(reactions.liked);
+          setUserSupported(reactions.supported);
+        })
+        .catch(error => console.error("Error fetching user reactions:", error))
+        .finally(() => setLoadingReactions(false));
+    } else {
+      setLoadingReactions(false);
+      setUserLiked(false);
+      setUserSupported(false);
+    }
+  }, [campaign.id, campaign.likeCount, campaign.supportCount, user]);
+
 
   const handleDonationSubmit = async () => {
      if (!user) {
@@ -120,7 +155,7 @@ export function CampaignCard({ campaign, isPublicView = false }: CampaignCardPro
         campaignName: campaign.campaignTitle,
         amount: parseFloat(donationAmount),
         lastFourDigits: lastFourDigits,
-        receiverBkashNo: receiverBkashNo, // Include Bkash number
+        receiverBkashNo: receiverBkashNo,
     };
 
     try {
@@ -131,7 +166,7 @@ export function CampaignCard({ campaign, isPublicView = false }: CampaignCardPro
         });
         setDonationAmount("");
         setLastFourDigits("");
-        setReceiverBkashNo(""); // Clear Bkash number field
+        setReceiverBkashNo("");
         setIsDialogOpen(false);
     } catch (e) {
         console.error("Failed to submit donation from card:", e);
@@ -144,6 +179,50 @@ export function CampaignCard({ campaign, isPublicView = false }: CampaignCardPro
         setIsSubmittingDonation(false);
     }
   };
+
+  const handleReactionToggle = async (reactionType: ReactionType) => {
+    if (authLoading || !user || !campaign.id) {
+      toast({ title: "Login Required", description: "Please log in to react.", variant: "destructive" });
+      return;
+    }
+    if (isTogglingReaction) return;
+
+    setIsTogglingReaction(true);
+
+    // Optimistic UI update
+    if (reactionType === 'like') {
+      setLikeCount(prev => userLiked ? prev - 1 : prev + 1);
+      setUserLiked(prev => !prev);
+    } else if (reactionType === 'support') {
+      setSupportCount(prev => userSupported ? prev - 1 : prev + 1);
+      setUserSupported(prev => !prev);
+    }
+
+    try {
+      const { newCount, userHasReacted } = await toggleCampaignReaction(campaign.id, user.uid, reactionType);
+      if (reactionType === 'like') {
+        setLikeCount(newCount);
+        setUserLiked(userHasReacted);
+      } else if (reactionType === 'support') {
+        setSupportCount(newCount);
+        setUserSupported(userHasReacted);
+      }
+    } catch (error) {
+      console.error(`Error toggling ${reactionType}:`, error);
+      toast({ title: "Error", description: `Could not record ${reactionType}.`, variant: "destructive" });
+      // Revert optimistic update on error
+      if (reactionType === 'like') {
+        setLikeCount(prev => userLiked ? prev + 1 : prev - 1); // Revert previous optimistic change
+        setUserLiked(prev => !prev);
+      } else if (reactionType === 'support') {
+        setSupportCount(prev => userSupported ? prev + 1 : prev - 1);
+        setUserSupported(prev => !prev);
+      }
+    } finally {
+      setIsTogglingReaction(false);
+    }
+  };
+
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden rounded-lg">
@@ -256,14 +335,29 @@ export function CampaignCard({ campaign, isPublicView = false }: CampaignCardPro
             </Link>
           </Button>
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-rose-500">
-              <Heart className="h-4 w-4" />
-              <span className="sr-only">Like campaign</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-7 w-7", userLiked ? "text-blue-500 hover:text-blue-600" : "text-muted-foreground hover:text-rose-500")}
+              onClick={() => handleReactionToggle('like')}
+              disabled={isTogglingReaction || authLoading || loadingReactions}
+              aria-label="Like campaign"
+            >
+              {isTogglingReaction || loadingReactions ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className="h-4 w-4" />}
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
-              <ThumbsUp className="h-4 w-4" />
-              <span className="sr-only">Support campaign</span>
+            <span className="text-xs text-muted-foreground">{formatCount(likeCount)}</span>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-7 w-7", userSupported ? "text-blue-500 hover:text-blue-600" : "text-muted-foreground hover:text-primary")}
+              onClick={() => handleReactionToggle('support')}
+              disabled={isTogglingReaction || authLoading || loadingReactions}
+              aria-label="Support campaign"
+            >
+               {isTogglingReaction || loadingReactions ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
             </Button>
+            <span className="text-xs text-muted-foreground">{formatCount(supportCount)}</span>
           </div>
         </CardFooter>
       )}

@@ -1,9 +1,9 @@
 
 // src/services/campaignService.ts
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, getDoc, updateDoc, Timestamp, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, Timestamp, type DocumentData, type QueryDocumentSnapshot, runTransaction, deleteDoc, writeBatch } from 'firebase/firestore';
 
-// Extended CampaignData to include raisedAmount and id for display purposes
+// Extended CampaignData to include raisedAmount, id, likeCount, and supportCount for display purposes
 export interface CampaignData {
   id?: string; // Optional because it's not present when creating, but is when fetching
   campaignTitle: string;
@@ -15,7 +15,9 @@ export interface CampaignData {
   organizerName?: string;
   initialStatus: "draft" | "upcoming" | "active" | "completed"; // Added completed
   createdAt: Timestamp;
-  raisedAmount: number; // New field for amount raised
+  raisedAmount: number;
+  likeCount: number; // New field for like count
+  supportCount: number; // New field for support count
 }
 
 // Type for data being added to Firestore (Dates are JS Dates)
@@ -45,15 +47,17 @@ export interface CampaignUpdateData {
 
 export async function addCampaign(campaignData: NewCampaignInputData): Promise<string> {
   try {
-    const dataWithTimestampAndRaised: Omit<CampaignData, 'id' | 'startDate' | 'endDate'> & { startDate: Timestamp, endDate: Timestamp, initialStatus: NewCampaignInputData["initialStatus"] } = {
+    const dataWithTimestampAndCounters: Omit<CampaignData, 'id' | 'startDate' | 'endDate'> & { startDate: Timestamp, endDate: Timestamp, initialStatus: NewCampaignInputData["initialStatus"] } = {
       ...campaignData,
       startDate: Timestamp.fromDate(campaignData.startDate),
       endDate: Timestamp.fromDate(campaignData.endDate),
-      raisedAmount: 0, // Default raised amount to 0 on creation
+      raisedAmount: 0,
+      likeCount: 0, // Initialize likeCount
+      supportCount: 0, // Initialize supportCount
       createdAt: Timestamp.now(),
       initialStatus: campaignData.initialStatus,
     };
-    const docRef = await addDoc(collection(db, 'campaigns'), dataWithTimestampAndRaised);
+    const docRef = await addDoc(collection(db, 'campaigns'), dataWithTimestampAndCounters);
     return docRef.id;
   } catch (error) {
     console.error("Error adding document to Firestore: ", error);
@@ -83,6 +87,8 @@ export async function getCampaigns(): Promise<CampaignData[]> {
         initialStatus: data.initialStatus as "draft" | "upcoming" | "active" | "completed",
         createdAt: data.createdAt as Timestamp,
         raisedAmount: data.raisedAmount || 0,
+        likeCount: data.likeCount || 0, // Retrieve likeCount, default to 0
+        supportCount: data.supportCount || 0, // Retrieve supportCount, default to 0
       });
     });
     return campaigns;
@@ -115,6 +121,8 @@ export async function getCampaignById(id: string): Promise<CampaignData | null> 
         initialStatus: data.initialStatus as "draft" | "upcoming" | "active" | "completed",
         createdAt: data.createdAt as Timestamp,
         raisedAmount: data.raisedAmount || 0,
+        likeCount: data.likeCount || 0, // Retrieve likeCount, default to 0
+        supportCount: data.supportCount || 0, // Retrieve supportCount, default to 0
       };
     } else {
       console.log("No such document!");
@@ -133,18 +141,14 @@ export async function getCampaignById(id: string): Promise<CampaignData | null> 
 export async function updateCampaign(id: string, campaignData: CampaignUpdateData): Promise<void> {
   try {
     const docRef = doc(db, "campaigns", id);
-    // Convert JS Dates back to Firestore Timestamps for updating
     const dataToUpdate = {
       ...campaignData,
       startDate: Timestamp.fromDate(campaignData.startDate),
       endDate: Timestamp.fromDate(campaignData.endDate),
     };
-    // Log the data being sent to Firestore for debugging
-    console.log(`[campaignService.updateCampaign] Attempting to update campaign ${id} with data:`, JSON.parse(JSON.stringify(dataToUpdate)));
     await updateDoc(docRef, dataToUpdate);
-    console.log(`[campaignService.updateCampaign] Successfully updated campaign ${id}.`);
   } catch (error) {
-    console.error(`[campaignService.updateCampaign] Error updating campaign ${id}:`, error);
+    console.error(`Error updating campaign ${id}:`, error);
     if (error instanceof Error) {
       throw new Error(`Failed to update campaign ${id}: ${error.message}`);
     }
@@ -152,3 +156,73 @@ export async function updateCampaign(id: string, campaignData: CampaignUpdateDat
   }
 }
 
+// Type for reaction
+export type ReactionType = 'like' | 'support';
+
+// Function to get user's reactions for a specific campaign
+export async function getUserReactionsForCampaign(campaignId: string, userId: string): Promise<{ liked: boolean; supported: boolean }> {
+  if (!userId) return { liked: false, supported: false };
+  try {
+    const likeDocRef = doc(db, "campaigns", campaignId, "likes", userId);
+    const supportDocRef = doc(db, "campaigns", campaignId, "supports", userId);
+
+    const [likeSnap, supportSnap] = await Promise.all([
+      getDoc(likeDocRef),
+      getDoc(supportDocRef)
+    ]);
+
+    return {
+      liked: likeSnap.exists(),
+      supported: supportSnap.exists(),
+    };
+  } catch (error) {
+    console.error(`Error fetching user reactions for campaign ${campaignId}, user ${userId}:`, error);
+    return { liked: false, supported: false }; // Default to false on error
+  }
+}
+
+// Function to toggle a reaction (like or support)
+export async function toggleCampaignReaction(campaignId: string, userId: string, reactionType: ReactionType): Promise<{ newCount: number; userHasReacted: boolean }> {
+  if (!userId) throw new Error("User ID is required to react.");
+
+  const campaignDocRef = doc(db, "campaigns", campaignId);
+  const reactionSubcollectionName = reactionType === 'like' ? 'likes' : 'supports';
+  const countFieldName = reactionType === 'like' ? 'likeCount' : 'supportCount';
+  const userReactionDocRef = doc(db, "campaigns", campaignId, reactionSubcollectionName, userId);
+
+  try {
+    let newCount = 0;
+    let userHasReacted = false;
+
+    await runTransaction(db, async (transaction) => {
+      const campaignSnap = await transaction.get(campaignDocRef);
+      if (!campaignSnap.exists()) {
+        throw new Error(`Campaign ${campaignId} not found.`);
+      }
+      const campaignData = campaignSnap.data() as CampaignData;
+      const currentCount = campaignData[countFieldName] || 0;
+      const userReactionSnap = await transaction.get(userReactionDocRef);
+
+      if (userReactionSnap.exists()) {
+        // User is removing their reaction
+        transaction.delete(userReactionDocRef);
+        newCount = Math.max(0, currentCount - 1);
+        userHasReacted = false;
+      } else {
+        // User is adding their reaction
+        transaction.set(userReactionDocRef, { reactedAt: Timestamp.now() }); // Store a timestamp or empty object
+        newCount = currentCount + 1;
+        userHasReacted = true;
+      }
+      transaction.update(campaignDocRef, { [countFieldName]: newCount });
+    });
+
+    return { newCount, userHasReacted };
+  } catch (error) {
+    console.error(`Error toggling ${reactionType} for campaign ${campaignId} by user ${userId}:`, error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to toggle ${reactionType}: ${error.message}`);
+    }
+    throw new Error(`An unknown error occurred while toggling ${reactionType}.`);
+  }
+}

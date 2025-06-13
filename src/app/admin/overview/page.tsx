@@ -110,7 +110,7 @@ export default function AdminOverviewPage() {
           <Card className="lg:col-span-2 shadow-lg">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
+                <BarChart3 className="h-5 w-5 text-green-600" />
                 <CardTitle className="font-headline">Platform Analytics</CardTitle>
               </div>
               <CardDescription>Key performance indicators and trends.</CardDescription>
@@ -130,7 +130,7 @@ export default function AdminOverviewPage() {
           <Card className="shadow-lg">
             <CardHeader>
                <div className="flex items-center gap-2">
-                <Wand2 className="h-5 w-5 text-primary" />
+                <Wand2 className="h-5 w-5 text-green-600" />
                 <CardTitle className="font-headline">Quick Actions</CardTitle>
               </div>
               <CardDescription>Common administrative tasks.</CardDescription>
