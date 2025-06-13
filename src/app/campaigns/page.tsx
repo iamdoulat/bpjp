@@ -69,7 +69,7 @@ export default function BrowseCampaignsPage() {
   ) => {
     return (
       <section className="mb-12">
-        <h2 className="text-3xl font-headline font-semibold mb-2 text-primary">{title}</h2>
+        <h2 className="text-3xl font-headline font-semibold mb-2 text-foreground">{title}</h2>
         <p className="text-muted-foreground mb-6">
           {title === "Ongoing Campaigns" ? "Support these active initiatives today." : "Get ready to support these upcoming causes."}
         </p>
