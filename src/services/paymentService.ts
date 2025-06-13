@@ -1,7 +1,7 @@
 
 // src/services/paymentService.ts
 import { db, auth } from '@/lib/firebase'; // Added auth
-import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer } from 'firebase/firestore'; // Added deleteDoc and getDoc, getCountFromServer
+import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer, runTransaction } from 'firebase/firestore'; // Added runTransaction
 
 // Interface for data stored and retrieved from Firestore
 export interface PaymentTransaction {
@@ -9,24 +9,26 @@ export interface PaymentTransaction {
   userId: string;
   userEmail?: string; // Good to store for easier display if needed
   date: Date | Timestamp; // JS Date for input, Firestore Timestamp for storage/output
-  method: string; // e.g., "Card", "PayPal", "Manual Verification"
+  method: "BKash" | "Wallet" | "Manual Verification" | string; // More specific types + string for legacy
   amount: number;
   status: "Succeeded" | "Pending" | "Failed" | "Refunded";
   campaignId?: string;
   campaignName?: string;
-  lastFourDigits?: string; // For verification
-  receiverBkashNo?: string;
+  lastFourDigits?: string; // For verification, primarily for BKash
+  receiverBkashNo?: string; // Specific to BKash
   transactionReference?: string; // Optional field for a full reference if available
 }
 
 // Data for creating a new transaction via the UI
 export interface NewPaymentTransactionInput {
   userId: string;
-  userEmail?: string; // Optional, can be fetched if user is logged in
+  userEmail?: string;
   campaignId: string;
   campaignName: string;
   amount: number;
-  lastFourDigits: string;
+  paymentMethod: "BKash" | "Wallet"; // Explicit payment method
+  // Fields specific to BKash
+  lastFourDigits?: string;
   receiverBkashNo?: string;
 }
 
@@ -35,17 +37,52 @@ const PAYMENT_TRANSACTIONS_COLLECTION = 'paymentTransactions';
 const CAMPAIGNS_COLLECTION = 'campaigns';
 
 export async function addPaymentTransaction(transactionInput: NewPaymentTransactionInput): Promise<string> {
+  const paymentDocRef = doc(collection(db, PAYMENT_TRANSACTIONS_COLLECTION)); // Generate ref upfront for transaction ID
+  const campaignDocRef = doc(db, CAMPAIGNS_COLLECTION, transactionInput.campaignId);
+
   try {
-    const dataToSave = {
-      ...transactionInput,
-      date: Timestamp.now(),
-      status: "Pending" as const, // Default status
-      method: "Manual Verification", // Default method for popup submissions
-    };
-    console.log('[paymentService.addPaymentTransaction] Saving transaction:', dataToSave);
-    const docRef = await addDoc(collection(db, PAYMENT_TRANSACTIONS_COLLECTION), dataToSave);
-    console.log('[paymentService.addPaymentTransaction] Transaction saved with ID:', docRef.id);
-    return docRef.id;
+    await runTransaction(db, async (transaction) => {
+      const dataToSave: Omit<PaymentTransaction, 'id' | 'date'> & { date: Timestamp } = {
+        userId: transactionInput.userId,
+        userEmail: transactionInput.userEmail,
+        campaignId: transactionInput.campaignId,
+        campaignName: transactionInput.campaignName,
+        amount: transactionInput.amount,
+        date: Timestamp.now(),
+        status: transactionInput.paymentMethod === "Wallet" ? "Succeeded" as const : "Pending" as const,
+        method: transactionInput.paymentMethod,
+        lastFourDigits: transactionInput.paymentMethod === "BKash" ? transactionInput.lastFourDigits : undefined,
+        receiverBkashNo: transactionInput.paymentMethod === "BKash" ? transactionInput.receiverBkashNo : undefined,
+        transactionReference: undefined, // Explicitly set if not part of input
+      };
+
+      transaction.set(paymentDocRef, dataToSave);
+
+      // If payment is 'Wallet' and thus 'Succeeded', or if a BKash payment is directly marked succeeded (though current logic makes it pending)
+      // update campaign's raisedAmount
+      if (dataToSave.status === "Succeeded") {
+        const campaignSnap = await transaction.get(campaignDocRef);
+        if (!campaignSnap.exists()) {
+          throw new Error(`Campaign ${transactionInput.campaignId} not found.`);
+        }
+        const campaignData = campaignSnap.data();
+        const currentRaisedAmount = campaignData.raisedAmount || 0;
+        const newRaisedAmount = currentRaisedAmount + transactionInput.amount;
+        transaction.update(campaignDocRef, { raisedAmount: newRaisedAmount });
+        
+        // Future Phase 2: Deduct from user's walletBalance here if method is Wallet
+        // const userProfileRef = doc(db, 'userProfiles', transactionInput.userId);
+        // const userProfileSnap = await transaction.get(userProfileRef);
+        // if (!userProfileSnap.exists()) throw new Error("User profile not found for wallet deduction.");
+        // const currentWalletBalance = userProfileSnap.data().walletBalance || 0;
+        // if (currentWalletBalance < transactionInput.amount) throw new Error("Insufficient wallet balance.");
+        // transaction.update(userProfileRef, { walletBalance: currentWalletBalance - transactionInput.amount });
+      }
+    });
+
+    console.log('[paymentService.addPaymentTransaction] Transaction saved with ID:', paymentDocRef.id);
+    return paymentDocRef.id;
+
   } catch (error) {
     console.error("[paymentService.addPaymentTransaction] Error adding payment transaction to Firestore: ", error);
     if (error instanceof Error) {

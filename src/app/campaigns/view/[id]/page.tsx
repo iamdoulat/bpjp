@@ -1,3 +1,4 @@
+
 // src/app/campaigns/view/[id]/page.tsx
 "use client"
 
@@ -12,7 +13,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
 import { getCampaignById, type CampaignData } from '@/services/campaignService';
-import { Loader2, AlertCircle, ArrowLeft, CalendarDays, Users, DollarSign, Target as TargetIcon, HeartHandshake, Phone } from "lucide-react"
+import { Loader2, AlertCircle, ArrowLeft, CalendarDays, Users, DollarSign, Target as TargetIcon, HeartHandshake, Phone, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Dialog,
@@ -26,9 +27,10 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/contexts/AuthContext"; // Added useAuth
-import { addPaymentTransaction, type NewPaymentTransactionInput } from "@/services/paymentService"; // Added payment service
+import { useAuth } from "@/contexts/AuthContext";
+import { addPaymentTransaction, type NewPaymentTransactionInput } from "@/services/paymentService";
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -66,7 +68,7 @@ export default function PublicViewCampaignPage() {
   const params = useParams();
   const router = useRouter();
   const campaignId = params.id as string;
-  const { user } = useAuth(); // Get user from AuthContext
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [campaign, setCampaign] = React.useState<CampaignData | null>(null);
@@ -75,8 +77,9 @@ export default function PublicViewCampaignPage() {
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [donationAmount, setDonationAmount] = React.useState("");
+  const [paymentMethod, setPaymentMethod] = React.useState<"BKash" | "Wallet">("BKash");
   const [lastFourDigits, setLastFourDigits] = React.useState("");
-  const [receiverBkashNo, setReceiverBkashNo] = React.useState(""); // New state
+  const [receiverBkashNo, setReceiverBkashNo] = React.useState("");
   const [isSubmittingDonation, setIsSubmittingDonation] = React.useState(false);
 
 
@@ -113,78 +116,66 @@ export default function PublicViewCampaignPage() {
         description: "Please log in to make a donation.",
         variant: "destructive",
       });
-      setIsDialogOpen(false); // Close dialog if user not logged in
-      router.push("/login"); // Redirect to login
+      setIsDialogOpen(false);
+      router.push("/login");
       return;
     }
 
-    if (!donationAmount || !lastFourDigits || !receiverBkashNo) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter amount, last 4 digits, and Receiver Bkash No.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (isNaN(parseFloat(donationAmount)) || parseFloat(donationAmount) <= 0) {
-        toast({
-            title: "Invalid Amount",
-            description: "Please enter a valid donation amount.",
-            variant: "destructive",
-        });
-        return;
-    }
-    if (lastFourDigits.length !== 4 || !/^\d{4}$/.test(lastFourDigits)) {
-        toast({
-            title: "Invalid Last 4 Digits",
-            description: "Please enter exactly 4 digits.",
-            variant: "destructive",
-        });
-        return;
-    }
-     // Basic Bkash number validation (example: starts with 01 and is 11 digits)
-    if (!/^01[3-9]\d{8}$/.test(receiverBkashNo)) {
-        toast({
-            title: "Invalid Bkash Number",
-            description: "Please enter a valid 11-digit Bkash number starting with 01.",
-            variant: "destructive",
-        });
-        return;
-    }
-
-
-    setIsSubmittingDonation(true);
-    
-    if (!campaign || !campaign.id) {
-        toast({
-            title: "Error",
-            description: "Campaign details are missing. Cannot process donation.",
-            variant: "destructive",
-        });
-        setIsSubmittingDonation(false);
+    if (!donationAmount || isNaN(parseFloat(donationAmount)) || parseFloat(donationAmount) <= 0) {
+        toast({ title: "Invalid Amount", description: "Please enter a valid donation amount.", variant: "destructive" });
         return;
     }
 
     const transactionInput: NewPaymentTransactionInput = {
         userId: user.uid,
         userEmail: user.email || undefined,
-        campaignId: campaign.id,
-        campaignName: campaign.campaignTitle,
+        campaignId: campaign!.id!, // campaign is checked before this function is called
+        campaignName: campaign!.campaignTitle,
         amount: parseFloat(donationAmount),
-        lastFourDigits: lastFourDigits,
-        receiverBkashNo: receiverBkashNo, // Include Bkash number
+        paymentMethod: paymentMethod,
     };
 
+    if (paymentMethod === "BKash") {
+      if (!lastFourDigits || !receiverBkashNo) {
+        toast({ title: "Missing Information", description: "For BKash, please enter last 4 digits and Receiver Bkash No.", variant: "destructive" });
+        return;
+      }
+      if (lastFourDigits.length !== 4 || !/^\d{4}$/.test(lastFourDigits)) {
+          toast({ title: "Invalid Last 4 Digits", description: "Please enter exactly 4 digits for BKash.", variant: "destructive" });
+          return;
+      }
+      if (!/^01[3-9]\d{8}$/.test(receiverBkashNo)) {
+          toast({ title: "Invalid Bkash Number", description: "Please enter a valid 11-digit Bkash number.", variant: "destructive" });
+          return;
+      }
+      transactionInput.lastFourDigits = lastFourDigits;
+      transactionInput.receiverBkashNo = receiverBkashNo;
+    }
+    // No specific fields for Wallet for now, but could add wallet ID or similar later
+
+    setIsSubmittingDonation(true);
+    
     try {
         await addPaymentTransaction(transactionInput);
         toast({
-          title: "Donation Submitted!",
-          description: "Your donation is pending verification by an admin. Thank you for your support!",
+          title: paymentMethod === "Wallet" ? "Donation Successful!" : "Donation Submitted!",
+          description: paymentMethod === "Wallet" 
+            ? "Thank you for your generous contribution via Wallet!" 
+            : "Your BKash donation is pending verification. Thank you!",
         });
+        // Reset form fields
         setDonationAmount("");
         setLastFourDigits("");
-        setReceiverBkashNo(""); // Clear Bkash number field
+        setReceiverBkashNo("");
+        setPaymentMethod("BKash"); // Reset to default
         setIsDialogOpen(false);
+
+        // Refetch campaign data to show updated raised amount if it was a wallet payment
+        if (paymentMethod === "Wallet" && campaignId) {
+          const updatedCampaign = await getCampaignById(campaignId);
+          if (updatedCampaign) setCampaign(updatedCampaign);
+        }
+
     } catch (e) {
         console.error("Failed to submit donation:", e);
         toast({
@@ -346,20 +337,35 @@ export default function PublicViewCampaignPage() {
                     <Button 
                         size="lg" 
                         className="w-full sm:w-auto text-lg py-3 px-8 bg-green-600 hover:bg-green-700 text-white"
+                        disabled={campaign.initialStatus !== 'active'} // Disable if campaign is not active
                     >
                       <HeartHandshake className="mr-2 h-5 w-5" /> Donate Now
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
+                  <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                       <DialogTitle>Make a Donation</DialogTitle>
                       <DialogDescription>
-                        Support "{campaign.campaignTitle}". Enter amount, last 4 transaction digits, and Receiver Bkash No.
+                        Support "{campaign.campaignTitle}". Choose your payment method and enter the amount.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-6 py-4">
+                      <div>
+                        <Label className="mb-2 block">Payment Method</Label>
+                        <RadioGroup defaultValue="BKash" value={paymentMethod} onValueChange={(value: "BKash" | "Wallet") => setPaymentMethod(value)}>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="BKash" id={`bkash-view-${campaign.id}`} />
+                            <Label htmlFor={`bkash-view-${campaign.id}`} className="font-normal">BKash Payment</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Wallet" id={`wallet-view-${campaign.id}`} />
+                            <Label htmlFor={`wallet-view-${campaign.id}`} className="font-normal">Wallet Payment</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="amount" className="text-right">
+                        <Label htmlFor="amount" className="text-right col-span-1">
                           Amount
                         </Label>
                         <Input
@@ -372,34 +378,47 @@ export default function PublicViewCampaignPage() {
                           disabled={isSubmittingDonation}
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="lastFour" className="text-right">
-                          Last 4 Digits
-                        </Label>
-                        <Input
-                          id="lastFour"
-                          value={lastFourDigits}
-                          onChange={(e) => setLastFourDigits(e.target.value)}
-                          className="col-span-3"
-                          placeholder="e.g., 1234 (from transaction)"
-                          maxLength={4}
-                          disabled={isSubmittingDonation}
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="bkashNo" className="text-right">
-                          Bkash No.
-                        </Label>
-                        <Input
-                          id="bkashNo"
-                          value={receiverBkashNo}
-                          onChange={(e) => setReceiverBkashNo(e.target.value)}
-                          className="col-span-3"
-                          placeholder="Receiver's Bkash No."
-                          maxLength={11}
-                          disabled={isSubmittingDonation}
-                        />
-                      </div>
+                      {paymentMethod === "BKash" && (
+                        <>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="lastFour" className="text-right col-span-1">
+                              Last 4 Digits
+                            </Label>
+                            <Input
+                              id="lastFour"
+                              value={lastFourDigits}
+                              onChange={(e) => setLastFourDigits(e.target.value)}
+                              className="col-span-3"
+                              placeholder="Transaction last 4 digits"
+                              maxLength={4}
+                              disabled={isSubmittingDonation}
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="bkashNo" className="text-right col-span-1">
+                              Bkash No.
+                            </Label>
+                            <Input
+                              id="bkashNo"
+                              value={receiverBkashNo}
+                              onChange={(e) => setReceiverBkashNo(e.target.value)}
+                              className="col-span-3"
+                              placeholder="Receiver's Bkash No."
+                              maxLength={11}
+                              disabled={isSubmittingDonation}
+                            />
+                          </div>
+                        </>
+                      )}
+                       {paymentMethod === "Wallet" && (
+                        <Alert variant="default" className="col-span-4">
+                            <Wallet className="h-4 w-4" />
+                            <ShadCNAlertTitle>Pay from Wallet</ShadCNAlertTitle>
+                            <AlertDescription>
+                                The donation amount will be deducted from your available wallet balance. Wallet balance check and deduction will be implemented in a future update.
+                            </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
@@ -410,7 +429,7 @@ export default function PublicViewCampaignPage() {
                       <Button 
                         type="button" 
                         onClick={handleDonationSubmit} 
-                        disabled={isSubmittingDonation || !donationAmount || !lastFourDigits || lastFourDigits.length !== 4 || !receiverBkashNo}
+                        disabled={isSubmittingDonation || !donationAmount || (paymentMethod === "BKash" && (!lastFourDigits || lastFourDigits.length !== 4 || !receiverBkashNo))}
                       >
                         {isSubmittingDonation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Submit Donation
