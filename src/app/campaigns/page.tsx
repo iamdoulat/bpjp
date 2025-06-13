@@ -122,7 +122,7 @@ export default function BrowseCampaignsPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <Megaphone className="h-10 w-10 text-primary" />
+            <Megaphone className="h-10 w-10 text-green-600" />
             <div>
               <h1 className="text-3xl font-headline font-bold">Browse Campaigns</h1>
               <p className="text-muted-foreground text-md">
