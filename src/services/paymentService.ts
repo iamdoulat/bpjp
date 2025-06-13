@@ -1,6 +1,6 @@
 
 // src/services/paymentService.ts
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase'; // Added auth
 import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc } from 'firebase/firestore';
 
 // Interface for data stored and retrieved from Firestore
@@ -54,6 +54,7 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
 
 
 export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
+  console.log(`[paymentService.getPaymentTransactions] auth.currentUser?.email from SDK: ${auth.currentUser?.email}`); // Added this log
   console.log(`[paymentService.getPaymentTransactions] Fetching from collection: ${PAYMENT_TRANSACTIONS_COLLECTION}`);
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
@@ -102,3 +103,4 @@ export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
 }
 
 // Future functions like updatePaymentTransactionStatus, etc. can be added here.
+
