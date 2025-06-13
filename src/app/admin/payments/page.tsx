@@ -45,6 +45,7 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getPaymentTransactions, updatePaymentTransactionStatus, type PaymentTransaction } from "@/services/paymentService";
+import { getAllUserProfiles, type UserProfileData } from "@/services/userService"; // Added
 import { auth } from '@/lib/firebase';
 
 function formatCurrency(amount: number) {
@@ -63,13 +64,17 @@ function formatDisplayDateTime(date: Date | undefined) {
   }).format(new Date(date));
 }
 
-function getInitials(email?: string, userId?: string): string {
-  if (email) {
-    const namePart = email.split('@')[0];
-    return namePart.substring(0, 2).toUpperCase();
+// Updated getInitials function, similar to ManageUsersPage
+function getInitials(name?: string | null, email?: string | null): string {
+  if (name) {
+    const parts = name.split(" ");
+    if (parts.length > 1 && parts[0] && parts[parts.length -1]) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   }
-  if (userId) {
-    return userId.substring(0, 2).toUpperCase();
+  if (email) {
+    return email.substring(0, 2).toUpperCase();
   }
   return "U";
 }
@@ -77,6 +82,7 @@ function getInitials(email?: string, userId?: string): string {
 
 export default function PaymentTrackingPage() {
   const [payments, setPayments] = React.useState<PaymentTransaction[]>([]);
+  const [userProfilesMap, setUserProfilesMap] = React.useState<Map<string, UserProfileData>>(new Map()); // Added
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -88,29 +94,41 @@ export default function PaymentTrackingPage() {
   const [isSubmittingStatusUpdate, setIsSubmittingStatusUpdate] = React.useState(false);
 
   React.useEffect(() => {
-    async function fetchPayments() {
+    async function fetchData() {
       console.log("[PaymentTrackingPage] Current auth user email:", auth.currentUser?.email);
-      console.log("[PaymentTrackingPage] Attempting to fetch payments...");
+      console.log("[PaymentTrackingPage] Attempting to fetch data...");
       setLoading(true);
       setError(null);
       try {
-        const fetchedPayments = await getPaymentTransactions();
+        const [fetchedPayments, fetchedProfiles] = await Promise.all([
+          getPaymentTransactions(),
+          getAllUserProfiles()
+        ]);
+        
         console.log("[PaymentTrackingPage] Fetched payments from service:", fetchedPayments.length);
         setPayments(fetchedPayments);
+
+        const profilesMap = new Map<string, UserProfileData>();
+        fetchedProfiles.forEach(profile => profilesMap.set(profile.uid, profile));
+        setUserProfilesMap(profilesMap);
+        console.log("[PaymentTrackingPage] Fetched user profiles:", fetchedProfiles.length);
+
       } catch (e) {
-        console.error("[PaymentTrackingPage] Error caught in page while fetching payments:", e);
-        setError(e instanceof Error ? e.message : "An unknown error occurred while fetching payments.");
+        console.error("[PaymentTrackingPage] Error caught in page while fetching data:", e);
+        setError(e instanceof Error ? e.message : "An unknown error occurred while fetching data.");
       } finally {
         setLoading(false);
         console.log("[PaymentTrackingPage] Fetching complete. Loading set to false.");
       }
     }
-    fetchPayments();
+    fetchData();
   }, []);
 
   const filteredPayments = payments.filter(payment =>
     payment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     payment.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (userProfilesMap.get(payment.userId)?.displayName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (userProfilesMap.get(payment.userId)?.mobileNumber?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
     (payment.userEmail && payment.userEmail.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (payment.campaignName && payment.campaignName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (payment.method && payment.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -140,7 +158,7 @@ export default function PaymentTrackingPage() {
 
   const handleOpenViewDetailsModal = (payment: PaymentTransaction) => {
     setPaymentToViewOrUpdate(payment);
-    setSelectedNewStatusForUpdate(payment.status); // Pre-fill select with current status
+    setSelectedNewStatusForUpdate(payment.status); 
     setIsViewDetailsModalOpen(true);
   };
 
@@ -212,8 +230,9 @@ export default function PaymentTrackingPage() {
                <div key={i} className="grid grid-cols-[minmax(180px,1fr)_150px_minmax(150px,1fr)_130px_100px_120px_100px_100px_80px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
                 <div className="flex items-center gap-3">
                     <Skeleton className="h-9 w-9 rounded-full" />
-                    <div>
-                        <Skeleton className="h-4 w-24" /> 
+                    <div className="space-y-1.5">
+                        <Skeleton className="h-4 w-20" /> 
+                        <Skeleton className="h-3 w-24" /> 
                     </div>
                 </div>
                 <Skeleton className="h-4 w-full" /> {/* Date */}
@@ -232,7 +251,7 @@ export default function PaymentTrackingPage() {
         {error && !loading && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <ShadCNAlertTitle>Error Fetching Payments</ShadCNAlertTitle>
+            <ShadCNAlertTitle>Error Fetching Data</ShadCNAlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -264,53 +283,61 @@ export default function PaymentTrackingPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPayments.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={undefined} alt={payment.userEmail || payment.userId} data-ai-hint="profile person"/>
-                          <AvatarFallback>{getInitials(payment.userEmail, payment.userId)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <span className="font-medium truncate block text-sm">
-                            {payment.userEmail ? payment.userEmail.split('@')[0] : payment.userId}
-                          </span>
+                {filteredPayments.map((payment) => {
+                  const userProfile = userProfilesMap.get(payment.userId);
+                  const displayName = userProfile?.displayName || payment.userEmail?.split('@')[0] || payment.userId;
+                  const avatarUrl = userProfile?.photoURL;
+                  const mobileNumber = userProfile?.mobileNumber;
+
+                  return (
+                    <TableRow key={payment.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={avatarUrl || `https://placehold.co/40x40.png?text=${getInitials(displayName, payment.userEmail)}`} alt={displayName} data-ai-hint="profile person" />
+                            <AvatarFallback>{getInitials(displayName, payment.userEmail)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="font-medium truncate block text-sm">
+                              {displayName}
+                            </span>
+                            {mobileNumber && <span className="text-xs text-muted-foreground block">Mobile: {mobileNumber}</span>}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs">{formatDisplayDateTime(payment.date as Date)}</TableCell>
-                    <TableCell className="text-xs font-medium truncate max-w-[150px]">{payment.campaignName || 'N/A'}</TableCell>
-                    <TableCell className="text-xs">{payment.receiverBkashNo || 'N/A'}</TableCell>
-                    <TableCell className="text-xs">{payment.lastFourDigits || 'N/A'}</TableCell>
-                    <TableCell className="text-xs">{payment.method}</TableCell>
-                    <TableCell className="text-xs text-right font-medium">{formatCurrency(payment.amount)}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge 
-                        variant={getStatusBadgeVariant(payment.status)} 
-                        className={cn("text-xs px-2 py-0.5", getStatusBadgeClassName(payment.status))}
-                      >
-                        {payment.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Transaction actions for {payment.id}</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleOpenViewDetailsModal(payment)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details / Change Status
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell className="text-xs">{formatDisplayDateTime(payment.date as Date)}</TableCell>
+                      <TableCell className="text-xs font-medium truncate max-w-[150px]">{payment.campaignName || 'N/A'}</TableCell>
+                      <TableCell className="text-xs">{payment.receiverBkashNo || 'N/A'}</TableCell>
+                      <TableCell className="text-xs">{payment.lastFourDigits || 'N/A'}</TableCell>
+                      <TableCell className="text-xs">{payment.method}</TableCell>
+                      <TableCell className="text-xs text-right font-medium">{formatCurrency(payment.amount)}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge 
+                          variant={getStatusBadgeVariant(payment.status)} 
+                          className={cn("text-xs px-2 py-0.5", getStatusBadgeClassName(payment.status))}
+                        >
+                          {payment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Transaction actions for {payment.id}</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleOpenViewDetailsModal(payment)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details / Change Status
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
              <div className="p-4 text-sm text-muted-foreground">
@@ -332,7 +359,7 @@ export default function PaymentTrackingPage() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-3 items-center gap-2">
                 <Label className="text-sm text-muted-foreground col-span-1">User:</Label>
-                <p className="text-sm col-span-2">{paymentToViewOrUpdate.userEmail || paymentToViewOrUpdate.userId}</p>
+                <p className="text-sm col-span-2">{userProfilesMap.get(paymentToViewOrUpdate.userId)?.displayName || paymentToViewOrUpdate.userEmail || paymentToViewOrUpdate.userId}</p>
               </div>
               <div className="grid grid-cols-3 items-center gap-2">
                 <Label className="text-sm text-muted-foreground col-span-1">Amount:</Label>
