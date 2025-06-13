@@ -1,4 +1,3 @@
-
 // src/app/profile/page.tsx
 "use client";
 
@@ -8,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// Removed unused Label import: import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,10 +16,11 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
+import { getTotalDonationsByUser } from "@/services/paymentService"; // Added import
 import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet } from "lucide-react"; 
 import { format } from 'date-fns';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import DonationHistory from "@/components/profile/donation-history"; // Added import
+import DonationHistory from "@/components/profile/donation-history";
 
 const profileFormSchema = z.object({
   displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters.").optional().or(z.literal('')),
@@ -30,12 +29,21 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+function formatCurrency(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) {
+    return "$0"; // Or "N/A" or some other placeholder
+  }
+  return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
 export default function ProfilePage() {
   const { user, loading: authLoading, refreshAuthUser } = useAuth();
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [profileData, setProfileData] = React.useState<UserProfileData | null>(null);
+  const [totalUserDonations, setTotalUserDonations] = React.useState<number | null>(null); // New state for total donations
+  const [isLoadingTotalDonations, setIsLoadingTotalDonations] = React.useState(true); // New loading state
   const [isLoading, setIsLoading] = React.useState(true);
   const [isEditing, setIsEditing] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -57,10 +65,12 @@ export default function ProfilePage() {
 
   React.useEffect(() => {
     if (user) {
-      const fetchProfile = async () => {
+      const fetchProfileAndDonations = async () => {
         setIsLoading(true);
+        setIsLoadingTotalDonations(true);
         setError(null);
         try {
+          // Fetch profile data
           const fetchedProfile = await getUserProfile(user.uid);
           if (fetchedProfile) {
             setProfileData(fetchedProfile);
@@ -69,39 +79,43 @@ export default function ProfilePage() {
               mobileNumber: fetchedProfile.mobileNumber || "",
             });
           } else {
-            // No profile in Firestore, use Auth data and prepare for creation
-            setProfileData({ uid: user.uid, email: user.email }); // Minimal profile
+            setProfileData({ uid: user.uid, email: user.email }); 
             form.reset({
               displayName: user.displayName || "",
               mobileNumber: "",
             });
-            // If user has no Firestore profile yet, create one on first edit or image upload.
           }
+
+          // Fetch total donations
+          const donationsSum = await getTotalDonationsByUser(user.uid);
+          setTotalUserDonations(donationsSum);
+
         } catch (e) {
-          console.error("Failed to fetch profile:", e);
-          setError("Could not load profile data.");
+          console.error("Failed to fetch profile or donations:", e);
+          setError("Could not load profile data or donation sum.");
         } finally {
           setIsLoading(false);
+          setIsLoadingTotalDonations(false);
         }
       };
-      fetchProfile();
+      fetchProfileAndDonations();
     } else if (!authLoading) {
       setIsLoading(false);
-      // Redirect or show message if no user and not loading (handled by AppShell typically)
+      setIsLoadingTotalDonations(false);
     }
   }, [user, authLoading, form]);
 
   const getInitials = (name?: string | null) => {
     if (!name) return user?.email?.substring(0, 2).toUpperCase() || "U";
     const parts = name.split(" ");
-    if (parts.length > 1) {
+    if (parts.length > 1 && parts[0] && parts[parts.length - 1]) {
       return parts[0][0] + parts[parts.length - 1][0];
     }
     return name.substring(0, 2);
   };
 
   const handleEditToggle = () => {
-    if (isEditing) { // If was editing, reset form to current profile data
+    if (isEditing) { 
       form.reset({
         displayName: profileData?.displayName || user?.displayName || "",
         mobileNumber: profileData?.mobileNumber || "",
@@ -115,8 +129,8 @@ export default function ProfilePage() {
     setIsSubmitting(true);
     try {
       await updateUserProfileService(user, data);
-      await refreshAuthUser(); // Refresh user in AuthContext to get updated displayName/photoURL
-      const updatedProfile = await getUserProfile(user.uid); // Re-fetch from Firestore
+      await refreshAuthUser(); 
+      const updatedProfile = await getUserProfile(user.uid); 
       if (updatedProfile) setProfileData(updatedProfile);
 
       toast({ title: "Profile Updated", description: "Your profile information has been saved." });
@@ -135,8 +149,8 @@ export default function ProfilePage() {
     setIsUploading(true);
     try {
       const newPhotoURL = await uploadProfilePictureAndUpdate(user, file);
-      await refreshAuthUser(); // Refresh user in AuthContext
-      setProfileData(prev => ({ ...prev, photoURL: newPhotoURL } as UserProfileData)); // Optimistically update local state
+      await refreshAuthUser(); 
+      setProfileData(prev => ({ ...prev, photoURL: newPhotoURL } as UserProfileData)); 
       toast({ title: "Profile Picture Updated", description: "Your new profile picture has been uploaded." });
     } catch (e) {
       console.error("Profile picture upload error:", e);
@@ -144,7 +158,7 @@ export default function ProfilePage() {
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Reset file input
+        fileInputRef.current.value = ""; 
       }
     }
   };
@@ -154,7 +168,7 @@ export default function ProfilePage() {
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 space-y-6">
-          <Card className="shadow-xl"> {/* Removed max-w-4xl mx-auto */}
+          <Card className="shadow-xl">
             <CardHeader className="p-0">
               <Skeleton className="h-48 w-full rounded-t-md" />
               <div className="relative flex justify-center -mt-16">
@@ -169,6 +183,10 @@ export default function ProfilePage() {
               <Skeleton className="h-6 w-3/4" />
               <Skeleton className="h-6 w-1/2" />
               <Skeleton className="h-6 w-2/3" />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
             </CardContent>
             <CardFooter className="flex justify-end">
                 <Skeleton className="h-10 w-24" />
@@ -212,7 +230,7 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
-        <Card className="shadow-xl"> {/* Removed max-w-4xl mx-auto */}
+        <Card className="shadow-xl">
           <CardHeader className="p-0">
             <div className="h-48 bg-muted/30 relative">
               <Image 
@@ -342,11 +360,15 @@ export default function ProfilePage() {
                     <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
                     <div>
                       <p className="text-xs text-muted-foreground">Total Approved Donations</p>
-                      <p className="font-semibold">$360</p> 
+                      {isLoadingTotalDonations ? (
+                        <Skeleton className="h-6 w-20" />
+                      ) : (
+                        <p className="font-semibold">{formatCurrency(totalUserDonations)}</p>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-start mt-6 gap-2"> {/* Changed justify-end to justify-start */}
+                <div className="flex justify-start mt-6 gap-2">
                    <Button variant="outline" onClick={() => toast({ title: "My Wallet Clicked", description: "Wallet functionality coming soon!"})}>
                     <Wallet className="mr-2 h-4 w-4" /> My Wallet: $0.00
                   </Button>
@@ -360,11 +382,9 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
         
-        {/* Donation History Section */}
         <DonationHistory />
 
       </main>
     </AppShell>
   );
 }
-
