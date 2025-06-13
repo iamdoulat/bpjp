@@ -215,17 +215,22 @@ export default function PaymentTrackingPage() {
         {loading && (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-               <div key={i} className="flex items-center space-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="flex-1 space-y-1">
-                  <Skeleton className="h-4 w-1/4" /> 
-                  <Skeleton className="h-3 w-2/4" /> 
+               <div key={i} className="grid grid-cols-[minmax(180px,1fr)_150px_minmax(150px,1fr)_120px_100px_120px_100px_100px_80px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
+                <div className="flex items-center space-x-2">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-4 w-3/4" /> 
+                        <Skeleton className="h-3 w-1/2" /> 
+                    </div>
                 </div>
-                <Skeleton className="h-4 w-1/12" /> 
-                <Skeleton className="h-4 w-1/12" /> 
-                <Skeleton className="h-4 w-1/12" /> 
-                <Skeleton className="h-6 w-20 rounded-full" /> 
-                <Skeleton className="h-6 w-8 rounded-md" /> 
+                <Skeleton className="h-4 w-full" /> {/* Date */}
+                <Skeleton className="h-4 w-full" /> {/* Campaign */}
+                <Skeleton className="h-4 w-full" /> {/* Rece. Bkash No. */}
+                <Skeleton className="h-4 w-full" /> {/* Last 4 */}
+                <Skeleton className="h-4 w-full" /> {/* Method */}
+                <Skeleton className="h-4 w-full" /> {/* Amount */}
+                <Skeleton className="h-6 w-20 rounded-full justify-self-center" /> {/* Status */}
+                <Skeleton className="h-6 w-8 rounded-md justify-self-end" /> {/* Actions */}
               </div>
             ))}
           </div>
@@ -254,14 +259,15 @@ export default function PaymentTrackingPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px]">User</TableHead>
-                  <TableHead className="w-[150px]">Date</TableHead>
-                  <TableHead>Campaign</TableHead>
-                  <TableHead className="w-[100px]">Last 4</TableHead>
-                  <TableHead className="w-[120px]">Method</TableHead>
-                  <TableHead className="text-right w-[100px]">Amount</TableHead>
-                  <TableHead className="text-center w-[100px]">Status</TableHead>
-                  <TableHead className="text-right w-[80px]">Actions</TableHead>
+                  <TableHead className="w-[180px] min-w-[180px]">User</TableHead>
+                  <TableHead className="w-[150px] min-w-[150px]">Date</TableHead>
+                  <TableHead className="min-w-[150px]">Campaign</TableHead>
+                  <TableHead className="w-[130px] min-w-[130px]">Rece. Bkash No.</TableHead>
+                  <TableHead className="w-[100px] min-w-[100px]">Last 4</TableHead>
+                  <TableHead className="w-[120px] min-w-[120px]">Method</TableHead>
+                  <TableHead className="text-right w-[100px] min-w-[100px]">Amount</TableHead>
+                  <TableHead className="text-center w-[100px] min-w-[100px]">Status</TableHead>
+                  <TableHead className="text-right w-[80px] min-w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -278,6 +284,7 @@ export default function PaymentTrackingPage() {
                     </TableCell>
                     <TableCell className="text-xs">{formatDisplayDateTime(payment.date as Date)}</TableCell>
                     <TableCell className="text-xs font-medium truncate max-w-[150px]">{payment.campaignName || 'N/A'}</TableCell>
+                    <TableCell className="text-xs">{payment.receiverBkashNo || 'N/A'}</TableCell>
                     <TableCell className="text-xs">{payment.lastFourDigits || 'N/A'}</TableCell>
                     <TableCell className="text-xs">{payment.method}</TableCell>
                     <TableCell className="text-xs text-right font-medium">{formatCurrency(payment.amount)}</TableCell>
