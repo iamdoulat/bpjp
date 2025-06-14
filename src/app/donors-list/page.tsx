@@ -287,7 +287,7 @@ export default function DonorsListPage() {
         <section className="mt-12">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <ListChecks className="h-8 w-8 text-blue-500" />
+              <ListChecks className="h-8 w-8 text-green-600" />
               <div>
                 <h1 className="text-2xl font-headline font-semibold">All Valued Donors List</h1>
                 <p className="text-muted-foreground text-sm">

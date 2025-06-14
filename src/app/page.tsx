@@ -29,9 +29,14 @@ export default function DashboardPage() {
     return (
       <AppShell> {/* AppShell will show login/signup in header */}
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center space-y-4">
-          <h1 className="text-3xl font-headline font-semibold">Welcome to BPJP</h1>
+          <h1 className="text-3xl font-headline font-semibold"> ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ এ আপনাকে স্বাগতম</h1>
           <p className="text-muted-foreground max-w-md">
-            Your platform for discovering and supporting impactful campaigns. Please log in or sign up to access your dashboard and manage your contributions.
+          আমরা বিশ্বাস করি—মানুষ মানুষের জন্য। মানবতার মহান ব্রত নিয়ে আমরা এগিয়ে চলেছি সমাজের অসহায়, দুঃস্থ ও সুবিধাবঞ্চিত মানুষের পাশে দাঁড়ানোর প্রত্যয়ে।
+আমাদের এই ক্ষুদ্র প্রয়াসের মাধ্যমে আমরা প্রবাসীদের সহযোগিতায় গড়ে তুলতে চাই একটি মানবিক সমাজ, যেখানে বিপদে-আপদে আমরা একে অপরের সহায় হই。<br />
+<br />
+মানবতার হাত বাড়িয়ে দিন, সহযোগিতার বন্ধন সুদৃঢ় করুন。<br />
+আপনার অংশগ্রহণ ও সহযোগিতায় আমাদের এ প্রচেষ্টা হবে আরও অর্থবহ ও শক্তিশালী。<br />
+আসুন, একসাথে কাজ করি সুন্দর আগামীর জন্য。<br />
           </p>
           <div className="flex gap-4">
             <Button asChild>

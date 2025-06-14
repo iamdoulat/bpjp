@@ -83,7 +83,7 @@ export default function AboutUsPage() {
     <AppShell>
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
         <div className="flex items-center gap-3 mb-4">
-          <Info className="h-8 w-8 text-primary" />
+          <Info className="h-8 w-8 text-green-600" />
           <div>
             <h1 className="text-2xl font-headline font-bold">About Us</h1>
             <p className="text-muted-foreground text-md">
@@ -105,7 +105,7 @@ export default function AboutUsPage() {
           </div>
           <CardHeader className="bg-muted/20 border-b border-t">
             <div className="flex items-center gap-3">
-              <Building className="h-7 w-7 text-primary" />
+              <Building className="h-7 w-7 text-green-600" />
               <CardTitle className="text-2xl font-headline">{settingsToDisplay.organizationName}</CardTitle>
             </div>
              {settingsToDisplay.registrationNumber && (
@@ -121,10 +121,10 @@ export default function AboutUsPage() {
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="space-y-4">
-              <InfoItem icon={<MapPin className="text-primary"/>} label="Address" value={settingsToDisplay.address} />
-              <InfoItem icon={<Mail className="text-primary"/>} label="Contact Email" value={<a href={`mailto:${settingsToDisplay.contactEmail}`} className="text-primary hover:underline">{settingsToDisplay.contactEmail}</a>} />
-              <InfoItem icon={<UserCircle className="text-primary"/>} label="Contact Person" value={settingsToDisplay.contactPersonName} />
-              <InfoItem icon={<Phone className="text-primary"/>} label="Contact Cell" value={settingsToDisplay.contactPersonCell || "Not Provided"} />
+              <InfoItem icon={<MapPin className="text-green-600"/>} label="Address" value={settingsToDisplay.address} />
+              <InfoItem icon={<Mail className="text-green-600"/>} label="Contact Email" value={<a href={`mailto:${settingsToDisplay.contactEmail}`} className="text-primary hover:underline">{settingsToDisplay.contactEmail}</a>} />
+              <InfoItem icon={<UserCircle className="text-green-600"/>} label="Contact Person" value={settingsToDisplay.contactPersonName} />
+              <InfoItem icon={<Phone className="text-green-600"/>} label="Contact Cell" value={settingsToDisplay.contactPersonCell || "Not Provided"} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t mt-8">
@@ -189,7 +189,7 @@ const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imag
     <p className="text-muted-foreground">{title}</p>
     {mobileNumber && (
       <div className="flex items-center mt-1.5 text-sm text-muted-foreground">
-        <Phone className="h-4 w-4 mr-1.5 text-primary/80" />
+        <Phone className="h-4 w-4 mr-1.5 text-green-600/80" />
         {mobileNumber}
       </div>
     )}
