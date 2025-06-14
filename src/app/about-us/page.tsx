@@ -21,7 +21,7 @@ export default function AboutUsPage() {
     }
   }, [organizationSettings, isLoadingAppSettings]);
 
-  const coverImageUrlToUse = settingsToDisplay?.coverImageUrl || "https://placehold.co/1200x300.png";
+  const coverImageUrlToUse = settingsToDisplay?.coverImageUrl || "https://placehold.co/1200x500.png";
 
   if (isLoadingAppSettings || !settingsToDisplay) {
     return (
@@ -51,6 +51,7 @@ export default function AboutUsPage() {
                     <Skeleton className="h-28 w-28 rounded-full" />
                     <Skeleton className="h-6 w-32" />
                     <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-20 mt-1" /> {/* Skeleton for mobile number */}
                   </div>
                 ))}
               </div>
@@ -82,7 +83,7 @@ export default function AboutUsPage() {
     <AppShell>
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
         <div className="flex items-center gap-3 mb-4">
-          <Info className="h-8 w-8 text-green-600" />
+          <Info className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-2xl font-headline font-bold">About Us</h1>
             <p className="text-muted-foreground text-md">
@@ -104,7 +105,7 @@ export default function AboutUsPage() {
           </div>
           <CardHeader className="bg-muted/20 border-b border-t">
             <div className="flex items-center gap-3">
-              <Building className="h-7 w-7 text-green-600" />
+              <Building className="h-7 w-7 text-primary" />
               <CardTitle className="text-2xl font-headline">{settingsToDisplay.organizationName}</CardTitle>
             </div>
              {settingsToDisplay.registrationNumber && (
@@ -120,10 +121,10 @@ export default function AboutUsPage() {
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="space-y-4">
-              <InfoItem icon={<MapPin className="text-green-600"/>} label="Address" value={settingsToDisplay.address} />
-              <InfoItem icon={<Mail className="text-green-600"/>} label="Contact Email" value={<a href={`mailto:${settingsToDisplay.contactEmail}`} className="text-primary hover:underline">{settingsToDisplay.contactEmail}</a>} />
-              <InfoItem icon={<UserCircle className="text-green-600"/>} label="Contact Person" value={settingsToDisplay.contactPersonName} />
-              <InfoItem icon={<Phone className="text-green-600"/>} label="Contact Cell" value={settingsToDisplay.contactPersonCell || "Not Provided"} />
+              <InfoItem icon={<MapPin className="text-primary"/>} label="Address" value={settingsToDisplay.address} />
+              <InfoItem icon={<Mail className="text-primary"/>} label="Contact Email" value={<a href={`mailto:${settingsToDisplay.contactEmail}`} className="text-primary hover:underline">{settingsToDisplay.contactEmail}</a>} />
+              <InfoItem icon={<UserCircle className="text-primary"/>} label="Contact Person" value={settingsToDisplay.contactPersonName} />
+              <InfoItem icon={<Phone className="text-primary"/>} label="Contact Cell" value={settingsToDisplay.contactPersonCell || "Not Provided"} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t mt-8">
@@ -131,12 +132,14 @@ export default function AboutUsPage() {
                 name={settingsToDisplay.presidentName}
                 title="President"
                 imageUrl={settingsToDisplay.presidentImageURL}
+                mobileNumber={settingsToDisplay.presidentMobileNumber}
                 dataAiHint="person portrait"
               />
               <LeadershipProfile
                 name={settingsToDisplay.secretaryName}
                 title="General Secretary"
                 imageUrl={settingsToDisplay.secretaryImageURL}
+                mobileNumber={settingsToDisplay.secretaryMobileNumber}
                 dataAiHint="person portrait"
               />
             </div>
@@ -167,10 +170,11 @@ interface LeadershipProfileProps {
   name: string;
   title: string;
   imageUrl?: string | null;
+  mobileNumber?: string | null;
   dataAiHint?: string;
 }
 
-const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imageUrl, dataAiHint }) => (
+const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imageUrl, mobileNumber, dataAiHint }) => (
   <div className="flex flex-col items-center text-center p-4 bg-card rounded-lg border shadow-sm">
     <div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg">
       <Image
@@ -183,5 +187,12 @@ const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imag
     </div>
     <h3 className="text-xl font-semibold text-foreground">{name}</h3>
     <p className="text-muted-foreground">{title}</p>
+    {mobileNumber && (
+      <div className="flex items-center mt-1.5 text-sm text-muted-foreground">
+        <Phone className="h-4 w-4 mr-1.5 text-primary/80" />
+        {mobileNumber}
+      </div>
+    )}
   </div>
 );
+
