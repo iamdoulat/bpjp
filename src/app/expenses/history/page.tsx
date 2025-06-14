@@ -15,26 +15,9 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ReceiptText, MoreHorizontal, Eye, Edit, Trash2, ServerCrash, Search, FileText, Download, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ReceiptText, Eye, Edit, Trash2, ServerCrash, Search, FileText, Download, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { PlatformDonationsCard } from "@/components/stats/platform-donations-card";
 import { getExpenses, deleteExpense, type ExpenseData } from "@/services/expenseService";
 import { Timestamp } from "firebase/firestore";
@@ -56,7 +39,7 @@ function formatDisplayDateTime(date: Date | Timestamp | undefined): string {
   }).format(jsDate);
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20; // Updated to 20
 
 export default function ExpensesHistoryPage() {
   const router = useRouter();
@@ -65,8 +48,6 @@ export default function ExpensesHistoryPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [expenseToDelete, setExpenseToDelete] = React.useState<ExpenseData | null>(null);
-  const [isDeleting, setIsDeleting] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(1);
 
   const fetchExpensesData = React.useCallback(async () => {
@@ -98,45 +79,6 @@ export default function ExpensesHistoryPage() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
-
-
-  const handleDeleteExpense = async () => {
-    if (!expenseToDelete || !expenseToDelete.id) return;
-    setIsDeleting(true);
-    try {
-      await deleteExpense(expenseToDelete.id);
-      toast({
-        title: "Expense Deleted",
-        description: `Expense "${expenseToDelete.name}" has been successfully deleted. Platform funds will reflect this change.`,
-      });
-      setExpenses(prev => prev.filter(exp => exp.id !== expenseToDelete.id));
-      setExpenseToDelete(null);
-      // Force re-fetch of expenses if the current page becomes empty after deletion
-      if (paginatedExpenses.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    } catch (e) {
-      console.error("Failed to delete expense:", e);
-      toast({
-        title: "Error Deleting Expense",
-        description: e instanceof Error ? e.message : "An unknown error occurred.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-  
-  const handleViewDetails = (expenseId?: string) => {
-    if (!expenseId) return;
-    router.push(`/admin/expenses/view/${expenseId}`);
-  };
-  
-  const handleEditExpense = (expenseId?: string) => {
-    if (!expenseId) return;
-    router.push(`/admin/expenses/edit/${expenseId}`);
-  };
-
 
   return (
     <AppShell>
@@ -207,7 +149,7 @@ export default function ExpensesHistoryPage() {
                   <TableHead className="w-[120px] text-right">Amount</TableHead>
                   <TableHead className="w-[180px]">Date Recorded</TableHead>
                   <TableHead className="w-[100px] text-center">Attachment</TableHead>
-                  <TableHead className="text-right w-[100px]">Actions</TableHead>
+                  {/* Actions column removed */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -231,30 +173,7 @@ export default function ExpensesHistoryPage() {
                         <span className="text-xs text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewDetails(expense.id)}>
-                            <Eye className="mr-2 h-4 w-4" /> View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditExpense(expense.id)}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                            onClick={() => setExpenseToDelete(expense)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {/* Actions cell removed */}
                   </TableRow>
                 ))}
               </TableBody>
@@ -287,32 +206,7 @@ export default function ExpensesHistoryPage() {
           </div>
         )}
       </main>
-
-      {expenseToDelete && (
-        <AlertDialog open={!!expenseToDelete} onOpenChange={(open) => !open && setExpenseToDelete(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to delete this expense?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the expense:
-                <span className="font-semibold"> "{expenseToDelete.name}"</span> for {formatCurrency(expenseToDelete.amount)}.
-                The expense amount will be effectively added back to the platform's net funds.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setExpenseToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteExpense}
-                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                disabled={isDeleting}
-              >
-                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Delete Expense
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      {/* AlertDialog for delete confirmation removed as actions are removed */}
     </AppShell>
   );
 }
