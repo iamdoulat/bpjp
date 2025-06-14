@@ -8,40 +8,64 @@ service firebase.storage {
       allow read, write: if false;
     }
 
-    // Profile images:
-    // Users can read anyone's profile image (if public)
-    // Users can only write to their own profile image path
-    match /profile-images/{userId}/{allPaths=**} {
-      allow read: if true; // Or use `if request.auth != null;` if profiles should only be seen by logged-in users
+    // Profile Images:
+    // Allow users to read and write their own profile images.
+    // Public read can be useful if profile images are displayed publicly.
+    match /profile-images/{userId}/{fileName} {
+      allow read: if true; // Or restrict to authenticated users: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Campaign images:
-    // Allow public read for campaign images
-    // Allow write by authenticated users (assuming admins or campaign creators handle this)
-    match /campaign_images/{allPaths=**} {
+    // Campaign Images:
+    // Allow authenticated users to upload campaign images.
+    // Public read is typical for campaign images.
+    match /campaign_images/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /campaign_images/{campaignId}/{fileName} { // If using campaignId in path
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Organization settings images (president, secretary, cover):
-    // Allow public read
-    // Allow write by authenticated users (assuming admins handle this)
-    match /organization/{settingsDocId}/{imageName} {
+
+    // Expense Attachments:
+    // Allow authenticated users to upload (write) expense attachments.
+    // Allow authenticated users to read their own or all expense attachments.
+    // Adjust read access based on your app's requirements (e.g., only admins or specific users).
+    match /expense_attachments/{fileName} {
+      allow read: if request.auth != null; // Allow any authenticated user to read (e.g., for admin review)
+      allow write: if request.auth != null; // Allow any authenticated user to write (e.g., admins or designated users creating expenses)
+    }
+
+    // Organization Setting Images (President, Secretary, Cover Images):
+    // Allow authenticated users (presumably admins) to upload these.
+    // Public read for display on About Us page.
+    match /organization/{settingsDocId}/{imageType}.{extension} {
+      allow read: if true;
+      allow write: if request.auth != null; // Assuming admins are authenticated users who can access the settings page
+    }
+    match /organization/{settingsDocId}/president_image.{extension} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /organization/{settingsDocId}/secretary_image.{extension} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+     match /organization/{settingsDocId}/cover_image.{extension} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Expense attachments:
-    // Allow authenticated users to upload (write) and read their attachments.
-    // The current expenseService.ts saves attachments to `expense_attachments/{uniqueFileName}`.
-    // This rule allows any authenticated user to write to any path under `expense_attachments`.
-    // If you want to restrict so users can only manage attachments linked to expenses they created,
-    // you'd need to adjust Firestore rules and potentially the storage path to include userId.
-    // For now, this general rule should unblock the upload.
-    match /expense_attachments/{allPaths=**} {
-      allow read: if request.auth != null;   // Authenticated users can read any expense attachment
-      allow write: if request.auth != null;  // Authenticated users can write any expense attachment
-    }
+
+    // Example: More restrictive rules for expense_attachments if needed
+    // Only allow the user who created the expense (or an admin) to read/write.
+    // This would require storing the uploader's UID with the expense document in Firestore
+    // and then checking against that here.
+    // match /expense_attachments/{expenseId}/{fileName} {
+    //   allow read, write: if request.auth != null &&
+    //                       (request.auth.uid == resource.metadata.ownerUid || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin');
+    // }
   }
 }
