@@ -24,6 +24,7 @@ const CampaignSchema = z.object({
   name: z.string().describe('The name of the campaign.'),
   description: z.string().describe('A short description of the campaign.'),
   category: z.string().describe('The category of the campaign (e.g., environment, education).'),
+  imageUrl: z.string().url().optional().describe('URL of the campaign image.'),
 });
 
 const PersonalizedCampaignRecommendationsOutputSchema = z.array(CampaignSchema).describe('A list of recommended campaigns.');
@@ -48,9 +49,12 @@ async (input) => {
   // In a real application, this would call a database or service to retrieve campaigns.
   // This is a placeholder implementation.
   const campaigns = [
-    { campaignId: '1', name: 'Save the Rainforest', description: 'Protect the Amazon rainforest.', category: 'environment' },
-    { campaignId: '2', name: 'Educate a Child', description: 'Provide education to underprivileged children.', category: 'education' },
-    { campaignId: '3', name: 'Clean Water Project', description: 'Provide clean water to communities in need.', category: 'water' },
+    { campaignId: '1', name: 'Save the Rainforest', description: 'Protect the Amazon rainforest.', category: 'environment', imageUrl: 'https://placehold.co/600x400.png?text=Rainforest' },
+    { campaignId: '2', name: 'Educate a Child', description: 'Provide education to underprivileged children.', category: 'education', imageUrl: 'https://placehold.co/600x400.png?text=Education' },
+    { campaignId: '3', name: 'Clean Water Project', description: 'Provide clean water to communities in need.', category: 'water', imageUrl: 'https://placehold.co/600x400.png?text=Water' },
+    { campaignId: '4', name: 'Animal Shelter Support', description: 'Help local animal shelters provide care.', category: 'animals', imageUrl: 'https://placehold.co/600x400.png?text=Animals' },
+    { campaignId: '5', name: 'Tech for Good', description: 'Support initiatives using technology for social impact.', category: 'technology', imageUrl: 'https://placehold.co/600x400.png?text=Tech' },
+
   ];
 
   // Filter campaigns based on user preferences (simplified).
