@@ -3,43 +3,45 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Default deny all to enforce explicit permissions
+    // Default deny all
     match /{allPaths=**} {
       allow read, write: if false;
     }
 
     // Profile images:
-    // Users can write (upload/update/delete) their own profile picture.
-    // Profile pictures are publicly readable.
-    match /profile-images/{userId}/{fileName} {
-      allow read: if true;
+    // Users can read anyone's profile image (if public)
+    // Users can only write to their own profile image path
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read: if true; // Or use `if request.auth != null;` if profiles should only be seen by logged-in users
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Campaign images:
-    // Authenticated users can write (upload) campaign images.
-    // Campaign images are publicly readable.
-    match /campaign_images/{fileName} {
+    // Allow public read for campaign images
+    // Allow write by authenticated users (assuming admins or campaign creators handle this)
+    match /campaign_images/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Organization setting images (president, secretary, cover images for About Us):
-    // Authenticated users can write.
-    // These images are publicly readable.
-    // The path is typically `organization/{settingsDocId}/{imageType}.{extension}`
-    // e.g., organization/organizationDetails/president_image.png
-    match /organization/{settingsDocId}/{imageIdentifier} {
+    // Organization settings images (president, secretary, cover):
+    // Allow public read
+    // Allow write by authenticated users (assuming admins handle this)
+    match /organization/{settingsDocId}/{imageName} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
     // Expense attachments:
-    // Authenticated users can upload (write) and read their expense attachments.
-    // The path used in `expenseService.ts` is `expense_attachments/{uniqueFileName}`.
-    match /expense_attachments/{fileName} {
-      allow read: if request.auth != null; // Only authenticated users can read
-      allow write: if request.auth != null; // Only authenticated users can upload
+    // Allow authenticated users to upload (write) and read their attachments.
+    // The current expenseService.ts saves attachments to `expense_attachments/{uniqueFileName}`.
+    // This rule allows any authenticated user to write to any path under `expense_attachments`.
+    // If you want to restrict so users can only manage attachments linked to expenses they created,
+    // you'd need to adjust Firestore rules and potentially the storage path to include userId.
+    // For now, this general rule should unblock the upload.
+    match /expense_attachments/{allPaths=**} {
+      allow read: if request.auth != null;   // Authenticated users can read any expense attachment
+      allow write: if request.auth != null;  // Authenticated users can write any expense attachment
     }
   }
 }
