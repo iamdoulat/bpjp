@@ -17,11 +17,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
-import { getTotalDonationsByUser, getTotalRefundedByUser } from "@/services/paymentService"; // Added getTotalRefundedByUser
-import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet } from "lucide-react"; 
+import { getTotalDonationsByUser, getTotalRefundedByUser } from "@/services/paymentService";
+import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet } from "lucide-react";
 import { format } from 'date-fns';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import DonationHistory from "@/components/profile/donation-history";
+import ImageCropDialog from "@/components/ui/image-crop-dialog"; // Import ImageCropDialog
 
 const profileFormSchema = z.object({
   displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters.").optional().or(z.literal('')),
@@ -32,7 +33,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 function formatCurrency(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) {
-    return "$0.00"; 
+    return "$0.00";
   }
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -44,20 +45,21 @@ export default function ProfilePage() {
 
   const [profileData, setProfileData] = React.useState<UserProfileData | null>(null);
   const [totalUserDonations, setTotalUserDonations] = React.useState<number | null>(null);
-  const [totalUserRefunds, setTotalUserRefunds] = React.useState<number | null>(null); 
+  const [totalUserRefunds, setTotalUserRefunds] = React.useState<number | null>(null);
   const [isLoadingTotalDonations, setIsLoadingTotalDonations] = React.useState(true);
-  const [isLoadingTotalRefunds, setIsLoadingTotalRefunds] = React.useState(true); 
+  const [isLoadingTotalRefunds, setIsLoadingTotalRefunds] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isEditing, setIsEditing] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [isUploading, setIsUploading] = React.useState(false);
   
+  // State for image cropping
+  const [imageToCropSrc, setImageToCropSrc] = React.useState<string | null>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = React.useState(false);
+  const [isUploadingCroppedImage, setIsUploadingCroppedImage] = React.useState(false); // Renamed from isUploading
+
   const [displayWalletBalance, setDisplayWalletBalance] = React.useState<string | React.ReactNode>(<Skeleton className="h-5 w-16 inline-block" />);
-
-
   const profileCoverUrl = process.env.NEXT_PUBLIC_PROFILE_COVER_URL || "https://placehold.co/1200x300.png";
-
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -84,7 +86,7 @@ export default function ProfilePage() {
             });
             setDisplayWalletBalance(formatCurrency(fetchedProfile.walletBalance));
           } else {
-            setProfileData({ uid: user.uid, email: user.email, walletBalance: 0 }); 
+            setProfileData({ uid: user.uid, email: user.email, walletBalance: 0 });
             form.reset({
               displayName: user.displayName || "",
               mobileNumber: "",
@@ -126,7 +128,7 @@ export default function ProfilePage() {
   };
 
   const handleEditToggle = () => {
-    if (isEditing) { 
+    if (isEditing) {
       form.reset({
         displayName: profileData?.displayName || user?.displayName || "",
         mobileNumber: profileData?.mobileNumber || "",
@@ -140,13 +142,12 @@ export default function ProfilePage() {
     setIsSubmitting(true);
     try {
       await updateUserProfileService(user, data);
-      await refreshAuthUser(); 
-      const updatedProfile = await getUserProfile(user.uid); 
+      await refreshAuthUser();
+      const updatedProfile = await getUserProfile(user.uid);
       if (updatedProfile) {
         setProfileData(updatedProfile);
         setDisplayWalletBalance(formatCurrency(updatedProfile.walletBalance))
       }
-
       toast({ title: "Profile Updated", description: "Your profile information has been saved." });
       setIsEditing(false);
     } catch (e) {
@@ -157,16 +158,28 @@ export default function ProfilePage() {
     }
   };
 
-  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !event.target.files || event.target.files.length === 0) return;
-    const file = event.target.files[0];
-    setIsUploading(true);
+  const handleFileSelectForCrop = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrc(reader.result as string);
+        setIsCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCroppedImageUpload = async (croppedBlob: Blob) => {
+    if (!user) return;
+    setIsUploadingCroppedImage(true);
     try {
-      const newPhotoURL = await uploadProfilePictureAndUpdate(user, file);
-      await refreshAuthUser(); 
-      const updatedProfile = await getUserProfile(user.uid); // Fetch updated profile
-       if (updatedProfile) {
-        setProfileData(updatedProfile); // This will include walletBalance
+      const croppedFile = new File([croppedBlob], "profile_picture.png", { type: "image/png" });
+      const newPhotoURL = await uploadProfilePictureAndUpdate(user, croppedFile);
+      await refreshAuthUser();
+      const updatedProfile = await getUserProfile(user.uid);
+      if (updatedProfile) {
+        setProfileData(updatedProfile);
         setDisplayWalletBalance(formatCurrency(updatedProfile.walletBalance));
       }
       toast({ title: "Profile Picture Updated", description: "Your new profile picture has been uploaded." });
@@ -174,9 +187,10 @@ export default function ProfilePage() {
       console.error("Profile picture upload error:", e);
       toast({ title: "Upload Failed", description: (e as Error).message || "Could not upload picture.", variant: "destructive" });
     } finally {
-      setIsUploading(false);
+      setIsUploadingCroppedImage(false);
+      setIsCropDialogOpen(false); // Close dialog after processing
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; 
+        fileInputRef.current.value = ""; // Reset file input
       }
     }
   };
@@ -244,7 +258,7 @@ export default function ProfilePage() {
   const currentDisplayName = profileData?.displayName || user.displayName || "User";
   const currentPhotoURL = profileData?.photoURL || user.photoURL;
   const currentUserRole = profileData?.role ? profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1) : "User";
-  
+
 
   return (
     <AppShell>
@@ -252,13 +266,13 @@ export default function ProfilePage() {
         <Card className="shadow-xl">
           <CardHeader className="p-0">
             <div className="h-48 bg-muted/30 relative">
-              <Image 
-                src={profileCoverUrl} 
-                alt="Cover photo" 
-                layout="fill" 
-                objectFit="cover" 
-                priority 
-                data-ai-hint="abstract texture" 
+              <Image
+                src={profileCoverUrl}
+                alt="Cover photo"
+                layout="fill"
+                objectFit="cover"
+                priority
+                data-ai-hint="abstract texture"
               />
             </div>
             <div className="relative flex flex-col items-center -mt-16">
@@ -272,19 +286,19 @@ export default function ProfilePage() {
                     size="sm"
                     className="absolute top-16 right-4 sm:right-6 md:right-8 lg:right-10 xl:right-12 bg-background/70 backdrop-blur-sm p-2"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
+                    disabled={isUploadingCroppedImage || isCropDialogOpen}
                     aria-label="Upload profile picture"
                   >
-                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+                  {isUploadingCroppedImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
                 </Button>
               )}
                <input
                   type="file"
                   ref={fileInputRef}
-                  onChange={handleProfilePictureUpload}
+                  onChange={handleFileSelectForCrop}
                   accept="image/png, image/jpeg, image/gif"
                   className="hidden"
-                  disabled={isUploading}
+                  disabled={isUploadingCroppedImage || isCropDialogOpen}
                 />
               <div className="text-center mt-4">
                 {isEditing ? (
@@ -329,7 +343,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-            
+
             {isEditing ? (
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                  <div className="space-y-2">
@@ -388,11 +402,11 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="flex justify-between items-center mt-6">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => toast({ 
-                      title: "My Wallet Details", 
-                      description: `Current Balance: ${displayWalletBalance}. Total Refunded (credited to wallet): ${isLoadingTotalRefunds || totalUserRefunds === null ? 'Loading...' : formatCurrency(totalUserRefunds)}` 
+                  <Button
+                    variant="outline"
+                    onClick={() => toast({
+                      title: "My Wallet Details",
+                      description: `Current Balance: ${displayWalletBalance}. Total Refunded (credited to wallet): ${isLoadingTotalRefunds || totalUserRefunds === null ? 'Loading...' : formatCurrency(totalUserRefunds)}`
                     })}
                   >
                     <Wallet className="mr-2 h-4 w-4" /> My Wallet: {isLoading ? <Skeleton className="h-5 w-16 inline-block" /> : displayWalletBalance}
@@ -406,8 +420,26 @@ export default function ProfilePage() {
            </Form>
           </CardContent>
         </Card>
-        
+
         <DonationHistory />
+
+        {imageToCropSrc && (
+          <ImageCropDialog
+            isOpen={isCropDialogOpen}
+            onClose={() => {
+              setIsCropDialogOpen(false);
+              setImageToCropSrc(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = ""; // Reset file input
+              }
+            }}
+            imageSrc={imageToCropSrc}
+            onCropComplete={handleCroppedImageUpload}
+            aspectRatio={1} // 1:1 for profile picture
+            targetWidth={100} // Target 100px width
+            targetHeight={100} // Target 100px height
+          />
+        )}
 
       </main>
     </AppShell>
