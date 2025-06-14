@@ -55,7 +55,7 @@ function formatDisplayDateTime(date: Date | Timestamp | undefined): string {
   }).format(jsDate);
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20; // Updated to 20 items per page
 
 export default function ExpensesHistoryListPage() {
   const router = useRouter();
@@ -110,7 +110,7 @@ export default function ExpensesHistoryListPage() {
       });
       setExpenses(prev => prev.filter(exp => exp.id !== expenseToDelete.id));
       setExpenseToDelete(null);
-      if (paginatedExpenses.length === 1 && currentPage > 1) {
+      if (paginatedExpenses.length === 1 && currentPage > 1 && (filteredExpenses.length -1) % ITEMS_PER_PAGE === 0) {
         setCurrentPage(currentPage - 1);
       }
     } catch (e) {
