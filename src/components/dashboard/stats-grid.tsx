@@ -6,11 +6,11 @@ import { StatsCard } from './stats-card';
 import { DollarSign, CalendarClock, Landmark, ListChecks, HeartPulse } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
-import { getTotalSucceededPaymentTransactions, getUniqueCampaignsSupportedByUser, getTotalDonationsByUser } from '@/services/paymentService'; 
+import { getNetPlatformFundsAvailable, getUniqueCampaignsSupportedByUser, getTotalDonationsByUser } from '@/services/paymentService';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PlatformStats {
-  totalSucceededDonations: number;
+  netPlatformFunds: number; // Changed from totalSucceededDonations
   activeCampaigns: number;
   upcomingCampaigns: number;
 }
@@ -38,19 +38,19 @@ export function StatsGrid() {
     async function fetchAllStats() {
       setLoadingPlatformStats(true);
       try {
-        const succeededDonationsTotal = await getTotalSucceededPaymentTransactions(); // Corrected function name
+        const netFunds = await getNetPlatformFundsAvailable(); // Fetch net funds
         const campaigns = await getCampaigns();
         const activeCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'active').length;
         const upcomingCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'upcoming').length;
         setPlatformStats({ 
-          totalSucceededDonations: succeededDonationsTotal, 
+          netPlatformFunds: netFunds, // Store net funds
           activeCampaigns, 
           upcomingCampaigns 
         });
       } catch (e) {
         console.error("Failed to fetch platform stats:", e);
         setError(e instanceof Error ? e.message : "Could not load platform statistics.");
-        setPlatformStats({ totalSucceededDonations: 0, activeCampaigns: 0, upcomingCampaigns: 0 });
+        setPlatformStats({ netPlatformFunds: 0, activeCampaigns: 0, upcomingCampaigns: 0 });
       } finally {
         setLoadingPlatformStats(false);
       }
@@ -99,9 +99,9 @@ export function StatsGrid() {
 
   const baseStats = [
     { 
-      title: "Platform Donations", 
-      value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-24 inline-block" /> : formatCurrency(platformStats.totalSucceededDonations),
-      subtitle: "Total Succeeded Donations.", 
+      title: "Platform Net Funds", 
+      value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-24 inline-block" /> : formatCurrency(platformStats.netPlatformFunds),
+      subtitle: "Total donations after operational expenses.", 
       icon: <Landmark className="h-5 w-5 text-green-600" />,
       isLoading: loadingPlatformStats || !platformStats
     },
