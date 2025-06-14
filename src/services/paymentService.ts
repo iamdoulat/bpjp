@@ -25,7 +25,7 @@ export interface NewPaymentTransactionInput {
   userId: string;
   userEmail?: string;
   campaignId: string;
-  campaignName: string;
+  campaignName: string; // Already in input, no need to read from campaign doc for this
   amount: number;
   paymentMethod: "BKash" | "Wallet"; // Explicit payment method
   // Fields specific to BKash
@@ -45,35 +45,38 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
 
   try {
     await runTransaction(db, async (transaction) => {
-      let initialStatus: "Succeeded" | "Pending";
-      let campaignSnap: DocumentSnapshot<DocumentData> | null = null;
-      let userProfileSnap: DocumentSnapshot<DocumentData> | null = null;
-
       // --- READ PHASE ---
-      campaignSnap = await transaction.get(campaignDocRef);
+      // Declare variables to hold data from reads
+      let readCampaignRaisedAmount: number;
+      let readUserProfileWalletBalance: number | undefined;
+
+      const campaignSnap = await transaction.get(campaignDocRef);
       if (!campaignSnap.exists()) {
         throw new Error(`Campaign ${transactionInput.campaignId} not found.`);
       }
+      const campaignDataFromSnap = campaignSnap.data();
+      readCampaignRaisedAmount = campaignDataFromSnap.raisedAmount || 0; // Extract needed data
 
       if (transactionInput.paymentMethod === "Wallet") {
-        userProfileSnap = await transaction.get(userProfileDocRef);
+        const userProfileSnap = await transaction.get(userProfileDocRef);
         if (!userProfileSnap.exists()) {
           throw new Error(`User profile ${transactionInput.userId} not found.`);
         }
+        const userProfileData = userProfileSnap!.data() as UserProfileData;
+        readUserProfileWalletBalance = userProfileData.walletBalance || 0; // Extract needed data
       }
+      // ALL READS ARE DONE. Values are in local variables.
 
-      // --- LOGIC & PREPARATION PHASE ---
-      const campaignDataFromSnap = campaignSnap.data(); // campaignSnap is guaranteed to exist here
+      // --- LOGIC & PREPARATION PHASE (NO MORE FIRESTORE READS) ---
+      let initialStatus: "Succeeded" | "Pending";
       let newWalletBalance: number | undefined = undefined;
 
       if (transactionInput.paymentMethod === "Wallet") {
-        const userProfileData = userProfileSnap!.data() as UserProfileData; 
-        const currentWalletBalance = userProfileData.walletBalance || 0;
-
-        if (currentWalletBalance < transactionInput.amount) {
+        // readUserProfileWalletBalance is guaranteed to be defined here if method is Wallet
+        if (readUserProfileWalletBalance! < transactionInput.amount) {
           throw new Error("Insufficient wallet balance.");
         }
-        newWalletBalance = currentWalletBalance - transactionInput.amount;
+        newWalletBalance = readUserProfileWalletBalance! - transactionInput.amount;
         initialStatus = "Succeeded" as const;
       } else {
         initialStatus = "Pending" as const;
@@ -83,32 +86,34 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
         userId: transactionInput.userId,
         userEmail: transactionInput.userEmail,
         campaignId: transactionInput.campaignId,
-        campaignName: transactionInput.campaignName,
+        campaignName: transactionInput.campaignName, // Use from input, no need to re-read
         amount: transactionInput.amount,
         date: Timestamp.now(),
         status: initialStatus,
         method: transactionInput.paymentMethod,
       };
 
+      // Only include these fields if they have values and method is BKash
       if (transactionInput.paymentMethod === "BKash") {
-        if (transactionInput.lastFourDigits) dataToSave.lastFourDigits = transactionInput.lastFourDigits;
-        if (transactionInput.receiverBkashNo) dataToSave.receiverBkashNo = transactionInput.receiverBkashNo;
+        if (transactionInput.lastFourDigits && transactionInput.lastFourDigits.trim() !== "") {
+            dataToSave.lastFourDigits = transactionInput.lastFourDigits;
+        }
+        if (transactionInput.receiverBkashNo && transactionInput.receiverBkashNo.trim() !== "") {
+            dataToSave.receiverBkashNo = transactionInput.receiverBkashNo;
+        }
       }
-
+      // LOGIC & PREPARATION IS DONE.
 
       // --- WRITE PHASE ---
-      transaction.set(paymentDocRef, dataToSave);
+      transaction.set(paymentDocRef, dataToSave); // 1st write
 
-      if (initialStatus === "Succeeded") { 
-        // Update campaign's raisedAmount
-        const currentRaisedAmount = campaignDataFromSnap.raisedAmount || 0;
-        const newRaisedAmount = currentRaisedAmount + transactionInput.amount;
-        transaction.update(campaignDocRef, { raisedAmount: newRaisedAmount });
+      if (initialStatus === "Succeeded") {
+        const newRaisedAmount = readCampaignRaisedAmount + transactionInput.amount;
+        transaction.update(campaignDocRef, { raisedAmount: newRaisedAmount }); // 2nd write (conditional)
+      }
 
-        // Update user's wallet balance if it was a wallet payment
-        if (transactionInput.paymentMethod === "Wallet" && newWalletBalance !== undefined) {
-          transaction.update(userProfileDocRef, { walletBalance: newWalletBalance });
-        }
+      if (transactionInput.paymentMethod === "Wallet" && newWalletBalance !== undefined) {
+        transaction.update(userProfileDocRef, { walletBalance: newWalletBalance }); // 3rd write (conditional)
       }
     });
 
@@ -192,16 +197,34 @@ export async function updatePaymentTransactionStatus(
       const campaignId = currentTransactionData.campaignId;
       const userId = currentTransactionData.userId; // Get userId for wallet operations
 
+      // Wallet balance adjustment logic for Refunds must happen AFTER reads
+      let newWalletBalance: number | undefined;
+      let userProfileDocRef: any; // To store ref for potential update
+      if (newStatus === "Refunded" && oldStatus === "Succeeded" && userId && typeof amount === 'number' && amount > 0) {
+        userProfileDocRef = doc(db, USER_PROFILES_COLLECTION, userId);
+        const userProfileSnap = await transaction.get(userProfileDocRef);
+        if (userProfileSnap.exists()) {
+          const userProfileData = userProfileSnap.data() as UserProfileData;
+          const currentWalletBalance = userProfileData.walletBalance || 0;
+          newWalletBalance = currentWalletBalance + amount;
+        } else {
+           console.warn(`[paymentService.updatePaymentTransactionStatus] User profile ${userId} not found for refund. Wallet not credited.`);
+        }
+      }
+
+
       // Update campaign's raisedAmount if status change affects it
+      let newRaisedAmount: number | undefined;
+      let campaignUpdateNeeded = false;
+      let campaignDocRefToUpdate: any;
+
       if (campaignId && typeof amount === 'number' && amount > 0) {
-        const campaignDocRef = doc(db, CAMPAIGNS_COLLECTION, campaignId);
-        const campaignSnap = await transaction.get(campaignDocRef);
+        campaignDocRefToUpdate = doc(db, CAMPAIGNS_COLLECTION, campaignId);
+        const campaignSnap = await transaction.get(campaignDocRefToUpdate);
 
         if (campaignSnap.exists()) {
           let currentRaisedAmount = campaignSnap.data().raisedAmount || 0;
-          let newRaisedAmount = currentRaisedAmount;
-          let campaignUpdateNeeded = false;
-
+          
           if (newStatus === "Succeeded" && oldStatus !== "Succeeded") {
             newRaisedAmount = currentRaisedAmount + amount;
             campaignUpdateNeeded = true;
@@ -209,36 +232,25 @@ export async function updatePaymentTransactionStatus(
             newRaisedAmount = Math.max(0, currentRaisedAmount - amount);
             campaignUpdateNeeded = true;
           }
-
-          if (campaignUpdateNeeded) {
-            transaction.update(campaignDocRef, { raisedAmount: newRaisedAmount });
-          }
         } else {
           console.warn(`[paymentService.updatePaymentTransactionStatus] Campaign ${campaignId} not found. Cannot update raisedAmount.`);
         }
       }
 
-      // Wallet balance adjustment logic for Refunds
-      if (newStatus === "Refunded" && oldStatus === "Succeeded" && userId && typeof amount === 'number' && amount > 0) {
-        const userProfileDocRef = doc(db, USER_PROFILES_COLLECTION, userId);
-        const userProfileSnap = await transaction.get(userProfileDocRef);
-        if (userProfileSnap.exists()) {
-          const userProfileData = userProfileSnap.data() as UserProfileData;
-          const currentWalletBalance = userProfileData.walletBalance || 0;
-          const updatedWalletBalance = currentWalletBalance + amount;
-          transaction.update(userProfileDocRef, { walletBalance: updatedWalletBalance });
-          console.log(`[paymentService.updatePaymentTransactionStatus] User ${userId} wallet credited with ${amount} due to refund. New balance: ${updatedWalletBalance}`);
-        } else {
-           console.warn(`[paymentService.updatePaymentTransactionStatus] User profile ${userId} not found for refund. Wallet not credited.`);
-        }
-      }
-
-
-      // Now update the payment transaction status
+      // Now perform writes
       transaction.update(transactionDocRef, {
         status: newStatus,
         lastUpdated: Timestamp.now(), 
       });
+
+      if (campaignUpdateNeeded && newRaisedAmount !== undefined && campaignDocRefToUpdate) {
+        transaction.update(campaignDocRefToUpdate, { raisedAmount: newRaisedAmount });
+      }
+      
+      if (newWalletBalance !== undefined && userProfileDocRef) {
+         transaction.update(userProfileDocRef, { walletBalance: newWalletBalance });
+         console.log(`[paymentService.updatePaymentTransactionStatus] User ${userId} wallet credited with ${amount} due to refund. New balance: ${newWalletBalance}`);
+      }
     });
 
     console.log(`[paymentService.updatePaymentTransactionStatus] Successfully updated status for transaction ${transactionId} to ${newStatus}.`);
@@ -264,18 +276,25 @@ export async function deletePaymentTransaction(transactionId: string): Promise<v
       }
       const transactionData = transactionSnap.data() as Omit<PaymentTransaction, 'id' | 'date'> & { date: Timestamp };
 
+      let campaignDocRefToUpdate: any;
+      let newRaisedAmountOnDelete: number | undefined;
+
       if (transactionData.status === "Succeeded" && transactionData.campaignId && typeof transactionData.amount === 'number' && transactionData.amount > 0) {
-        const campaignDocRef = doc(db, CAMPAIGNS_COLLECTION, transactionData.campaignId);
-        const campaignSnap = await transaction.get(campaignDocRef);
+        campaignDocRefToUpdate = doc(db, CAMPAIGNS_COLLECTION, transactionData.campaignId);
+        const campaignSnap = await transaction.get(campaignDocRefToUpdate);
         if (campaignSnap.exists()) {
           let currentRaisedAmount = campaignSnap.data().raisedAmount || 0;
-          let newRaisedAmount = Math.max(0, currentRaisedAmount - transactionData.amount);
-          transaction.update(campaignDocRef, { raisedAmount: newRaisedAmount });
+          newRaisedAmountOnDelete = Math.max(0, currentRaisedAmount - transactionData.amount);
         } else {
            console.warn(`[paymentService.deletePaymentTransaction] Campaign ${transactionData.campaignId} not found. Cannot adjust raisedAmount.`);
         }
       }
       // Note: Deleting a transaction does not automatically refund to wallet here. Refunds are explicit status changes.
+      
+      // Perform writes last
+      if (newRaisedAmountOnDelete !== undefined && campaignDocRefToUpdate) {
+        transaction.update(campaignDocRefToUpdate, { raisedAmount: newRaisedAmountOnDelete });
+      }
       transaction.delete(transactionDocRef);
     });
     console.log(`[paymentService.deletePaymentTransaction] Successfully deleted transaction ${transactionId}.`);
@@ -559,4 +578,5 @@ export async function debitWallet(userId: string, amount: number): Promise<void>
 // it implies an administrative action and might not involve wallet crediting
 // unless money was actually collected and then returned. The current logic in
 // updatePaymentTransactionStatus credits wallet only if changing from Succeeded to Refunded.
+
 
