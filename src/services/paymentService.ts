@@ -42,7 +42,8 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
 
   try {
     await runTransaction(db, async (transaction) => {
-      const dataToSave: Omit<PaymentTransaction, 'id' | 'date'> & { date: Timestamp } = {
+      // Base data for the transaction
+      const dataToSave: any = { // Use `any` temporarily for flexibility, then cast or define a more precise intermediate type
         userId: transactionInput.userId,
         userEmail: transactionInput.userEmail,
         campaignId: transactionInput.campaignId,
@@ -51,12 +52,21 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
         date: Timestamp.now(),
         status: transactionInput.paymentMethod === "Wallet" ? "Succeeded" as const : "Pending" as const,
         method: transactionInput.paymentMethod,
-        lastFourDigits: transactionInput.paymentMethod === "BKash" ? transactionInput.lastFourDigits : undefined,
-        receiverBkashNo: transactionInput.paymentMethod === "BKash" ? transactionInput.receiverBkashNo : undefined,
-        transactionReference: undefined, // Explicitly set if not part of input
+        // transactionReference: undefined, // Firestore omits undefined fields, so this is fine if it's truly optional
       };
 
-      transaction.set(paymentDocRef, dataToSave);
+      // Conditionally add BKash specific fields only if they are provided and method is BKash
+      if (transactionInput.paymentMethod === "BKash") {
+        if (transactionInput.lastFourDigits) {
+          dataToSave.lastFourDigits = transactionInput.lastFourDigits;
+        }
+        if (transactionInput.receiverBkashNo) {
+          dataToSave.receiverBkashNo = transactionInput.receiverBkashNo;
+        }
+      }
+
+      transaction.set(paymentDocRef, dataToSave as Omit<PaymentTransaction, 'id' | 'date'> & { date: Timestamp });
+
 
       // If payment is 'Wallet' and thus 'Succeeded', or if a BKash payment is directly marked succeeded (though current logic makes it pending)
       // update campaign's raisedAmount
