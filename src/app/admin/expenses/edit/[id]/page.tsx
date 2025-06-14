@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCard
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, FileEdit, AlertCircle, X, Download } from "lucide-react";
+import { Loader2, Save, FileEdit, AlertCircle, X, Download, FileText, ArrowLeft } from "lucide-react"; // Added FileText and ArrowLeft
 import { getExpenseById, updateExpense, type ExpenseData, type UpdateExpenseInput } from "@/services/expenseService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -191,10 +191,10 @@ export default function EditExpensePage() {
         <main className="flex-1 p-4 md:p-6 flex items-center justify-center">
           <Alert variant="destructive" className="max-w-md">
             <AlertCircle className="h-4 w-4" /><ShadCNAlertTitle>Error Loading Data</ShadCNAlertTitle><ShadCNAlertDescription>{error}</ShadCNAlertDescription>
+             <Button onClick={() => router.push('/expenses/history')} className="mt-4">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to History
+             </Button>
           </Alert>
-           <Button onClick={() => router.push('/expenses/history')} className="mt-4">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to History
-          </Button>
         </main>
       </AppShell>
     );
@@ -203,8 +203,13 @@ export default function EditExpensePage() {
   if (!expense) {
      return (
         <AppShell>
-            <main className="flex-1 p-4 md:p-6 flex items-center justify-center">
-             <p>Expense data could not be loaded.</p>
+            <main className="flex-1 p-4 md:p-6 flex flex-col items-center justify-center">
+              <Alert variant="default" className="max-w-md">
+                <AlertCircle className="h-4 w-4" /><ShadCNAlertTitle>Expense Not Found</ShadCNAlertTitle><ShadCNAlertDescription>The expense data could not be loaded or does not exist.</ShadCNAlertDescription>
+              </Alert>
+              <Button onClick={() => router.push('/expenses/history')} className="mt-4">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to History
+              </Button>
             </main>
          </AppShell>
     );
@@ -297,3 +302,4 @@ export default function EditExpensePage() {
     </AppShell>
   );
 }
+
