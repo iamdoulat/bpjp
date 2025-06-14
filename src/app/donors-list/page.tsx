@@ -41,16 +41,15 @@ interface AllDonorsTransactionEntry {
   userAvatarUrl?: string | null;
   userMobileNumber?: string | null;
   userEmail: string;
-  userJoinedDate?: Date;
+  transactionDate: Date; // Changed from userJoinedDate
   campaignNameForTransaction?: string;
   donationAmountForTransaction: number;
-  transactionDate: Date;
   totalCampaignsSupportedByUser: number;
   totalDonationByUser: number;
 }
 
 const TOP_DONORS_COUNT = 10;
-const ITEMS_PER_PAGE_ALL_DONORS = 20; // Changed from 10 to 20
+const ITEMS_PER_PAGE_ALL_DONORS = 20;
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -152,10 +151,9 @@ export default function DonorsListPage() {
               userAvatarUrl: profile?.photoURL,
               userMobileNumber: profile?.mobileNumber,
               userEmail: profile?.email || tx.userEmail || "N/A",
-              userJoinedDate: profile?.joinedDate instanceof Timestamp ? profile.joinedDate.toDate() : undefined,
+              transactionDate: tx.date instanceof Date ? tx.date : (tx.date as Timestamp).toDate(), // Use transaction date here
               campaignNameForTransaction: tx.campaignName || "N/A",
               donationAmountForTransaction: tx.amount,
-              transactionDate: tx.date instanceof Date ? tx.date : (tx.date as Timestamp).toDate(),
               totalCampaignsSupportedByUser: userStats?.campaignIds.size || 0,
               totalDonationByUser: userStats?.totalDonation || 0,
             };
@@ -306,7 +304,7 @@ export default function DonorsListPage() {
                     <TableHead className="w-[50px]">No</TableHead>
                     <TableHead className="min-w-[200px]">User</TableHead>
                     <TableHead className="min-w-[150px]">Email</TableHead>
-                    <TableHead className="w-[110px]">Joined</TableHead>
+                    <TableHead className="w-[140px]">Transaction Date</TableHead> {/* Changed Header */}
                     <TableHead className="min-w-[150px]">Campaign</TableHead>
                     <TableHead className="w-[100px] text-right">Donation</TableHead>
                     <TableHead className="w-[100px] text-center">Total Supported</TableHead>
@@ -350,7 +348,7 @@ export default function DonorsListPage() {
                       <TableHead className="w-[50px] text-xs">No</TableHead>
                       <TableHead className="min-w-[200px] text-xs">User</TableHead>
                       <TableHead className="min-w-[150px] text-xs">Email ID</TableHead>
-                      <TableHead className="w-[110px] text-xs">Joined Date</TableHead>
+                      <TableHead className="w-[140px] text-xs">Transaction Date</TableHead> {/* Changed Header */}
                       <TableHead className="min-w-[150px] text-xs">Campaigns Name</TableHead>
                       <TableHead className="w-[100px] text-right text-xs">Donation</TableHead>
                       <TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead>
@@ -367,7 +365,7 @@ export default function DonorsListPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-xs truncate max-w-[150px]">{tx.userEmail}</TableCell>
-                        <TableCell className="text-xs">{formatDisplayDate(tx.userJoinedDate)}</TableCell>
+                        <TableCell className="text-xs">{formatDisplayDateTime(tx.transactionDate)}</TableCell> {/* Changed Data Source */}
                         <TableCell className="text-xs truncate max-w-[150px]">{tx.campaignNameForTransaction}</TableCell>
                         <TableCell className="text-right text-xs font-medium">{formatCurrency(tx.donationAmountForTransaction)}</TableCell>
                         <TableCell className="text-center text-xs">{tx.totalCampaignsSupportedByUser}</TableCell>
