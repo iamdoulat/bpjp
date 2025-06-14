@@ -16,6 +16,7 @@ export interface UserProfileData {
   joinedDate?: Timestamp | null; // Firestore Timestamp
   lastLoginDate?: Timestamp | null; // Firestore Timestamp
   lastUpdated?: Timestamp;
+  walletBalance?: number; // Added wallet balance
 }
 
 export interface NewUserProfileFirestoreData {
@@ -27,6 +28,7 @@ export interface NewUserProfileFirestoreData {
   joinedDate: Timestamp;
   lastLoginDate?: Timestamp | null; // Can be set on first login by new user
   photoURL?: string | null;
+  walletBalance?: number; // Added wallet balance
 }
 
 
@@ -48,9 +50,18 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
         joinedDate: data.joinedDate || null,
         lastLoginDate: data.lastLoginDate || null,
         lastUpdated: data.lastUpdated || null,
+        walletBalance: data.walletBalance !== undefined ? data.walletBalance : 0, // Default to 0 if undefined
       } as UserProfileData;
     }
-    return null;
+    // If document doesn't exist, return a default structure with walletBalance 0
+    return { 
+      uid, 
+      email: auth.currentUser?.email || null, // Try to get email from auth context if available
+      displayName: auth.currentUser?.displayName || null,
+      walletBalance: 0,
+      role: 'user',
+      status: 'Active',
+    };
   } catch (error) {
     console.error("Error fetching user profile:", error);
     throw error;
@@ -76,6 +87,7 @@ export async function getAllUserProfiles(): Promise<UserProfileData[]> {
         joinedDate: data.joinedDate as Timestamp || null,
         lastLoginDate: data.lastLoginDate as Timestamp || null,
         lastUpdated: data.lastUpdated as Timestamp || null,
+        walletBalance: data.walletBalance !== undefined ? data.walletBalance : 0,
       });
     });
     return profiles;
@@ -120,15 +132,15 @@ export async function updateUserProfileService(
     if (currentProfile) {
       await updateDoc(userDocRef, dataToStore);
     } else {
-      // This case handles creating a Firestore profile if one doesn't exist yet for the authUser
       dataToStore.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
       dataToStore.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
-      dataToStore.photoURL = authUser.photoURL; // Capture initial photoURL from Auth if any
+      dataToStore.photoURL = authUser.photoURL; 
       dataToStore.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
       dataToStore.status = 'Active';
+      dataToStore.walletBalance = 0; // Initialize wallet balance
       await setDoc(userDocRef, {
-        ...dataToStore, // contains displayName, mobileNumber if provided, uid, email, lastUpdated
-        displayName: dataToStore.displayName || authUser.displayName, // ensure displayName is set
+        ...dataToStore, 
+        displayName: dataToStore.displayName || authUser.displayName,
       });
     }
   } catch (error) {
@@ -140,7 +152,7 @@ export async function updateUserProfileService(
 // Function for an admin to update any user's profile in Firestore
 export async function updateUserProfileAdmin(
   userId: string,
-  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'role' | 'status'>>
+  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'role' | 'status' | 'walletBalance'>> // Added walletBalance
 ): Promise<void> {
   if (!userId) throw new Error("User ID is required.");
   const userDocRef = doc(db, 'userProfiles', userId);
@@ -185,14 +197,14 @@ export async function uploadProfilePictureAndUpdate(
     if (currentProfile) {
         await updateDoc(userDocRef, dataToUpdate);
     } else {
-        // Create profile if it doesn't exist (e.g., user updated pic before any other profile action)
         dataToUpdate.uid = authUser.uid;
         dataToUpdate.email = authUser.email;
-        dataToUpdate.displayName = authUser.displayName; // from Auth
+        dataToUpdate.displayName = authUser.displayName; 
         dataToUpdate.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
         dataToUpdate.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
         dataToUpdate.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
         dataToUpdate.status = 'Active';
+        dataToUpdate.walletBalance = 0; // Initialize wallet balance
         await setDoc(userDocRef, dataToUpdate);
     }
 
@@ -211,8 +223,6 @@ export async function deleteUserProfileDocument(userId: string): Promise<void> {
     await deleteDoc(userDocRef);
   } catch (error) {
     console.error(`Error deleting Firestore profile for user ${userId}:`, error);
-    // Note: This does not delete the Firebase Auth user.
-    // Deleting Firebase Auth users typically requires Admin SDK on a backend.
     throw error;
   }
 }
@@ -225,8 +235,9 @@ export async function createUserProfileDocument(
   try {
     const userDocRef = doc(db, 'userProfiles', uid);
     await setDoc(userDocRef, {
-      uid, // Explicitly set uid in the document
+      uid, 
       ...profileData,
+      walletBalance: profileData.walletBalance || 0, // Initialize to 0 if not provided
       lastUpdated: serverTimestamp() as Timestamp,
     });
   } catch (error) {

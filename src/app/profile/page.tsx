@@ -52,6 +52,9 @@ export default function ProfilePage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
+  
+  const [displayWalletBalance, setDisplayWalletBalance] = React.useState<string | React.ReactNode>(<Skeleton className="h-5 w-16 inline-block" />);
+
 
   const profileCoverUrl = process.env.NEXT_PUBLIC_PROFILE_COVER_URL || "https://placehold.co/1200x300.png";
 
@@ -72,7 +75,6 @@ export default function ProfilePage() {
         setIsLoadingTotalRefunds(true);
         setError(null);
         try {
-          // Fetch profile data
           const fetchedProfile = await getUserProfile(user.uid);
           if (fetchedProfile) {
             setProfileData(fetchedProfile);
@@ -80,19 +82,19 @@ export default function ProfilePage() {
               displayName: fetchedProfile.displayName || user.displayName || "",
               mobileNumber: fetchedProfile.mobileNumber || "",
             });
+            setDisplayWalletBalance(formatCurrency(fetchedProfile.walletBalance));
           } else {
-            setProfileData({ uid: user.uid, email: user.email }); 
+            setProfileData({ uid: user.uid, email: user.email, walletBalance: 0 }); 
             form.reset({
               displayName: user.displayName || "",
               mobileNumber: "",
             });
+            setDisplayWalletBalance(formatCurrency(0));
           }
 
-          // Fetch total donations
           const donationsSum = await getTotalDonationsByUser(user.uid);
           setTotalUserDonations(donationsSum);
 
-          // Fetch total refunds
           const refundsSum = await getTotalRefundedByUser(user.uid);
           setTotalUserRefunds(refundsSum);
 
@@ -110,6 +112,7 @@ export default function ProfilePage() {
       setIsLoading(false);
       setIsLoadingTotalDonations(false);
       setIsLoadingTotalRefunds(false);
+      setDisplayWalletBalance(formatCurrency(0));
     }
   }, [user, authLoading, form]);
 
@@ -139,7 +142,10 @@ export default function ProfilePage() {
       await updateUserProfileService(user, data);
       await refreshAuthUser(); 
       const updatedProfile = await getUserProfile(user.uid); 
-      if (updatedProfile) setProfileData(updatedProfile);
+      if (updatedProfile) {
+        setProfileData(updatedProfile);
+        setDisplayWalletBalance(formatCurrency(updatedProfile.walletBalance))
+      }
 
       toast({ title: "Profile Updated", description: "Your profile information has been saved." });
       setIsEditing(false);
@@ -158,7 +164,11 @@ export default function ProfilePage() {
     try {
       const newPhotoURL = await uploadProfilePictureAndUpdate(user, file);
       await refreshAuthUser(); 
-      setProfileData(prev => ({ ...prev, photoURL: newPhotoURL } as UserProfileData)); 
+      const updatedProfile = await getUserProfile(user.uid); // Fetch updated profile
+       if (updatedProfile) {
+        setProfileData(updatedProfile); // This will include walletBalance
+        setDisplayWalletBalance(formatCurrency(updatedProfile.walletBalance));
+      }
       toast({ title: "Profile Picture Updated", description: "Your new profile picture has been uploaded." });
     } catch (e) {
       console.error("Profile picture upload error:", e);
@@ -234,9 +244,7 @@ export default function ProfilePage() {
   const currentDisplayName = profileData?.displayName || user.displayName || "User";
   const currentPhotoURL = profileData?.photoURL || user.photoURL;
   const currentUserRole = profileData?.role ? profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1) : "User";
-  const formattedRefunds = isLoadingTotalRefunds || totalUserRefunds === null
-    ? <Skeleton className="h-4 w-10 inline-block ml-1" />
-    : formatCurrency(totalUserRefunds);
+  
 
   return (
     <AppShell>
@@ -383,11 +391,11 @@ export default function ProfilePage() {
                   <Button 
                     variant="outline" 
                     onClick={() => toast({ 
-                      title: "My Wallet", 
-                      description: `Total refunded amount: ${isLoadingTotalRefunds ? 'Loading...' : formatCurrency(totalUserRefunds)}` 
+                      title: "My Wallet Details", 
+                      description: `Current Balance: ${displayWalletBalance}. Total Refunded (credited to wallet): ${isLoadingTotalRefunds || totalUserRefunds === null ? 'Loading...' : formatCurrency(totalUserRefunds)}` 
                     })}
                   >
-                    <Wallet className="mr-2 h-4 w-4" /> My Wallet: {formattedRefunds}
+                    <Wallet className="mr-2 h-4 w-4" /> My Wallet: {isLoading ? <Skeleton className="h-5 w-16 inline-block" /> : displayWalletBalance}
                   </Button>
                   <Button onClick={handleEditToggle}>
                     <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
