@@ -393,14 +393,14 @@ export default function AdminSettingsPage() {
                   <FormItem>
                     <FormLabel htmlFor="coverImageFile">Cover Picture</FormLabel>
                     {coverPreview && (
-                      <div className="mt-2 mb-2 w-full aspect-[4/1] relative rounded-md overflow-hidden border">
+                      <div className="mt-2 mb-2 w-full aspect-[12/5] relative rounded-md overflow-hidden border">
                         <Image src={coverPreview} alt="Cover preview" layout="fill" objectFit="cover" data-ai-hint="organization banner"/>
                       </div>
                     )}
                     <FormControl>
                        <Input id="coverImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleCoverFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting} ref={coverFileInputRef} />
                     </FormControl>
-                    <FormDescription>Upload a cover image for the About Us page banner (recommended 1200x300).</FormDescription>
+                    <FormDescription>Upload a cover image for the About Us page banner (recommended 1200x500px).</FormDescription>
                     <FormMessage>{form.formState.errors.coverImageFile?.message}</FormMessage>
                   </FormItem>
                 </div>
@@ -522,9 +522,9 @@ export default function AdminSettingsPage() {
             }}
             imageSrc={imageToCropSrcCover}
             onCropComplete={handleCoverCropComplete}
-            aspectRatio={1200 / 300} // 4:1 aspect ratio for cover
+            aspectRatio={1200 / 500} 
             targetWidth={1200}
-            targetHeight={300}
+            targetHeight={500}
           />
         )}
 
@@ -532,3 +532,4 @@ export default function AdminSettingsPage() {
     </AppShell>
   );
 }
+
