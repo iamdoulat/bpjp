@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ReceiptText, Construction, MoreHorizontal, Eye, Edit, Trash2, AlertCircle as AlertIcon, ServerCrash, Search, FileText, Download } from "lucide-react";
+import { ReceiptText, MoreHorizontal, Eye, Edit, Trash2, ServerCrash, Search, FileText, Download, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { PlatformDonationsCard } from "@/components/stats/platform-donations-card";
 import { getExpenses, deleteExpense, type ExpenseData } from "@/services/expenseService";
 import { Timestamp } from "firebase/firestore";
@@ -90,7 +90,7 @@ export default function ExpensesHistoryPage() {
   const filteredExpenses = expenses.filter(expense =>
     expense.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     expense.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (expense.createdBy && expense.createdBy.toLowerCase().includes(searchTerm.toLowerCase()))
+    (expense.createdBy && typeof expense.createdBy === 'string' && expense.createdBy.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const totalPages = Math.ceil(filteredExpenses.length / ITEMS_PER_PAGE);
@@ -107,11 +107,14 @@ export default function ExpensesHistoryPage() {
       await deleteExpense(expenseToDelete.id);
       toast({
         title: "Expense Deleted",
-        description: `Expense "${expenseToDelete.name}" has been successfully deleted.`,
+        description: `Expense "${expenseToDelete.name}" has been successfully deleted. Platform funds will reflect this change.`,
       });
       setExpenses(prev => prev.filter(exp => exp.id !== expenseToDelete.id));
       setExpenseToDelete(null);
-      // Consider triggering a refresh of PlatformDonationsCard if it doesn't auto-update
+      // Force re-fetch of expenses if the current page becomes empty after deletion
+      if (paginatedExpenses.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     } catch (e) {
       console.error("Failed to delete expense:", e);
       toast({
@@ -126,14 +129,12 @@ export default function ExpensesHistoryPage() {
   
   const handleViewDetails = (expenseId?: string) => {
     if (!expenseId) return;
-    // router.push(`/admin/expenses/view/${expenseId}`); // Future view page
-    toast({ title: "View Details", description: `Viewing details for expense ID ${expenseId}. (Page not yet implemented)`});
+    router.push(`/admin/expenses/view/${expenseId}`);
   };
   
   const handleEditExpense = (expenseId?: string) => {
     if (!expenseId) return;
-    // router.push(`/admin/expenses/edit/${expenseId}`); // Future edit page
-     toast({ title: "Edit Expense", description: `Editing expense ID ${expenseId}. (Page not yet implemented)`});
+    router.push(`/admin/expenses/edit/${expenseId}`);
   };
 
 
@@ -166,7 +167,6 @@ export default function ExpensesHistoryPage() {
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1);}}
             />
           </div>
-          {/* Add Filter button if needed */}
         </div>
 
 
@@ -206,7 +206,7 @@ export default function ExpensesHistoryPage() {
                   <TableHead className="min-w-[250px]">Details (Excerpt)</TableHead>
                   <TableHead className="w-[120px] text-right">Amount</TableHead>
                   <TableHead className="w-[180px]">Date Recorded</TableHead>
-                  <TableHead className="w-[100px]">Attachment</TableHead>
+                  <TableHead className="w-[100px] text-center">Attachment</TableHead>
                   <TableHead className="text-right w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -271,7 +271,7 @@ export default function ExpensesHistoryPage() {
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
                         >
-                            Previous
+                            <ChevronLeft className="h-3 w-3 mr-1" /> Previous
                         </Button>
                         <Button
                             variant="outline"
@@ -279,23 +279,13 @@ export default function ExpensesHistoryPage() {
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages}
                         >
-                            Next
+                            Next <ChevronRight className="h-3 w-3 ml-1" />
                         </Button>
                     </div>
                 </div>
             )}
           </div>
         )}
-
-        {/* Placeholder for future "View Details" and "Edit Expense" pages information */}
-        <Alert className="mt-8">
-          <Construction className="h-4 w-4" />
-          <ShadCNAlertTitle>Under Construction: Details & Edit</ShadCNAlertTitle>
-          <AlertDescription>
-            The "View Details" and "Edit Expense" functionalities are currently under development. Clicking them will show a toast notification.
-          </AlertDescription>
-        </Alert>
-
       </main>
 
       {expenseToDelete && (

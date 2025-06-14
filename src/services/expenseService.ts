@@ -8,17 +8,18 @@ export interface ExpenseData {
   id?: string;
   name: string;
   details: string;
-  amount: number; // Added amount
+  amount: number;
   attachmentUrl?: string | null;
   attachmentPath?: string | null;
   createdAt: Timestamp;
-  createdBy?: string;
+  lastUpdated?: Timestamp; // For tracking updates
+  createdBy?: string; // User ID of who created it
 }
 
 export interface NewExpenseInput {
   name: string;
   details: string;
-  amount: number; // Added amount
+  amount: number;
   attachmentFile?: File | null;
   userId?: string;
 }
@@ -28,7 +29,6 @@ export interface UpdateExpenseInput {
     details?: string;
     amount?: number;
     attachmentFile?: File | null; // For new/replacement attachment
-    // attachmentUrl and attachmentPath will be handled internally if attachmentFile is present
 }
 
 
@@ -48,13 +48,13 @@ export async function addExpense(expenseInput: NewExpenseInput): Promise<string>
       attachmentPath = storagePath;
     }
 
-    const dataToSave: Omit<ExpenseData, 'id' | 'createdAt'> & { createdAt: Timestamp } = {
+    const dataToSave: Omit<ExpenseData, 'id' | 'createdAt' | 'lastUpdated'> & { createdAt: Timestamp, createdBy?: string } = {
       name: expenseInput.name,
       details: expenseInput.details,
-      amount: expenseInput.amount, // Save amount
+      amount: expenseInput.amount,
       attachmentUrl: attachmentUrl || null,
       attachmentPath: attachmentPath || null,
-      createdAt: serverTimestamp() as Timestamp,
+      createdAt: serverTimestamp() as Timestamp, // Use serverTimestamp for creation
     };
     if (expenseInput.userId) {
         dataToSave.createdBy = expenseInput.userId;
@@ -83,10 +83,11 @@ export async function getExpenses(): Promise<ExpenseData[]> {
         id: docSnap.id,
         name: data.name,
         details: data.details,
-        amount: data.amount || 0, // Get amount, default to 0
+        amount: data.amount || 0,
         attachmentUrl: data.attachmentUrl || null,
         attachmentPath: data.attachmentPath || null,
         createdAt: data.createdAt as Timestamp,
+        lastUpdated: data.lastUpdated as Timestamp,
         createdBy: data.createdBy,
       });
     });
@@ -115,6 +116,7 @@ export async function getExpenseById(id: string): Promise<ExpenseData | null> {
         attachmentUrl: data.attachmentUrl || null,
         attachmentPath: data.attachmentPath || null,
         createdAt: data.createdAt as Timestamp,
+        lastUpdated: data.lastUpdated as Timestamp,
         createdBy: data.createdBy,
       } as ExpenseData;
     } else {
@@ -134,8 +136,6 @@ export async function getExpenseById(id: string): Promise<ExpenseData | null> {
 export async function getApprovedExpensesTotal(): Promise<number> {
   try {
     const expensesCollectionRef = collection(db, "expenses");
-    // Assuming all expenses are "approved" for now.
-    // If an approval status is added, query 'where("status", "==", "approved")'
     const querySnapshot = await getDocs(expensesCollectionRef);
     let totalExpenses = 0;
     querySnapshot.forEach((docSnap) => {
@@ -147,7 +147,7 @@ export async function getApprovedExpensesTotal(): Promise<number> {
     return totalExpenses;
   } catch (error) {
     console.error("Error fetching total approved expenses:", error);
-    return 0; // Return 0 on error
+    return 0;
   }
 }
 
@@ -178,15 +178,11 @@ export async function deleteExpense(expenseId: string): Promise<void> {
     }
     const expenseData = expenseSnap.data() as ExpenseData;
 
-    // Delete attachment if it exists
     if (expenseData.attachmentPath) {
       await deleteExpenseAttachment(expenseData.attachmentPath);
     }
-
-    // Delete the expense document
     await deleteDoc(expenseDocRef);
     console.log(`Expense ${expenseId} deleted successfully.`);
-    // The platform total will reflect this change upon next fetch by display components.
   } catch (error) {
     console.error(`Error deleting expense ${expenseId}:`, error);
     if (error instanceof Error) {
@@ -198,17 +194,21 @@ export async function deleteExpense(expenseId: string): Promise<void> {
 
 export async function updateExpense(expenseId: string, updates: UpdateExpenseInput, existingAttachmentPath?: string | null): Promise<void> {
     const expenseDocRef = doc(db, "expenses", expenseId);
-    const dataToUpdate: Partial<ExpenseData> = { ...updates }; // remove attachmentFile
+    const dataToUpdate: Partial<ExpenseData> = { ...updates };
 
-    delete (dataToUpdate as any).attachmentFile; // remove from data to be saved directly
+    delete (dataToUpdate as any).attachmentFile; // remove attachmentFile from direct Firestore update object
 
     try {
-        if (updates.attachmentFile) {
-            // If there's an old attachment, delete it
+        if (updates.attachmentFile === null) { // Explicitly removing attachment
             if (existingAttachmentPath) {
                 await deleteExpenseAttachment(existingAttachmentPath);
             }
-            // Upload new attachment
+            dataToUpdate.attachmentUrl = null;
+            dataToUpdate.attachmentPath = null;
+        } else if (updates.attachmentFile) { // New attachment uploaded
+            if (existingAttachmentPath) {
+                await deleteExpenseAttachment(existingAttachmentPath);
+            }
             const timestamp = new Date().getTime();
             const uniqueFileName = `${timestamp}_${updates.attachmentFile.name.replace(/\s+/g, '_')}`;
             const storagePath = `expense_attachments/${uniqueFileName}`;
@@ -217,13 +217,8 @@ export async function updateExpense(expenseId: string, updates: UpdateExpenseInp
             const snapshot = await uploadBytes(storageRef, updates.attachmentFile);
             dataToUpdate.attachmentUrl = await getDownloadURL(snapshot.ref);
             dataToUpdate.attachmentPath = storagePath;
-        } else if (updates.attachmentFile === null && existingAttachmentPath) {
-            // If attachmentFile is explicitly set to null (meaning remove existing attachment without new one)
-            await deleteExpenseAttachment(existingAttachmentPath);
-            dataToUpdate.attachmentUrl = null;
-            dataToUpdate.attachmentPath = null;
         }
-
+        // If updates.attachmentFile is undefined, it means no change to attachment was intended
 
         dataToUpdate.lastUpdated = serverTimestamp() as Timestamp;
         await updateDoc(expenseDocRef, dataToUpdate);
