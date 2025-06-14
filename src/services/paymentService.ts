@@ -1,38 +1,35 @@
 
 // src/services/paymentService.ts
-import { db, auth } from '@/lib/firebase'; // Added auth
-import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer, runTransaction, type DocumentSnapshot } from 'firebase/firestore'; // Added runTransaction and DocumentSnapshot
-import type { UserProfileData } from './userService'; // Import UserProfileData
+import { db, auth } from '@/lib/firebase';
+import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer, runTransaction, type DocumentSnapshot } from 'firebase/firestore';
+import type { UserProfileData } from './userService';
+import { getApprovedExpensesTotal } from './expenseService'; // Import expense total
 
-// Interface for data stored and retrieved from Firestore
 export interface PaymentTransaction {
-  id: string; // Firestore document ID
+  id: string;
   userId: string;
-  userEmail?: string; // Good to store for easier display if needed
-  date: Date | Timestamp; // JS Date for input, Firestore Timestamp for storage/output
-  method: "BKash" | "Wallet" | "Manual Verification" | string; // More specific types + string for legacy
+  userEmail?: string;
+  date: Date | Timestamp;
+  method: "BKash" | "Wallet" | "Manual Verification" | string;
   amount: number;
   status: "Succeeded" | "Pending" | "Failed" | "Refunded";
   campaignId?: string;
   campaignName?: string;
-  lastFourDigits?: string; // For verification, primarily for BKash
-  receiverBkashNo?: string; // Specific to BKash
-  transactionReference?: string; // Optional field for a full reference if available
+  lastFourDigits?: string;
+  receiverBkashNo?: string;
+  transactionReference?: string;
 }
 
-// Data for creating a new transaction via the UI
 export interface NewPaymentTransactionInput {
   userId: string;
   userEmail?: string;
   campaignId: string;
-  campaignName: string; // Already in input, no need to read from campaign doc for this
+  campaignName: string;
   amount: number;
-  paymentMethod: "BKash" | "Wallet"; // Explicit payment method
-  // Fields specific to BKash
+  paymentMethod: "BKash" | "Wallet";
   lastFourDigits?: string;
   receiverBkashNo?: string;
 }
-
 
 const PAYMENT_TRANSACTIONS_COLLECTION = 'paymentTransactions';
 const CAMPAIGNS_COLLECTION = 'campaigns';
@@ -45,8 +42,6 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
 
   try {
     await runTransaction(db, async (transaction) => {
-      // --- READ PHASE ---
-      // Declare variables to hold data from reads
       let readCampaignRaisedAmount: number;
       let readUserProfileWalletBalance: number | undefined;
 
@@ -55,7 +50,7 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
         throw new Error(`Campaign ${transactionInput.campaignId} not found.`);
       }
       const campaignDataFromSnap = campaignSnap.data();
-      readCampaignRaisedAmount = campaignDataFromSnap.raisedAmount || 0; // Extract needed data
+      readCampaignRaisedAmount = campaignDataFromSnap.raisedAmount || 0;
 
       if (transactionInput.paymentMethod === "Wallet") {
         const userProfileSnap = await transaction.get(userProfileDocRef);
@@ -63,16 +58,13 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
           throw new Error(`User profile ${transactionInput.userId} not found.`);
         }
         const userProfileData = userProfileSnap!.data() as UserProfileData;
-        readUserProfileWalletBalance = userProfileData.walletBalance || 0; // Extract needed data
+        readUserProfileWalletBalance = userProfileData.walletBalance || 0;
       }
-      // ALL READS ARE DONE. Values are in local variables.
 
-      // --- LOGIC & PREPARATION PHASE (NO MORE FIRESTORE READS) ---
       let initialStatus: "Succeeded" | "Pending";
       let newWalletBalance: number | undefined = undefined;
 
       if (transactionInput.paymentMethod === "Wallet") {
-        // readUserProfileWalletBalance is guaranteed to be defined here if method is Wallet
         if (readUserProfileWalletBalance! < transactionInput.amount) {
           throw new Error("Insufficient wallet balance.");
         }
@@ -86,14 +78,13 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
         userId: transactionInput.userId,
         userEmail: transactionInput.userEmail,
         campaignId: transactionInput.campaignId,
-        campaignName: transactionInput.campaignName, // Use from input, no need to re-read
+        campaignName: transactionInput.campaignName,
         amount: transactionInput.amount,
         date: Timestamp.now(),
         status: initialStatus,
         method: transactionInput.paymentMethod,
       };
 
-      // Only include these fields if they have values and method is BKash
       if (transactionInput.paymentMethod === "BKash") {
         if (transactionInput.lastFourDigits && transactionInput.lastFourDigits.trim() !== "") {
             dataToSave.lastFourDigits = transactionInput.lastFourDigits;
@@ -102,18 +93,16 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
             dataToSave.receiverBkashNo = transactionInput.receiverBkashNo;
         }
       }
-      // LOGIC & PREPARATION IS DONE.
-
-      // --- WRITE PHASE ---
-      transaction.set(paymentDocRef, dataToSave); // 1st write
+      
+      transaction.set(paymentDocRef, dataToSave);
 
       if (initialStatus === "Succeeded") {
         const newRaisedAmount = readCampaignRaisedAmount + transactionInput.amount;
-        transaction.update(campaignDocRef, { raisedAmount: newRaisedAmount }); // 2nd write (conditional)
+        transaction.update(campaignDocRef, { raisedAmount: newRaisedAmount });
       }
 
       if (transactionInput.paymentMethod === "Wallet" && newWalletBalance !== undefined) {
-        transaction.update(userProfileDocRef, { walletBalance: newWalletBalance }); // 3rd write (conditional)
+        transaction.update(userProfileDocRef, { walletBalance: newWalletBalance });
       }
     });
 
@@ -128,7 +117,6 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
     throw new Error('An unknown error occurred while adding the payment transaction.');
   }
 }
-
 
 export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
   console.log(`[paymentService.getPaymentTransactions] Current auth.currentUser from SDK:`, auth.currentUser);
@@ -195,11 +183,10 @@ export async function updatePaymentTransactionStatus(
       const oldStatus = currentTransactionData.status;
       const amount = currentTransactionData.amount;
       const campaignId = currentTransactionData.campaignId;
-      const userId = currentTransactionData.userId; // Get userId for wallet operations
+      const userId = currentTransactionData.userId;
 
-      // Wallet balance adjustment logic for Refunds must happen AFTER reads
       let newWalletBalance: number | undefined;
-      let userProfileDocRef: any; // To store ref for potential update
+      let userProfileDocRef: any;
       if (newStatus === "Refunded" && oldStatus === "Succeeded" && userId && typeof amount === 'number' && amount > 0) {
         userProfileDocRef = doc(db, USER_PROFILES_COLLECTION, userId);
         const userProfileSnap = await transaction.get(userProfileDocRef);
@@ -212,8 +199,6 @@ export async function updatePaymentTransactionStatus(
         }
       }
 
-
-      // Update campaign's raisedAmount if status change affects it
       let newRaisedAmount: number | undefined;
       let campaignUpdateNeeded = false;
       let campaignDocRefToUpdate: any;
@@ -236,8 +221,7 @@ export async function updatePaymentTransactionStatus(
           console.warn(`[paymentService.updatePaymentTransactionStatus] Campaign ${campaignId} not found. Cannot update raisedAmount.`);
         }
       }
-
-      // Now perform writes
+      
       transaction.update(transactionDocRef, {
         status: newStatus,
         lastUpdated: Timestamp.now(), 
@@ -264,7 +248,6 @@ export async function updatePaymentTransactionStatus(
   }
 }
 
-
 export async function deletePaymentTransaction(transactionId: string): Promise<void> {
   const transactionDocRef = doc(db, PAYMENT_TRANSACTIONS_COLLECTION, transactionId);
   try {
@@ -289,9 +272,7 @@ export async function deletePaymentTransaction(transactionId: string): Promise<v
            console.warn(`[paymentService.deletePaymentTransaction] Campaign ${transactionData.campaignId} not found. Cannot adjust raisedAmount.`);
         }
       }
-      // Note: Deleting a transaction does not automatically refund to wallet here. Refunds are explicit status changes.
       
-      // Perform writes last
       if (newRaisedAmountOnDelete !== undefined && campaignDocRefToUpdate) {
         transaction.update(campaignDocRefToUpdate, { raisedAmount: newRaisedAmountOnDelete });
       }
@@ -344,47 +325,45 @@ export async function getPaymentTransactionsByUserId(userId: string): Promise<Pa
   }
 }
 
-export async function getSucceededPlatformDonationsTotal(): Promise<number> {
-  console.log('[paymentService.getSucceededPlatformDonationsTotal] Attempting to fetch total for Succeeded donations.');
-  console.log(`[paymentService.getSucceededPlatformDonationsTotal] Current auth user for query: ${auth.currentUser?.email} (UID: ${auth.currentUser?.uid})`);
+export async function getTotalSucceededPaymentTransactions(): Promise<number> {
+  console.log('[paymentService.getTotalSucceededPaymentTransactions] Attempting to fetch total for Succeeded donations.');
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
     const q = query(paymentTransactionsRef, where("status", "==", "Succeeded"));
     const querySnapshot = await getDocs(q);
 
-    console.log(`[paymentService.getSucceededPlatformDonationsTotal] Query for 'Succeeded' status returned ${querySnapshot.size} documents.`);
-    if (querySnapshot.empty) {
-      console.log('[paymentService.getSucceededPlatformDonationsTotal] No "Succeeded" transactions found.');
-    }
-
     let total = 0;
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      console.log(`[paymentService.getSucceededPlatformDonationsTotal] Processing doc ID ${docSnap.id}:`, data);
       if (data.amount && typeof data.amount === 'number') {
         total += data.amount;
-        console.log(`[paymentService.getSucceededPlatformDonationsTotal] Added ${data.amount} to total. Current total: ${total}`);
-      } else {
-        console.warn(`[paymentService.getSucceededPlatformDonationsTotal] Document ID ${docSnap.id} has missing or invalid amount:`, data.amount);
       }
     });
-    console.log(`[paymentService.getSucceededPlatformDonationsTotal] Final calculated total for Succeeded donations: ${total}`);
+    console.log(`[paymentService.getTotalSucceededPaymentTransactions] Final calculated total for Succeeded payments: ${total}`);
     return total;
   } catch (error) {
-    console.error("[paymentService.getSucceededPlatformDonationsTotal] Error fetching total succeeded donations:", error);
-    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
-        console.error("[paymentService.getSucceededPlatformDonationsTotal] PERMISSION DENIED. Check Firestore security rules for reading 'paymentTransactions' collection, especially for admins performing collection queries.");
-    }
+    console.error("[paymentService.getTotalSucceededPaymentTransactions] Error fetching total succeeded payments:", error);
     return 0;
   }
 }
 
-export async function getUniqueCampaignsSupportedByUser(userId: string): Promise<number> {
-  if (!userId) {
-    console.log('[paymentService.getUniqueCampaignsSupportedByUser] No userId provided, returning 0.');
-    return 0;
+export async function getNetPlatformFundsAvailable(): Promise<number> {
+  console.log('[paymentService.getNetPlatformFundsAvailable] Calculating net platform funds.');
+  try {
+    const totalSucceededPayments = await getTotalSucceededPaymentTransactions();
+    const totalExpenses = await getApprovedExpensesTotal(); // From expenseService
+    const netFunds = totalSucceededPayments - totalExpenses;
+    console.log(`[paymentService.getNetPlatformFundsAvailable] Total Payments: ${totalSucceededPayments}, Total Expenses: ${totalExpenses}, Net Funds: ${netFunds}`);
+    return netFunds;
+  } catch (error) {
+    console.error("[paymentService.getNetPlatformFundsAvailable] Error calculating net platform funds:", error);
+    return 0; // Return 0 on error, or consider more specific error handling
   }
-  console.log(`[paymentService.getUniqueCampaignsSupportedByUser] Fetching campaigns supported by user: ${userId}`);
+}
+
+
+export async function getUniqueCampaignsSupportedByUser(userId: string): Promise<number> {
+  if (!userId) return 0;
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
     const q = query(
@@ -393,12 +372,6 @@ export async function getUniqueCampaignsSupportedByUser(userId: string): Promise
       where("status", "==", "Succeeded")
     );
     const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      console.log(`[paymentService.getUniqueCampaignsSupportedByUser] No "Succeeded" transactions found for user ${userId}.`);
-      return 0;
-    }
-
     const supportedCampaignIds = new Set<string>();
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -406,24 +379,15 @@ export async function getUniqueCampaignsSupportedByUser(userId: string): Promise
         supportedCampaignIds.add(data.campaignId);
       }
     });
-
-    console.log(`[paymentService.getUniqueCampaignsSupportedByUser] User ${userId} supported ${supportedCampaignIds.size} unique campaigns.`);
     return supportedCampaignIds.size;
   } catch (error) {
-    console.error(`[paymentService.getUniqueCampaignsSupportedByUser] Error fetching campaigns supported by user ${userId}:`, error);
-    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
-        console.error(`[paymentService.getUniqueCampaignsSupportedByUser] PERMISSION DENIED. Check Firestore security rules for querying 'paymentTransactions' collection by userId and status.`);
-    }
-    return 0; // Return 0 on error or if permissions fail
+    console.error(`[paymentService.getUniqueCampaignsSupportedByUser] Error for user ${userId}:`, error);
+    return 0;
   }
 }
 
 export async function getTotalDonationsByUser(userId: string): Promise<number> {
-  if (!userId) {
-    console.log('[paymentService.getTotalDonationsByUser] No userId provided, returning 0.');
-    return 0;
-  }
-  console.log(`[paymentService.getTotalDonationsByUser] Fetching total succeeded donations for user: ${userId}`);
+  if (!userId) return 0;
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
     const q = query(
@@ -432,12 +396,6 @@ export async function getTotalDonationsByUser(userId: string): Promise<number> {
       where("status", "==", "Succeeded")
     );
     const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      console.log(`[paymentService.getTotalDonationsByUser] No "Succeeded" transactions found for user ${userId}.`);
-      return 0;
-    }
-
     let totalUserDonations = 0;
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -445,24 +403,15 @@ export async function getTotalDonationsByUser(userId: string): Promise<number> {
         totalUserDonations += data.amount;
       }
     });
-
-    console.log(`[paymentService.getTotalDonationsByUser] User ${userId} total succeeded donations: ${totalUserDonations}.`);
     return totalUserDonations;
   } catch (error) {
-    console.error(`[paymentService.getTotalDonationsByUser] Error fetching total donations for user ${userId}:`, error);
-     if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
-        console.error(`[paymentService.getTotalDonationsByUser] PERMISSION DENIED. Check Firestore security rules for querying 'paymentTransactions' collection by userId and status.`);
-    }
+    console.error(`[paymentService.getTotalDonationsByUser] Error for user ${userId}:`, error);
     return 0; 
   }
 }
 
 export async function getTotalRefundedByUser(userId: string): Promise<number> {
-  if (!userId) {
-    console.log('[paymentService.getTotalRefundedByUser] No userId provided, returning 0.');
-    return 0;
-  }
-  console.log(`[paymentService.getTotalRefundedByUser] Fetching total refunded donations for user: ${userId}`);
+  if (!userId) return 0;
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
     const q = query(
@@ -471,12 +420,6 @@ export async function getTotalRefundedByUser(userId: string): Promise<number> {
       where("status", "==", "Refunded")
     );
     const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      console.log(`[paymentService.getTotalRefundedByUser] No "Refunded" transactions found for user ${userId}.`);
-      return 0;
-    }
-
     let totalUserRefunds = 0;
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -484,37 +427,25 @@ export async function getTotalRefundedByUser(userId: string): Promise<number> {
         totalUserRefunds += data.amount;
       }
     });
-
-    console.log(`[paymentService.getTotalRefundedByUser] User ${userId} total refunded donations: ${totalUserRefunds}.`);
     return totalUserRefunds;
   } catch (error) {
-    console.error(`[paymentService.getTotalRefundedByUser] Error fetching total refunded for user ${userId}:`, error);
-    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
-        console.error(`[paymentService.getTotalRefundedByUser] PERMISSION DENIED. Check Firestore security rules for querying 'paymentTransactions' collection by userId and status.`);
-    }
+    console.error(`[paymentService.getTotalRefundedByUser] Error for user ${userId}:`, error);
     return 0; 
   }
 }
 
 export async function getPendingPaymentsCount(): Promise<number> {
-  console.log('[paymentService.getPendingPaymentsCount] Attempting to count Pending payments.');
   try {
     const paymentTransactionsRef = collection(db, PAYMENT_TRANSACTIONS_COLLECTION);
     const q = query(paymentTransactionsRef, where("status", "==", "Pending"));
     const snapshot = await getCountFromServer(q);
-    const count = snapshot.data().count;
-    console.log(`[paymentService.getPendingPaymentsCount] Found ${count} pending payments.`);
-    return count;
+    return snapshot.data().count;
   } catch (error) {
     console.error("[paymentService.getPendingPaymentsCount] Error counting pending payments:", error);
-    if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
-        console.error("[paymentService.getPendingPaymentsCount] PERMISSION DENIED. Check Firestore security rules.");
-    }
-    return 0; // Return 0 on error
+    return 0;
   }
 }
 
-// New function to credit wallet (e.g., admin manually adds funds or system processes a refund)
 export async function creditWallet(userId: string, amount: number): Promise<void> {
   if (!userId) throw new Error("User ID is required.");
   if (amount <= 0) throw new Error("Credit amount must be positive.");
@@ -541,7 +472,6 @@ export async function creditWallet(userId: string, amount: number): Promise<void
   }
 }
 
-// New function for admin to debit wallet (e.g. manual adjustment)
 export async function debitWallet(userId: string, amount: number): Promise<void> {
   if (!userId) throw new Error("User ID is required.");
   if (amount <= 0) throw new Error("Debit amount must be positive.");
@@ -570,13 +500,3 @@ export async function debitWallet(userId: string, amount: number): Promise<void>
     throw new Error('An unknown error occurred while debiting wallet.');
   }
 }
-
-// When a payment status changes to "Refunded" (and was previously "Succeeded"),
-// the user's wallet should be credited with the donation amount.
-// This is now handled within updatePaymentTransactionStatus.
-// Note: If a "Pending" or "Failed" payment is marked as "Refunded", 
-// it implies an administrative action and might not involve wallet crediting
-// unless money was actually collected and then returned. The current logic in
-// updatePaymentTransactionStatus credits wallet only if changing from Succeeded to Refunded.
-
-

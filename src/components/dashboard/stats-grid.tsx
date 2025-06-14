@@ -6,7 +6,7 @@ import { StatsCard } from './stats-card';
 import { DollarSign, CalendarClock, Landmark, ListChecks, HeartPulse } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
-import { getSucceededPlatformDonationsTotal, getUniqueCampaignsSupportedByUser, getTotalDonationsByUser } from '@/services/paymentService'; 
+import { getTotalSucceededPaymentTransactions, getUniqueCampaignsSupportedByUser, getTotalDonationsByUser } from '@/services/paymentService'; 
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PlatformStats {
@@ -38,7 +38,7 @@ export function StatsGrid() {
     async function fetchAllStats() {
       setLoadingPlatformStats(true);
       try {
-        const succeededDonationsTotal = await getSucceededPlatformDonationsTotal();
+        const succeededDonationsTotal = await getTotalSucceededPaymentTransactions(); // Corrected function name
         const campaigns = await getCampaigns();
         const activeCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'active').length;
         const upcomingCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'upcoming').length;

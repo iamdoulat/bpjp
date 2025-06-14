@@ -21,13 +21,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FilePlus2, UploadCloud } from "lucide-react";
+import { Loader2, FilePlus2 } from "lucide-react"; // Removed UploadCloud as it's not directly used in UI now
 import { addExpense, type NewExpenseInput } from "@/services/expenseService";
 import { useAuth } from "@/contexts/AuthContext";
 
 const expenseFormSchema = z.object({
   name: z.string().min(3, { message: "Expense name must be at least 3 characters." }).max(150),
   details: z.string().min(10, { message: "Details must be at least 10 characters." }).max(5000),
+  amount: z.preprocess(
+    (val) => Number(String(val).replace(/[^0-9.-]+/g, "")), // Clean and convert to number
+    z.number().min(0.01, { message: "Expense amount must be at least $0.01." })
+  ),
   attachmentFile: z.instanceof(File).optional().nullable(),
 });
 
@@ -36,16 +40,16 @@ type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 const defaultValues: ExpenseFormValues = {
   name: "",
   details: "",
+  amount: 0,
   attachmentFile: null,
 };
 
 export default function CreateExpensePage() {
   const { toast } = useToast();
-  const { user } = useAuth(); // Get current user
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [attachmentPreview, setAttachmentPreview] = React.useState<string | null>(null);
-
 
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
@@ -64,7 +68,7 @@ export default function CreateExpensePage() {
         };
         reader.readAsDataURL(file);
       } else {
-        setAttachmentPreview(null); // Clear preview if not an image
+        setAttachmentPreview(null);
       }
     } else {
       form.setValue("attachmentFile", null);
@@ -82,13 +86,14 @@ export default function CreateExpensePage() {
       const expenseInput: NewExpenseInput = {
         name: data.name,
         details: data.details,
+        amount: data.amount,
         attachmentFile: data.attachmentFile,
-        userId: user.uid, // Add user ID
+        userId: user.uid,
       };
       const expenseId = await addExpense(expenseInput);
       toast({
         title: "Expense Recorded!",
-        description: `Expense "${data.name}" (ID: ${expenseId}) has been successfully saved.`,
+        description: `Expense "${data.name}" (ID: ${expenseId}) for $${data.amount.toFixed(2)} has been successfully saved.`,
       });
       form.reset(defaultValues);
       setAttachmentPreview(null);
@@ -115,7 +120,7 @@ export default function CreateExpensePage() {
           <div>
             <h1 className="text-2xl font-headline font-semibold">Record New Expense</h1>
             <p className="text-muted-foreground text-sm">
-              Enter details for a new expense. (Admin Only Context)
+              Enter details for a new expense. This will be deducted from platform funds.
             </p>
           </div>
         </div>
@@ -163,6 +168,27 @@ export default function CreateExpensePage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expense Amount ($)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="100.00" 
+                          step="0.01"
+                          {...field} 
+                          onChange={e => field.onChange(parseFloat(e.target.value) || 0)} 
+                          disabled={isSubmitting} 
+                        />
+                      </FormControl>
+                      <FormDescription>The total amount of this expense.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormItem>
                   <FormLabel>Attachment (Optional)</FormLabel>
                   <FormControl>
@@ -177,14 +203,14 @@ export default function CreateExpensePage() {
                   {attachmentPreview && (
                     <div className="mt-4 border rounded-md p-2">
                       <p className="text-sm font-medium mb-2">Image Preview:</p>
-                      <img src={attachmentPreview} alt="Attachment preview" className="max-w-full max-h-60 rounded-md object-contain" />
+                      <img src={attachmentPreview} alt="Attachment preview" className="max-w-full max-h-60 rounded-md object-contain" data-ai-hint="document invoice" />
                     </div>
                   )}
                    {form.getValues("attachmentFile") && !attachmentPreview && (
                      <p className="text-sm text-muted-foreground mt-2">File selected: {form.getValues("attachmentFile")?.name}</p>
                    )}
                   <FormDescription>Upload a supporting document or image (e.g., invoice, receipt).</FormDescription>
-                  <FormMessage>{form.formState.errors.attachmentFile?.message}</FormMessage>
+                  <FormMessage>{form.formState.errors.attachmentFile?.message as React.ReactNode}</FormMessage>
                 </FormItem>
 
                 <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || !form.formState.isValid}>
@@ -199,4 +225,3 @@ export default function CreateExpensePage() {
     </AppShell>
   );
 }
-    

@@ -26,10 +26,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
-import { getSucceededPlatformDonationsTotal, getPendingPaymentsCount } from "@/services/paymentService";
+import { getNetPlatformFundsAvailable, getPendingPaymentsCount } from "@/services/paymentService"; // Updated to use net funds
 import { getCampaigns, type CampaignData } from "@/services/campaignService";
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
-
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -37,7 +36,7 @@ function formatCurrency(amount: number) {
 
 interface AdminStatsData {
   totalUsers: number;
-  totalDonations: number;
+  netPlatformFunds: number; // Changed from totalDonations
   activeCampaigns: number;
   pendingPayments: number;
 }
@@ -55,9 +54,9 @@ export default function AdminOverviewPage() {
       setLoading(true);
       setError(null);
       try {
-        const [userProfiles, succeededDonations, allCampaigns, pendingCount] = await Promise.all([
+        const [userProfiles, netFunds, allCampaigns, pendingCount] = await Promise.all([
           getAllUserProfiles(),
-          getSucceededPlatformDonationsTotal(),
+          getNetPlatformFundsAvailable(), // Fetch net funds
           getCampaigns(),
           getPendingPaymentsCount(),
         ]);
@@ -66,7 +65,7 @@ export default function AdminOverviewPage() {
 
         setStats({
           totalUsers: userProfiles.length,
-          totalDonations: succeededDonations,
+          netPlatformFunds: netFunds, // Store net funds
           activeCampaigns: activeCampaignsCount,
           pendingPayments: pendingCount,
         });
@@ -80,7 +79,6 @@ export default function AdminOverviewPage() {
     }
     fetchAdminStats();
   }, []);
-
 
   const handleQuickAction = (actionName: string, path?: string) => {
     if (path) {
@@ -115,7 +113,6 @@ export default function AdminOverviewPage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 bg-card rounded-lg shadow">
           <div>
             <h1 className="text-2xl font-headline font-semibold">Admin Dashboard</h1>
@@ -131,7 +128,6 @@ export default function AdminOverviewPage() {
           </Button>
         </div>
 
-        {/* Stats Cards Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {loading || !stats ? (
             <>
@@ -149,9 +145,9 @@ export default function AdminOverviewPage() {
                 icon={<Users className="h-5 w-5 text-green-600" />}
               />
               <StatsCard
-                title="Total Donations"
-                value={formatCurrency(stats.totalDonations)}
-                subtitle="Succeeded donations"
+                title="Platform Net Funds" // Updated title
+                value={formatCurrency(stats.netPlatformFunds)} // Use net funds
+                subtitle="Net funds after expenses" // Updated subtitle
                 icon={<DollarSign className="h-5 w-5 text-green-600" />}
               />
               <StatsCard
@@ -176,9 +172,7 @@ export default function AdminOverviewPage() {
           )}
         </div>
 
-        {/* Platform Analytics and Quick Actions Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Platform Analytics Card */}
           <Card className="lg:col-span-2 shadow-lg">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -188,7 +182,6 @@ export default function AdminOverviewPage() {
               <CardDescription>Key performance indicators and trends.</CardDescription>
             </CardHeader>
             <CardContent className="h-[250px] md:h-[300px] flex items-center justify-center bg-muted/30 rounded-md">
-              {/* Placeholder for chart component or loading state for chart */}
               {loading ? <Skeleton className="h-full w-full" /> : <p className="text-muted-foreground">Analytics chart will be displayed here.</p>}
             </CardContent>
             <div className="p-4 border-t">
@@ -198,7 +191,6 @@ export default function AdminOverviewPage() {
             </div>
           </Card>
 
-          {/* Quick Actions Card */}
           <Card className="shadow-lg">
             <CardHeader>
                <div className="flex items-center gap-2">
@@ -246,4 +238,3 @@ function StatsCardSkeleton({ variant }: { variant?: "destructive" }) {
     </Card>
   );
 }
-

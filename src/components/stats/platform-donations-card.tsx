@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { StatsCard } from '@/components/dashboard/stats-card';
 import { Landmark } from 'lucide-react';
-import { getSucceededPlatformDonationsTotal } from '@/services/paymentService'; // Updated import
+import { getNetPlatformFundsAvailable } from '@/services/paymentService'; // Updated to use net funds
 import { Skeleton } from '@/components/ui/skeleton';
 
 function formatCurrency(amount: number) {
@@ -13,46 +13,45 @@ function formatCurrency(amount: number) {
 }
 
 export function PlatformDonationsCard() {
-  const [totalSucceededDonations, setTotalSucceededDonations] = useState<number | null>(null); // Renamed for clarity
+  const [netPlatformFunds, setNetPlatformFunds] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchPlatformSucceededDonations() {
+    async function fetchNetPlatformFunds() {
       try {
         setLoading(true);
         setError(null);
-        const sum = await getSucceededPlatformDonationsTotal(); // Use the new service function
-        setTotalSucceededDonations(sum);
+        const netFunds = await getNetPlatformFundsAvailable();
+        setNetPlatformFunds(netFunds);
       } catch (e) {
-        console.error("Failed to fetch platform succeeded donations:", e);
-        setError(e instanceof Error ? e.message : "Could not load platform donation statistics.");
-        setTotalSucceededDonations(0); // Display $0 on error
+        console.error("Failed to fetch net platform funds:", e);
+        setError(e instanceof Error ? e.message : "Could not load platform financial statistics.");
+        setNetPlatformFunds(0); // Display $0 on error
       } finally {
         setLoading(false);
       }
     }
-    fetchPlatformSucceededDonations();
+    fetchNetPlatformFunds();
   }, []);
 
   if (loading) {
     return (
       <StatsCard
-        title="Platform Donations"
+        title="Platform Net Funds"
         value={<Skeleton className="h-7 w-24 inline-block" />}
-        subtitle="Total Succeeded Donations." // Updated subtitle
-        icon={<Landmark className="h-5 w-5" />}
+        subtitle="Net funds after expenses."
+        icon={<Landmark className="h-5 w-5 text-green-600" />}
       />
     );
   }
 
   return (
     <StatsCard
-      title="Platform Donations"
-      value={formatCurrency(totalSucceededDonations ?? 0)}
-      subtitle="Total Succeeded Donations." // Updated subtitle
-      icon={<Landmark className="h-5 w-5" />}
+      title="Platform Net Funds"
+      value={formatCurrency(netPlatformFunds ?? 0)}
+      subtitle="Total Succeeded Donations minus Expenses."
+      icon={<Landmark className="h-5 w-5 text-green-600" />}
     />
   );
 }
