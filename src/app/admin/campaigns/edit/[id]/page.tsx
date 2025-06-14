@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import Image from 'next/image';
 import { useParams, useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -30,9 +31,11 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card"
 import { getCampaignById, updateCampaign, type CampaignUpdateData, type CampaignData } from '@/services/campaignService';
-import { Loader2, AlertCircle } from "lucide-react"
+import { Loader2, AlertCircle, UploadCloud } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
+import { uploadImageToStorage, deleteImageFromStorage } from "@/lib/firebase";
+import ImageCropDialog from "@/components/ui/image-crop-dialog";
 
 const editCampaignFormSchema = z.object({
   campaignTitle: z.string().min(5, {
@@ -51,9 +54,9 @@ const editCampaignFormSchema = z.object({
   endDate: z.date({
     required_error: "An end date is required.",
   }),
-  campaignImageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+  campaignImageFile: z.instanceof(File).optional(), // For storing new cropped file
   organizerName: z.string().max(100, { message: "Organizer name must be at most 100 characters."}).optional().or(z.literal('')),
-  initialStatus: z.enum(["draft", "upcoming", "active", "completed"]), // Added "completed"
+  initialStatus: z.enum(["draft", "upcoming", "active", "completed"]),
 }).refine(data => data.endDate >= data.startDate, {
   message: "End date cannot be before start date.",
   path: ["endDate"],
@@ -71,6 +74,12 @@ export default function EditCampaignPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  
+  const [imageToCropSrc, setImageToCropSrc] = React.useState<string | null>(null);
+  const [croppedImagePreview, setCroppedImagePreview] = React.useState<string | null>(null); // For new image
+  const [currentImagePreview, setCurrentImagePreview] = React.useState<string | null>(null); // For existing image
+  const [isCropDialogOpen, setIsCropDialogOpen] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const form = useForm<EditCampaignFormValues>({
     resolver: zodResolver(editCampaignFormSchema),
@@ -86,17 +95,17 @@ export default function EditCampaignPage() {
           const fetchedCampaign = await getCampaignById(campaignId);
           if (fetchedCampaign) {
             setCampaign(fetchedCampaign);
-            // Pre-fill form
             form.reset({
               campaignTitle: fetchedCampaign.campaignTitle,
               description: fetchedCampaign.description,
               goalAmount: fetchedCampaign.goalAmount,
-              startDate: new Date(fetchedCampaign.startDate as Date), // Ensure it's a Date object
-              endDate: new Date(fetchedCampaign.endDate as Date),     // Ensure it's a Date object
-              campaignImageUrl: fetchedCampaign.campaignImageUrl || "",
+              startDate: new Date(fetchedCampaign.startDate as Date),
+              endDate: new Date(fetchedCampaign.endDate as Date),
+              campaignImageFile: undefined, // Initialize as undefined
               organizerName: fetchedCampaign.organizerName || "",
               initialStatus: fetchedCampaign.initialStatus,
             });
+            setCurrentImagePreview(fetchedCampaign.campaignImageUrl || null);
           } else {
             setError("Campaign not found.");
           }
@@ -114,14 +123,55 @@ export default function EditCampaignPage() {
   const watchedStartDate = form.watch("startDate");
   const watchedEndDate = form.watch("endDate");
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrc(reader.result as string);
+        setIsCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "updated_campaign_image.png", { type: "image/png" });
+    form.setValue("campaignImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    setCroppedImagePreview(URL.createObjectURL(croppedBlob)); // Preview for newly cropped image
+    setCurrentImagePreview(null); // Hide old image preview if new one is cropped
+    setIsCropDialogOpen(false);
+     if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   async function onSubmit(data: EditCampaignFormValues) {
-    if (!campaignId) return;
+    if (!campaignId || !campaign) return;
     setIsSubmitting(true);
+    let uploadedImageUrl = campaign.campaignImageUrl; // Default to existing image URL
+
     try {
+      if (data.campaignImageFile) { // If a new file was selected and cropped
+        // Delete old image if it exists and is different from placeholder
+        if (campaign.campaignImageUrl && !campaign.campaignImageUrl.includes('placehold.co')) {
+          await deleteImageFromStorage(campaign.campaignImageUrl);
+        }
+        // Upload new image
+        const timestamp = new Date().getTime();
+        const uniqueFileName = `campaign_image_${campaignId}_${timestamp}_${data.campaignImageFile.name}`;
+        uploadedImageUrl = await uploadImageToStorage(data.campaignImageFile, `campaign_images/${uniqueFileName}`);
+      }
+
       const campaignInput: CampaignUpdateData = {
-        ...data,
+        campaignTitle: data.campaignTitle,
+        description: data.description,
+        goalAmount: data.goalAmount,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
+        campaignImageUrl: uploadedImageUrl || "", // Ensure it's a string
+        organizerName: data.organizerName,
+        initialStatus: data.initialStatus,
       };
       await updateCampaign(campaignId, campaignInput);
       toast({
@@ -129,7 +179,7 @@ export default function EditCampaignPage() {
         description: `Campaign "${data.campaignTitle}" has been successfully updated.`,
         variant: "default",
       });
-      router.push("/admin/campaigns"); // Navigate back to manage campaigns page
+      router.push("/admin/campaigns");
     } catch (error) {
       console.error("Failed to update campaign:", error);
       let errorMessage = "An unexpected error occurred.";
@@ -150,7 +200,6 @@ export default function EditCampaignPage() {
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
-          {/* Removed max-w-3xl mx-auto from this div */}
           <div>
             <Card className="shadow-lg max-w-3xl mx-auto">
               <CardHeader>
@@ -188,7 +237,7 @@ export default function EditCampaignPage() {
     );
   }
   
-  if (!campaign) { // Should be covered by error state if not found, but good fallback
+  if (!campaign) {
     return (
          <AppShell>
             <main className="flex-1 p-4 md:p-6 flex items-center justify-center">
@@ -201,7 +250,6 @@ export default function EditCampaignPage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
-        {/* Removed max-w-3xl mx-auto from this div */}
         <div> 
           <Card className="shadow-lg max-w-3xl mx-auto">
             <CardHeader>
@@ -278,7 +326,6 @@ export default function EditCampaignPage() {
                           placeholder="Select campaign start date"
                            disabled={(date) => {
                             if (isSubmitting) return true;
-                            // Allow past dates for editing, but not if it's after endDate
                             if (watchedEndDate && date > watchedEndDate) return true;
                             return false;
                           }}
@@ -302,7 +349,6 @@ export default function EditCampaignPage() {
                           placeholder="Select campaign end date"
                           disabled={(date) => {
                             if (isSubmitting) return true;
-                            // Allow past dates for editing, but not if it's before startDate
                             if (watchedStartDate && date < watchedStartDate) return true;
                             return false;
                           }}
@@ -314,22 +360,37 @@ export default function EditCampaignPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="campaignImageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Campaign Image URL (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://placehold.co/600x400.png" {...field} value={field.value ?? ""} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormDescription>
-                          Provide a URL for the campaign image. Use a placeholder like https://placehold.co/600x400.png if needed.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
+                  <FormItem>
+                    <FormLabel>Campaign Image</FormLabel>
+                    <div className="space-y-2">
+                      {(croppedImagePreview || currentImagePreview) && (
+                        <div className="mt-2 relative w-full aspect-[3/2] max-w-md mx-auto border rounded-md overflow-hidden">
+                          <Image 
+                            src={croppedImagePreview || currentImagePreview || "https://placehold.co/600x400.png"} 
+                            alt="Campaign image preview" 
+                            layout="fill" 
+                            objectFit="contain"
+                            data-ai-hint="campaign event" />
+                        </div>
+                      )}
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/png, image/jpeg, image/gif" 
+                          onChange={handleFileChange}
+                          className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                          disabled={isSubmitting}
+                          ref={fileInputRef}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormDescription>
+                      Upload or change the image for your campaign (aspect ratio 3:2, e.g., 600x400px recommended).
+                    </FormDescription>
+                    <FormMessage>{form.formState.errors.campaignImageFile?.message}</FormMessage>
+                  </FormItem>
+
                   <FormField
                     control={form.control}
                     name="organizerName"
@@ -372,7 +433,7 @@ export default function EditCampaignPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || !form.formState.isValid || isLoading}>
+                  <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || !form.formState.isDirty || !form.formState.isValid || isLoading}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>
@@ -381,6 +442,23 @@ export default function EditCampaignPage() {
             </CardContent>
           </Card>
         </div>
+        {imageToCropSrc && (
+          <ImageCropDialog
+            isOpen={isCropDialogOpen}
+            onClose={() => {
+              setIsCropDialogOpen(false);
+              setImageToCropSrc(null); 
+              if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+              }
+            }}
+            imageSrc={imageToCropSrc}
+            onCropComplete={handleCropComplete}
+            aspectRatio={600 / 400}
+            targetWidth={600}
+            targetHeight={400}
+          />
+        )}
       </main>
     </AppShell>
   )

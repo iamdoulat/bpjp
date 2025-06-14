@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import Image from 'next/image';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -29,7 +30,9 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card"
 import { addCampaign, type NewCampaignInputData } from '@/services/campaignService';
-import { Loader2 } from "lucide-react"
+import { Loader2, UploadCloud } from "lucide-react"
+import { uploadImageToStorage } from "@/lib/firebase";
+import ImageCropDialog from "@/components/ui/image-crop-dialog";
 
 const newCampaignFormSchema = z.object({
   campaignTitle: z.string().min(5, {
@@ -48,7 +51,7 @@ const newCampaignFormSchema = z.object({
   endDate: z.date({
     required_error: "An end date is required.",
   }),
-  campaignImageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+  campaignImageFile: z.instanceof(File).optional(), // For storing the cropped file
   organizerName: z.string().max(100, { message: "Organizer name must be at most 100 characters."}).optional().or(z.literal('')),
   initialStatus: z.enum(["draft", "upcoming", "active"]),
 }).refine(data => data.endDate >= data.startDate, {
@@ -58,14 +61,13 @@ const newCampaignFormSchema = z.object({
 
 type NewCampaignFormValues = z.infer<typeof newCampaignFormSchema>
 
-// This ensures the type passed to addCampaign matches NewCampaignInputData
-const defaultValues: NewCampaignFormValues = {
+const defaultValues: Omit<NewCampaignFormValues, 'startDate' | 'endDate'> & { startDate?: Date; endDate?: Date } = {
   campaignTitle: "",
   description: "",
   goalAmount: 1000,
-  startDate: undefined as unknown as Date, // Required, but set to undefined for initial empty state
-  endDate: undefined as unknown as Date,   // Required, but set to undefined for initial empty state
-  campaignImageUrl: "",
+  startDate: undefined,
+  endDate: undefined,
+  campaignImageFile: undefined,
   organizerName: "",
   initialStatus: "draft",
 }
@@ -73,6 +75,12 @@ const defaultValues: NewCampaignFormValues = {
 export default function NewCampaignPage() {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [imageToCropSrc, setImageToCropSrc] = React.useState<string | null>(null);
+  const [croppedImagePreview, setCroppedImagePreview] = React.useState<string | null>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+
   const form = useForm<NewCampaignFormValues>({
     resolver: zodResolver(newCampaignFormSchema),
     defaultValues,
@@ -82,14 +90,48 @@ export default function NewCampaignPage() {
   const watchedStartDate = form.watch("startDate");
   const watchedEndDate = form.watch("endDate");
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrc(reader.result as string);
+        setIsCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "cropped_campaign_image.png", { type: "image/png" });
+    form.setValue("campaignImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    setCroppedImagePreview(URL.createObjectURL(croppedBlob));
+    setIsCropDialogOpen(false); // Close dialog after crop
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // Reset file input
+    }
+  };
+
   async function onSubmit(data: NewCampaignFormValues) {
     setIsSubmitting(true);
+    let uploadedImageUrl: string | undefined = undefined;
+
     try {
-      // Ensure data conforms to NewCampaignInputData, especially date types
+      if (data.campaignImageFile) {
+        const timestamp = new Date().getTime();
+        const uniqueFileName = `campaign_image_${timestamp}_${data.campaignImageFile.name}`;
+        uploadedImageUrl = await uploadImageToStorage(data.campaignImageFile, `campaign_images/${uniqueFileName}`);
+      }
+
       const campaignInput: NewCampaignInputData = {
-        ...data,
-        startDate: new Date(data.startDate), // Ensure it's a Date object
-        endDate: new Date(data.endDate),     // Ensure it's a Date object
+        campaignTitle: data.campaignTitle,
+        description: data.description,
+        goalAmount: data.goalAmount,
+        startDate: new Date(data.startDate as Date),
+        endDate: new Date(data.endDate as Date),
+        organizerName: data.organizerName,
+        initialStatus: data.initialStatus,
+        campaignImageUrl: uploadedImageUrl, // Use the uploaded image URL
       };
       const campaignId = await addCampaign(campaignInput);
       toast({
@@ -97,7 +139,8 @@ export default function NewCampaignPage() {
         description: `Campaign "${data.campaignTitle}" (ID: ${campaignId}) has been successfully saved.`,
         variant: "default",
       });
-      form.reset(); 
+      form.reset(defaultValues);
+      setCroppedImagePreview(null); 
     } catch (error) {
       console.error("Failed to save campaign:", error);
       let errorMessage = "An unexpected error occurred.";
@@ -117,9 +160,8 @@ export default function NewCampaignPage() {
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
-        {/* Removed max-w-3xl mx-auto from this div */}
         <div> 
-          <Card className="shadow-lg max-w-3xl mx-auto"> {/* Card can maintain its own max-width for readability */}
+          <Card className="shadow-lg max-w-3xl mx-auto">
             <CardHeader>
               <CardTitle className="text-2xl font-headline">Create New Campaign</CardTitle>
               <ShadCNCardDescription>
@@ -196,9 +238,7 @@ export default function NewCampaignPage() {
                             if (isSubmitting) return true;
                             const today = new Date();
                             today.setHours(0,0,0,0);
-                            // Disable past dates
                             if (date < today) return true;
-                            // Disable if end date is set and this date is after end date
                             if (watchedEndDate && date > watchedEndDate) return true;
                             return false;
                           }}
@@ -224,9 +264,7 @@ export default function NewCampaignPage() {
                             if (isSubmitting) return true;
                             const today = new Date();
                             today.setHours(0,0,0,0);
-                             // If no start date, disable only past dates
                             if (!watchedStartDate && date < today) return true;
-                            // If start date exists, disable dates before start date OR past dates (if start date itself is in past)
                             if (watchedStartDate && (date < watchedStartDate || date < today)) return true;
                             return false;
                           }}
@@ -238,22 +276,30 @@ export default function NewCampaignPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="campaignImageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Campaign Image URL (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://placehold.co/600x400.png" {...field} value={field.value ?? ""} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormDescription>
-                          Provide a URL for the campaign image. Use a placeholder like https://placehold.co/600x400.png if needed.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
+                  
+                  <FormItem>
+                    <FormLabel>Campaign Image (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        accept="image/png, image/jpeg, image/gif" 
+                        onChange={handleFileChange}
+                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        disabled={isSubmitting}
+                        ref={fileInputRef}
+                      />
+                    </FormControl>
+                    {croppedImagePreview && (
+                      <div className="mt-4 relative w-full aspect-[3/2] max-w-md mx-auto border rounded-md overflow-hidden">
+                        <Image src={croppedImagePreview} alt="Cropped campaign preview" layout="fill" objectFit="contain" />
+                      </div>
                     )}
-                  />
+                    <FormDescription>
+                      Upload an image for your campaign (aspect ratio 3:2, e.g., 600x400px recommended).
+                    </FormDescription>
+                    <FormMessage>{form.formState.errors.campaignImageFile?.message}</FormMessage>
+                  </FormItem>
+
                   <FormField
                     control={form.control}
                     name="organizerName"
@@ -304,6 +350,23 @@ export default function NewCampaignPage() {
             </CardContent>
           </Card>
         </div>
+        {imageToCropSrc && (
+          <ImageCropDialog
+            isOpen={isCropDialogOpen}
+            onClose={() => {
+              setIsCropDialogOpen(false);
+              setImageToCropSrc(null); // Clear src if dialog is closed without cropping
+               if (fileInputRef.current) {
+                fileInputRef.current.value = ""; // Reset file input
+              }
+            }}
+            imageSrc={imageToCropSrc}
+            onCropComplete={handleCropComplete}
+            aspectRatio={600 / 400}
+            targetWidth={600}
+            targetHeight={400}
+          />
+        )}
       </main>
     </AppShell>
   )
