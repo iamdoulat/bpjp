@@ -1,7 +1,7 @@
 
 // src/services/paymentService.ts
 import { db, auth } from '@/lib/firebase'; // Added auth
-import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer, runTransaction } from 'firebase/firestore'; // Added runTransaction
+import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer, runTransaction, type DocumentSnapshot } from 'firebase/firestore'; // Added runTransaction and DocumentSnapshot
 
 // Interface for data stored and retrieved from Firestore
 export interface PaymentTransaction {
@@ -37,25 +37,37 @@ const PAYMENT_TRANSACTIONS_COLLECTION = 'paymentTransactions';
 const CAMPAIGNS_COLLECTION = 'campaigns';
 
 export async function addPaymentTransaction(transactionInput: NewPaymentTransactionInput): Promise<string> {
-  const paymentDocRef = doc(collection(db, PAYMENT_TRANSACTIONS_COLLECTION)); // Generate ref upfront for transaction ID
+  const paymentDocRef = doc(collection(db, PAYMENT_TRANSACTIONS_COLLECTION));
   const campaignDocRef = doc(db, CAMPAIGNS_COLLECTION, transactionInput.campaignId);
 
   try {
     await runTransaction(db, async (transaction) => {
-      // Base data for the transaction
-      const dataToSave: any = { // Use `any` temporarily for flexibility, then cast or define a more precise intermediate type
+      // Determine initial status based on payment method
+      const initialStatus = transactionInput.paymentMethod === "Wallet" ? "Succeeded" as const : "Pending" as const;
+
+      // ** Perform reads first if necessary **
+      let campaignSnap: DocumentSnapshot<DocumentData> | null = null;
+      if (initialStatus === "Succeeded") { // We only need to read campaign if we're immediately updating raisedAmount
+        campaignSnap = await transaction.get(campaignDocRef);
+        if (!campaignSnap.exists()) {
+          throw new Error(`Campaign ${transactionInput.campaignId} not found.`);
+        }
+      }
+
+      // ** Now perform writes **
+      // Base data for the payment transaction
+      const dataToSave: Omit<PaymentTransaction, 'id' | 'date'> & { date: Timestamp; status: "Succeeded" | "Pending" } = {
         userId: transactionInput.userId,
         userEmail: transactionInput.userEmail,
         campaignId: transactionInput.campaignId,
         campaignName: transactionInput.campaignName,
         amount: transactionInput.amount,
         date: Timestamp.now(),
-        status: transactionInput.paymentMethod === "Wallet" ? "Succeeded" as const : "Pending" as const,
+        status: initialStatus,
         method: transactionInput.paymentMethod,
-        // transactionReference: undefined, // Firestore omits undefined fields, so this is fine if it's truly optional
       };
 
-      // Conditionally add BKash specific fields only if they are provided and method is BKash
+      // Conditionally add BKash specific fields
       if (transactionInput.paymentMethod === "BKash") {
         if (transactionInput.lastFourDigits) {
           dataToSave.lastFourDigits = transactionInput.lastFourDigits;
@@ -64,29 +76,16 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
           dataToSave.receiverBkashNo = transactionInput.receiverBkashNo;
         }
       }
+      
+      // Set the payment transaction document
+      transaction.set(paymentDocRef, dataToSave);
 
-      transaction.set(paymentDocRef, dataToSave as Omit<PaymentTransaction, 'id' | 'date'> & { date: Timestamp });
-
-
-      // If payment is 'Wallet' and thus 'Succeeded', or if a BKash payment is directly marked succeeded (though current logic makes it pending)
-      // update campaign's raisedAmount
-      if (dataToSave.status === "Succeeded") {
-        const campaignSnap = await transaction.get(campaignDocRef);
-        if (!campaignSnap.exists()) {
-          throw new Error(`Campaign ${transactionInput.campaignId} not found.`);
-        }
+      // If payment status is 'Succeeded' (i.e., Wallet payment), update campaign's raisedAmount
+      if (initialStatus === "Succeeded" && campaignSnap && campaignSnap.exists()) { // campaignSnap will exist if initialStatus is Succeeded
         const campaignData = campaignSnap.data();
         const currentRaisedAmount = campaignData.raisedAmount || 0;
         const newRaisedAmount = currentRaisedAmount + transactionInput.amount;
         transaction.update(campaignDocRef, { raisedAmount: newRaisedAmount });
-        
-        // Future Phase 2: Deduct from user's walletBalance here if method is Wallet
-        // const userProfileRef = doc(db, 'userProfiles', transactionInput.userId);
-        // const userProfileSnap = await transaction.get(userProfileRef);
-        // if (!userProfileSnap.exists()) throw new Error("User profile not found for wallet deduction.");
-        // const currentWalletBalance = userProfileSnap.data().walletBalance || 0;
-        // if (currentWalletBalance < transactionInput.amount) throw new Error("Insufficient wallet balance.");
-        // transaction.update(userProfileRef, { walletBalance: currentWalletBalance - transactionInput.amount });
       }
     });
 
