@@ -3,7 +3,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react'; // Added useCallback
 import { getOrganizationSettings, type OrganizationSettingsData } from '@/services/organizationSettingsService'; // Import the service
 
 interface AppContextType {
@@ -42,15 +42,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     fetchInitialAppSettings();
   }, []);
 
-  const setAppNameState = (name: string) => {
+  // Memoize the setAppNameState function that will be passed in context
+  const memoizedSetAppNameState = useCallback((name: string) => {
     setAppName(name);
-    // Update appName within the organizationSettings state as well if it exists
-    setOrganizationSettings(prevSettings => prevSettings ? { ...prevSettings, appName: name } : null);
-  };
+  }, []); // setAppName from useState is stable, so empty dependency array for useCallback
 
   const value = {
     appName,
-    setAppNameState,
+    setAppNameState: memoizedSetAppNameState, // Use the memoized version
     organizationSettings,
     isLoadingAppSettings,
   };
@@ -65,3 +64,4 @@ export const useAppContext = (): AppContextType => {
   }
   return context;
 };
+
