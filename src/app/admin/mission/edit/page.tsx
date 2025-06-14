@@ -199,9 +199,9 @@ export default function EditMissionPage() {
 
                 <Alert className="mt-6">
                   <Construction className="h-4 w-4" />
-                  <ShadCNAlertTitle>Advanced Editor Coming Soon!</ShadCNAlertTitle>
+                  <ShadCNAlertTitle>Advanced Editor Capabilities</ShadCNAlertTitle>
                   <AlertDescription>
-                    Full rich text editing capabilities (bold, italics, lists, media embedding, etc.) for the mission details will be added in a future update.
+                    Full rich text editing capabilities (bold, italics, lists, media embedding, etc.) for the mission details are planned for a future update. For now, you can use basic HTML tags for simple formatting like line breaks (`&lt;br&gt;`).
                   </AlertDescription>
                 </Alert>
 
@@ -217,3 +217,4 @@ export default function EditMissionPage() {
     </AppShell>
   );
 }
+
