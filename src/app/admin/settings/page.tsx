@@ -22,11 +22,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Settings, UploadCloud, AlertCircle } from "lucide-react";
+import { Loader2, Save, Settings, AlertCircle } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { getOrganizationSettings, saveOrganizationSettings, type OrganizationSettingsData } from "@/services/organizationSettingsService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
+import ImageCropDialog from "@/components/ui/image-crop-dialog";
 
 
 const organizationSettingsSchema = z.object({
@@ -42,8 +43,7 @@ const organizationSettingsSchema = z.object({
   secretaryName: z.string().min(3, { message: "General Secretary's name must be at least 3 characters." }).max(100),
   secretaryImageFile: z.instanceof(File).optional(),
   appName: z.string().min(1, { message: "App Name cannot be empty." }).max(50),
-  coverImageFile: z.instanceof(File).optional(), // Added cover image file
-  // URLs are not part of the form data, but handled via previews/existing data
+  coverImageFile: z.instanceof(File).optional(),
 });
 
 type OrganizationSettingsFormValues = z.infer<typeof organizationSettingsSchema>;
@@ -55,9 +55,24 @@ export default function AdminSettingsPage() {
   const [isLoadingData, setIsLoadingData] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+  // State for president image cropping
   const [presidentPreview, setPresidentPreview] = React.useState<string | null>(null);
+  const [imageToCropSrcPresident, setImageToCropSrcPresident] = React.useState<string | null>(null);
+  const [isPresidentCropDialogOpen, setIsPresidentCropDialogOpen] = React.useState(false);
+  const presidentFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // State for secretary image cropping
   const [secretaryPreview, setSecretaryPreview] = React.useState<string | null>(null);
-  const [coverPreview, setCoverPreview] = React.useState<string | null>(null); // Added cover preview
+  const [imageToCropSrcSecretary, setImageToCropSrcSecretary] = React.useState<string | null>(null);
+  const [isSecretaryCropDialogOpen, setIsSecretaryCropDialogOpen] = React.useState(false);
+  const secretaryFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // State for cover image cropping
+  const [coverPreview, setCoverPreview] = React.useState<string | null>(null);
+  const [imageToCropSrcCover, setImageToCropSrcCover] = React.useState<string | null>(null);
+  const [isCoverCropDialogOpen, setIsCoverCropDialogOpen] = React.useState(false);
+  const coverFileInputRef = React.useRef<HTMLInputElement>(null);
+
 
   const form = useForm<OrganizationSettingsFormValues>({
     resolver: zodResolver(organizationSettingsSchema),
@@ -71,7 +86,7 @@ export default function AdminSettingsPage() {
       contactEmail: "",
       presidentName: "",
       secretaryName: "",
-      appName: appName, // Initialize with context or default
+      appName: appName,
       presidentImageFile: undefined,
       secretaryImageFile: undefined,
       coverImageFile: undefined,
@@ -96,17 +111,17 @@ export default function AdminSettingsPage() {
             contactEmail: settings.contactEmail,
             presidentName: settings.presidentName,
             secretaryName: settings.secretaryName,
-            appName: settings.appName, // This will be the persisted appName
+            appName: settings.appName,
             presidentImageFile: undefined,
             secretaryImageFile: undefined,
             coverImageFile: undefined,
           });
           if (settings.presidentImageURL) setPresidentPreview(settings.presidentImageURL);
           if (settings.secretaryImageURL) setSecretaryPreview(settings.secretaryImageURL);
-          if (settings.coverImageUrl) setCoverPreview(settings.coverImageUrl); // Set cover preview
-          if (settings.appName) setAppNameState(settings.appName); // Update context
+          if (settings.coverImageUrl) setCoverPreview(settings.coverImageUrl);
+          if (settings.appName) setAppNameState(settings.appName);
         } else {
-           form.reset({ ...form.formState.defaultValues, appName: appName }); // Fallback to defaults including context appName
+           form.reset({ ...form.formState.defaultValues, appName: appName });
         }
       } catch (e) {
         console.error("Failed to load organization settings:", e);
@@ -117,23 +132,69 @@ export default function AdminSettingsPage() {
       }
     }
     loadSettings();
-  }, [form, setAppNameState, appName]); // Include appName from context as it's a default
+  }, [form, setAppNameState, appName]);
 
-  const handleImageChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-    field: "presidentImageFile" | "secretaryImageFile" | "coverImageFile",
-    setPreview: React.Dispatch<React.SetStateAction<string | null>>
-  ) => {
+
+  const handlePresidentFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue(field, file, { shouldDirty: true });
-      setPreview(URL.createObjectURL(file));
-    } else {
-      form.setValue(field, undefined);
-      // Do not clear preview if file is removed, rely on existing URL from Firestore if present
-      // setPreview(null); // Clears preview if file is deselected, which might not be desired if there's an existing image
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrcPresident(reader.result as string);
+        setIsPresidentCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
     }
   };
+
+  const handlePresidentCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "president_image_cropped.png", { type: "image/png" });
+    form.setValue("presidentImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    setPresidentPreview(URL.createObjectURL(croppedBlob));
+    setIsPresidentCropDialogOpen(false);
+    if (presidentFileInputRef.current) presidentFileInputRef.current.value = "";
+  };
+
+  const handleSecretaryFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrcSecretary(reader.result as string);
+        setIsSecretaryCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSecretaryCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "secretary_image_cropped.png", { type: "image/png" });
+    form.setValue("secretaryImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    setSecretaryPreview(URL.createObjectURL(croppedBlob));
+    setIsSecretaryCropDialogOpen(false);
+    if (secretaryFileInputRef.current) secretaryFileInputRef.current.value = "";
+  };
+
+  const handleCoverFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrcCover(reader.result as string);
+        setIsCoverCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "cover_image_cropped.png", { type: "image/png" });
+    form.setValue("coverImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    setCoverPreview(URL.createObjectURL(croppedBlob));
+    setIsCoverCropDialogOpen(false);
+    if (coverFileInputRef.current) coverFileInputRef.current.value = "";
+  };
+
 
   async function onSubmit(data: OrganizationSettingsFormValues) {
     setIsSubmitting(true);
@@ -143,7 +204,7 @@ export default function AdminSettingsPage() {
       await saveOrganizationSettings(settingsToSave, presidentImageFile, secretaryImageFile, coverImageFile);
       
       if (data.appName) {
-        setAppNameState(data.appName); // Update context immediately
+        setAppNameState(data.appName);
       }
       toast({
         title: "Settings Saved!",
@@ -337,9 +398,9 @@ export default function AdminSettingsPage() {
                       </div>
                     )}
                     <FormControl>
-                       <Input id="coverImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleImageChange(e, "coverImageFile", setCoverPreview)} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting}/>
+                       <Input id="coverImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleCoverFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting} ref={coverFileInputRef} />
                     </FormControl>
-                    <FormDescription>Upload a cover image for the About Us page banner (recommended 1200x250 or 1200x300).</FormDescription>
+                    <FormDescription>Upload a cover image for the About Us page banner (recommended 1200x300).</FormDescription>
                     <FormMessage>{form.formState.errors.coverImageFile?.message}</FormMessage>
                   </FormItem>
                 </div>
@@ -369,9 +430,9 @@ export default function AdminSettingsPage() {
                       </div>
                     )}
                     <FormControl>
-                       <Input id="presidentImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleImageChange(e, "presidentImageFile", setPresidentPreview)} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting}/>
+                       <Input id="presidentImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handlePresidentFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting} ref={presidentFileInputRef}/>
                     </FormControl>
-                    <FormDescription>Upload a picture (PNG, JPG, GIF).</FormDescription>
+                    <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
                     <FormMessage>{form.formState.errors.presidentImageFile?.message}</FormMessage>
                   </FormItem>
                 </div>
@@ -400,9 +461,9 @@ export default function AdminSettingsPage() {
                       </div>
                     )}
                     <FormControl>
-                      <Input id="secretaryImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleImageChange(e, "secretaryImageFile", setSecretaryPreview)} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting}/>
+                      <Input id="secretaryImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleSecretaryFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting} ref={secretaryFileInputRef}/>
                     </FormControl>
-                     <FormDescription>Upload a picture (PNG, JPG, GIF).</FormDescription>
+                     <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
                     <FormMessage>{form.formState.errors.secretaryImageFile?.message}</FormMessage>
                   </FormItem>
                 </div>
@@ -415,6 +476,58 @@ export default function AdminSettingsPage() {
             </Form>
           </CardContent>
         </Card>
+
+        {/* President Image Crop Dialog */}
+        {imageToCropSrcPresident && (
+          <ImageCropDialog
+            isOpen={isPresidentCropDialogOpen}
+            onClose={() => {
+              setIsPresidentCropDialogOpen(false);
+              setImageToCropSrcPresident(null);
+              if (presidentFileInputRef.current) presidentFileInputRef.current.value = "";
+            }}
+            imageSrc={imageToCropSrcPresident}
+            onCropComplete={handlePresidentCropComplete}
+            aspectRatio={1} // 1:1 aspect ratio
+            targetWidth={150}
+            targetHeight={150}
+          />
+        )}
+
+        {/* Secretary Image Crop Dialog */}
+        {imageToCropSrcSecretary && (
+          <ImageCropDialog
+            isOpen={isSecretaryCropDialogOpen}
+            onClose={() => {
+              setIsSecretaryCropDialogOpen(false);
+              setImageToCropSrcSecretary(null);
+              if (secretaryFileInputRef.current) secretaryFileInputRef.current.value = "";
+            }}
+            imageSrc={imageToCropSrcSecretary}
+            onCropComplete={handleSecretaryCropComplete}
+            aspectRatio={1} // 1:1 aspect ratio
+            targetWidth={150}
+            targetHeight={150}
+          />
+        )}
+
+        {/* Cover Image Crop Dialog */}
+        {imageToCropSrcCover && (
+          <ImageCropDialog
+            isOpen={isCoverCropDialogOpen}
+            onClose={() => {
+              setIsCoverCropDialogOpen(false);
+              setImageToCropSrcCover(null);
+              if (coverFileInputRef.current) coverFileInputRef.current.value = "";
+            }}
+            imageSrc={imageToCropSrcCover}
+            onCropComplete={handleCoverCropComplete}
+            aspectRatio={1200 / 300} // Example: 4:1 aspect ratio for cover
+            targetWidth={1200}
+            targetHeight={300}
+          />
+        )}
+
       </main>
     </AppShell>
   );
