@@ -50,7 +50,7 @@ interface AllDonorsTransactionEntry {
 }
 
 const TOP_DONORS_COUNT = 10;
-const ITEMS_PER_PAGE_ALL_DONORS = 10;
+const ITEMS_PER_PAGE_ALL_DONORS = 20; // Changed from 10 to 20
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
