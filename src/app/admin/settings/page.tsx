@@ -39,8 +39,10 @@ const organizationSettingsSchema = z.object({
   contactPersonCell: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid contact person cell number." }).optional().or(z.literal('')),
   contactEmail: z.string().email({ message: "Invalid contact email format." }).max(100),
   presidentName: z.string().min(3, { message: "President's name must be at least 3 characters." }).max(100),
+  presidentMobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid president's mobile number." }).optional().or(z.literal('')),
   presidentImageFile: z.instanceof(File).optional(),
   secretaryName: z.string().min(3, { message: "General Secretary's name must be at least 3 characters." }).max(100),
+  secretaryMobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid secretary's mobile number." }).optional().or(z.literal('')),
   secretaryImageFile: z.instanceof(File).optional(),
   appName: z.string().min(1, { message: "App Name cannot be empty." }).max(50),
   coverImageFile: z.instanceof(File).optional(),
@@ -85,7 +87,9 @@ export default function AdminSettingsPage() {
       contactPersonCell: "",
       contactEmail: "",
       presidentName: "",
+      presidentMobileNumber: "",
       secretaryName: "",
+      secretaryMobileNumber: "",
       appName: appName,
       presidentImageFile: undefined,
       secretaryImageFile: undefined,
@@ -110,7 +114,9 @@ export default function AdminSettingsPage() {
             contactPersonCell: settings.contactPersonCell || "",
             contactEmail: settings.contactEmail,
             presidentName: settings.presidentName,
+            presidentMobileNumber: settings.presidentMobileNumber || "",
             secretaryName: settings.secretaryName,
+            secretaryMobileNumber: settings.secretaryMobileNumber || "",
             appName: settings.appName,
             presidentImageFile: undefined,
             secretaryImageFile: undefined,
@@ -234,7 +240,7 @@ export default function AdminSettingsPage() {
               <Skeleton className="h-4 w-4/5" />
             </CardHeader>
             <CardContent className="space-y-8 pt-6">
-              {[...Array(10)].map((_, i) => (
+              {[...Array(12)].map((_, i) => ( // Increased skeleton items
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-4 w-1/4" />
                   <Skeleton className="h-10 w-full" />
@@ -422,6 +428,19 @@ export default function AdminSettingsPage() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="presidentMobileNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>President's Mobile Number (Optional)</FormLabel>
+                        <FormControl>
+                          <Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormItem>
                     <FormLabel htmlFor="presidentImageFile">President's Picture</FormLabel>
                     {presidentPreview && (
@@ -448,6 +467,19 @@ export default function AdminSettingsPage() {
                         <FormLabel>General Secretary's Name</FormLabel>
                         <FormControl>
                           <Input placeholder="Full name" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="secretaryMobileNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>General Secretary's Mobile Number (Optional)</FormLabel>
+                        <FormControl>
+                          <Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -15,8 +15,10 @@ export interface OrganizationSettingsData {
   contactPersonCell?: string | null;
   contactEmail: string;
   presidentName: string;
+  presidentMobileNumber?: string | null;
   presidentImageURL?: string | null;
   secretaryName: string;
+  secretaryMobileNumber?: string | null;
   secretaryImageURL?: string | null;
   appName: string;
   lastUpdated?: Timestamp;
@@ -64,7 +66,9 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
         contactPersonName: data.contactPersonName || "Default Contact Person",
         contactEmail: data.contactEmail || "default@example.com",
         presidentName: data.presidentName || "Default President",
+        presidentMobileNumber: data.presidentMobileNumber || null,
         secretaryName: data.secretaryName || "Default Secretary",
+        secretaryMobileNumber: data.secretaryMobileNumber || null,
         appName: data.appName || process.env.NEXT_PUBLIC_APP_NAME || "BPJP",
         registrationNumber: data.registrationNumber || null,
         committeePeriod: data.committeePeriod || null,
@@ -86,8 +90,10 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       contactPersonCell: null,
       contactEmail: "contact@example.com",
       presidentName: "Alice President",
+      presidentMobileNumber: null,
       presidentImageURL: null,
       secretaryName: "Bob Secretary",
+      secretaryMobileNumber: null,
       secretaryImageURL: null,
       appName: process.env.NEXT_PUBLIC_APP_NAME || "BPJP",
       coverImageUrl: null,
@@ -104,7 +110,9 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       contactPersonName: "Error",
       contactEmail: "error@example.com",
       presidentName: "Error",
+      presidentMobileNumber: null,
       secretaryName: "Error",
+      secretaryMobileNumber: null,
       lastUpdated: undefined,
       // ensure all required fields are present
       registrationNumber: null,
@@ -118,17 +126,17 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
 }
 
 export async function saveOrganizationSettings(
-  settingsData: Omit<OrganizationSettingsData, 'id' | 'lastUpdated' | 'presidentImageURL' | 'secretaryImageURL'>,
+  settingsData: Omit<OrganizationSettingsData, 'id' | 'lastUpdated' | 'presidentImageURL' | 'secretaryImageURL' | 'coverImageUrl'>,
   presidentImageFile?: File,
   secretaryImageFile?: File,
-  coverImageFile?: File // Added coverImageFile
+  coverImageFile?: File
 ): Promise<void> {
   try {
     const docRef = doc(db, SITE_CONTENT_COLLECTION, SETTINGS_DOC_ID);
     const currentSettings = await getOrganizationSettings(); // Fetch current settings to get existing image URLs
 
     const dataToSave: Partial<OrganizationSettingsData> = {
-      ...settingsData,
+      ...settingsData, // This now includes presidentMobileNumber and secretaryMobileNumber
       lastUpdated: serverTimestamp() as Timestamp,
     };
 
@@ -146,7 +154,7 @@ export async function saveOrganizationSettings(
       dataToSave.secretaryImageURL = await uploadImage(secretaryImageFile, `organization/${SETTINGS_DOC_ID}/secretary_image.${secretaryImageFile.name.split('.').pop()}`);
     }
     
-    if (coverImageFile) { // Handle cover image upload
+    if (coverImageFile) {
       if (currentSettings?.coverImageUrl) {
         await deleteImage(currentSettings.coverImageUrl);
       }
@@ -163,3 +171,4 @@ export async function saveOrganizationSettings(
     throw new Error('An unknown error occurred while saving organization settings.');
   }
 }
+
