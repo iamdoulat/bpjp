@@ -393,7 +393,7 @@ export default function AdminSettingsPage() {
                   <FormItem>
                     <FormLabel htmlFor="coverImageFile">Cover Picture</FormLabel>
                     {coverPreview && (
-                      <div className="mt-2 mb-2 w-full aspect-[16/5] relative rounded-md overflow-hidden border">
+                      <div className="mt-2 mb-2 w-full aspect-[4/1] relative rounded-md overflow-hidden border">
                         <Image src={coverPreview} alt="Cover preview" layout="fill" objectFit="cover" data-ai-hint="organization banner"/>
                       </div>
                     )}
@@ -522,7 +522,7 @@ export default function AdminSettingsPage() {
             }}
             imageSrc={imageToCropSrcCover}
             onCropComplete={handleCoverCropComplete}
-            aspectRatio={1200 / 300} // Example: 4:1 aspect ratio for cover
+            aspectRatio={1200 / 300} // 4:1 aspect ratio for cover
             targetWidth={1200}
             targetHeight={300}
           />
