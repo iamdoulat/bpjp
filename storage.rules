@@ -1,0 +1,45 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Profile images:
+    // - Anyone can read profile images (e.g., for avatars on public lists).
+    // - Only the authenticated user can write to their own profile image path.
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Campaign images:
+    // - Anyone can read campaign images.
+    // - Authenticated users can write (upload/delete) campaign images.
+    match /campaign_images/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Organization setting images (president, secretary, cover images for About Us):
+    // - Anyone can read these images as they are displayed on public pages.
+    // - Authenticated users can write (upload/delete) these images (typically an admin via settings page).
+    match /organization/{settingsDocId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Expense attachments:
+    // - Only authenticated users can read expense attachments.
+    // - Only authenticated users can write (upload/delete) expense attachments.
+    //   (Assumes that if a user can see the expense record in Firestore, they should be able to access its attachment).
+    match /expense_attachments/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Default rule: Deny all reads and writes to any other paths.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
