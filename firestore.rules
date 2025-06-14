@@ -4,60 +4,71 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User Profiles
-    // Users can read and write their own profile.
-    // Authenticated users (assumed admin for listing) can read all profiles.
-    // Admins can update any profile.
-    match /userProfiles/{userId} {
-      allow read: if request.auth != null; // Allows logged-in users to read any profile (for admin user list)
-      allow create: if request.auth.uid == userId; // User can create their own profile
-      allow update: if request.auth.uid == userId || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
-      allow delete: if get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin'; // Only admins can delete profiles
+    // Helper function to check if a user is an admin
+    function isAdmin(userId) {
+      return get(/databases/$(database)/documents/userProfiles/$(userId)).data.role == 'admin';
     }
 
-    // Campaigns
-    // Anyone can read campaigns.
-    // Authenticated users (intended for admins) can create, update, delete.
+    // User Profiles: Users can read their own profile, admins can read all.
+    // Users can create their own profile upon signup.
+    // Users can update their own profile. Admins can update any profile.
+    match /userProfiles/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin(request.auth.uid));
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin(request.auth.uid));
+      allow delete: if request.auth != null && isAdmin(request.auth.uid); // Only admins can delete user profiles
+    }
+
+    // Campaigns: Publicly readable.
+    // Creation/Updates/Deletion typically handled by admin users or specific roles.
+    // For simplicity here, allowing authenticated users to create/update/delete.
+    // Consider restricting write access to admins in production.
     match /campaigns/{campaignId} {
       allow read: if true;
-      allow create, update, delete: if request.auth != null && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+      allow create: if request.auth != null; // Or check for admin role: if isAdmin(request.auth.uid);
+      allow update: if request.auth != null; // Or check for admin role: if isAdmin(request.auth.uid);
+      allow delete: if request.auth != null; // Or check for admin role: if isAdmin(request.auth.uid);
 
-      // Campaign Reactions (Likes/Supports)
-      // Authenticated users can create/delete their own reactions.
+      // Reactions (Likes/Supports) subcollections
       match /likes/{userId} {
-        allow read: if true; // Anyone can read like counts (implicitly through campaign document)
+        allow read: if true;
         allow create, delete: if request.auth != null && request.auth.uid == userId;
-        allow update: if false; // Typically no updates, just create/delete
       }
       match /supports/{userId} {
-        allow read: if true; // Anyone can read support counts
+        allow read: if true;
         allow create, delete: if request.auth != null && request.auth.uid == userId;
-        allow update: if false;
       }
     }
 
-    // Payment Transactions
-    // Users can create their own transactions.
-    // Users can read their own transactions.
-    // Admins can read/update/delete all transactions.
+    // Payment Transactions:
+    // Users can create their own payment transactions.
+    // Users can read their own payment transactions.
+    // Admins can read all payment transactions.
+    // Admins can update status or delete transactions.
     match /paymentTransactions/{transactionId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin');
-      allow update, delete: if request.auth != null && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin(request.auth.uid));
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && isAdmin(request.auth.uid);
     }
 
-    // Expenses
-    // Only authenticated users (admins) can create, read, update, delete expenses.
-    match /expenses/{expenseId} {
-      allow read, write: if request.auth != null && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Site Content (for Mission and Organization Settings)
-    // Anyone can read.
-    // Admins can write.
-    match /siteContent/{documentId} {
+    // Site Content (Mission, Organization Settings):
+    // Publicly readable for "Our Mission" and "About Us" pages.
+    // Writable only by admin users.
+    match /siteContent/{contentId} {
       allow read: if true;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+      allow write: if request.auth != null && isAdmin(request.auth.uid);
     }
+
+    // Expenses: Authenticated users can create.
+    // Reading might be restricted to admins or specific roles for history, but public for aggregated stats (handled by Cloud Functions or more complex rules if needed).
+    // For now, allow authenticated users to read their own, admins to read all.
+    // Admins can update/delete.
+    match /expenses/{expenseId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.createdBy || isAdmin(request.auth.uid));
+      allow create: if request.auth != null; // Any authenticated user can create an expense
+      allow update, delete: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // Add rules for other collections as needed.
   }
 }
