@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCard
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, FileEdit, AlertCircle, X, Download, FileText, ArrowLeft } from "lucide-react"; // Added FileText and ArrowLeft
+import { Loader2, Save, FileEdit, AlertCircle, X, Download, FileText, ArrowLeft } from "lucide-react"; // Ensure FileText and ArrowLeft are imported
 import { getExpenseById, updateExpense, type ExpenseData, type UpdateExpenseInput } from "@/services/expenseService";
 import { useAuth } from "@/contexts/AuthContext";
 
