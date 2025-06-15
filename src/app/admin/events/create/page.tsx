@@ -101,9 +101,16 @@ export default function CreateEventPage() {
       }
     } catch (error) {
       console.error("Failed to save event:", error);
+      let errorMessage = "An unexpected error occurred.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        if (errorMessage.includes("Firebase Storage permission denied")) {
+          errorMessage = "Failed to upload event image due to Firebase Storage permission issues. Please check your Storage security rules to allow writes to 'event_attachments/'.";
+        }
+      }
       toast({
         title: "Error Creating Event",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -235,3 +242,4 @@ export default function CreateEventPage() {
     </AppShell>
   );
 }
+
