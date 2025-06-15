@@ -10,9 +10,43 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
-import { getEventById, type EventData } from '@/services/eventService';
-import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Users } from "lucide-react"
+import { getEventById, type EventData, registerForEvent, checkIfUserRegistered } from '@/services/eventService';
+import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Users, CheckCircle, XCircle } from "lucide-react"
 import { Timestamp } from "firebase/firestore"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/AuthContext"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { getUserProfile } from "@/services/userService"
+
+const registrationFormSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters.").max(100),
+  mobileNumber: z.string().regex(/^[+]?[0-9\s-()]{7,20}$/, "Invalid mobile number format."),
+  wardNo: z.string().min(1, "Ward No. is required.").max(20, "Ward No. cannot exceed 20 characters."),
+});
+
+type RegistrationFormValues = z.infer<typeof registrationFormSchema>;
 
 function formatDisplayDateTime(date: Timestamp | Date | undefined): string {
   if (!date) return "N/A";
@@ -31,36 +65,130 @@ export default function PublicViewEventPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.id as string;
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
 
   const [event, setEvent] = React.useState<EventData | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [isRegistrationDialogOpen, setIsRegistrationDialogOpen] = React.useState(false);
+  const [confirmJoin, setConfirmJoin] = React.useState<"yes" | "no" | undefined>(undefined);
+  const [isSubmittingRegistration, setIsSubmittingRegistration] = React.useState(false);
+  const [isRegistered, setIsRegistered] = React.useState(false);
+  const [checkingRegistration, setCheckingRegistration] = React.useState(true);
 
-  React.useEffect(() => {
-    if (eventId) {
-      async function fetchEventDetails() {
-        setIsLoading(true);
-        setError(null);
-        try {
-          const fetchedEvent = await getEventById(eventId);
-          // For public view, allow viewing if event data is fetched, regardless of status (status check in list page)
-          if (fetchedEvent) {
-            setEvent(fetchedEvent);
-          } else {
-            setError("Event not found or is no longer available.");
-          }
-        } catch (e) {
-          console.error("Failed to fetch event details:", e);
-          setError(e instanceof Error ? e.message : "An unknown error occurred.");
-        } finally {
-          setIsLoading(false);
-        }
+  const registrationForm = useForm<RegistrationFormValues>({
+    resolver: zodResolver(registrationFormSchema),
+    defaultValues: {
+      name: "",
+      mobileNumber: "",
+      wardNo: "",
+    },
+  });
+
+  const fetchEventDetails = React.useCallback(async () => {
+    if (!eventId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const fetchedEvent = await getEventById(eventId);
+      if (fetchedEvent) {
+        setEvent(fetchedEvent);
+      } else {
+        setError("Event not found or is no longer available.");
       }
-      fetchEventDetails();
+    } catch (e) {
+      console.error("Failed to fetch event details:", e);
+      setError(e instanceof Error ? e.message : "An unknown error occurred.");
+    } finally {
+      setIsLoading(false);
     }
   }, [eventId]);
 
-  if (isLoading) {
+  React.useEffect(() => {
+    fetchEventDetails();
+  }, [fetchEventDetails]);
+
+  React.useEffect(() => {
+    if (user && eventId && !authLoading) {
+      setCheckingRegistration(true);
+      checkIfUserRegistered(eventId, user.uid)
+        .then(setIsRegistered)
+        .catch(err => console.error("Error checking registration status:", err))
+        .finally(() => setCheckingRegistration(false));
+    } else if (!user && !authLoading) {
+      setIsRegistered(false);
+      setCheckingRegistration(false);
+    }
+  }, [user, eventId, authLoading]);
+
+
+  React.useEffect(() => {
+    if (user && isRegistrationDialogOpen) {
+      getUserProfile(user.uid).then(profile => {
+        if (profile) {
+          registrationForm.reset({
+            name: profile.displayName || user.displayName || "",
+            mobileNumber: profile.mobileNumber || "",
+            wardNo: "",
+          });
+        } else {
+           registrationForm.reset({
+            name: user.displayName || "",
+            mobileNumber: "",
+            wardNo: "",
+          });
+        }
+      });
+    }
+  }, [user, isRegistrationDialogOpen, registrationForm]);
+
+  const handleRegistrationSubmit = async (data: RegistrationFormValues) => {
+    if (!user) {
+      toast({ title: "Login Required", description: "Please log in to register.", variant: "destructive" });
+      setIsRegistrationDialogOpen(false);
+      router.push('/login');
+      return;
+    }
+    if (!event || !event.id) {
+      toast({ title: "Error", description: "Event details are missing.", variant: "destructive" });
+      return;
+    }
+
+    setIsSubmittingRegistration(true);
+    try {
+      await registerForEvent(event.id, user.uid, {
+        name: data.name,
+        mobileNumber: data.mobileNumber,
+        wardNo: data.wardNo,
+        userEmail: user.email || undefined,
+      });
+      toast({
+        title: "Registration Successful!",
+        description: `You have successfully registered for "${event.title}".`,
+        variant: "default",
+      });
+      setIsRegistrationDialogOpen(false);
+      setConfirmJoin(undefined);
+      registrationForm.reset();
+      setIsRegistered(true); // Assume registration successful, update UI
+      // Refetch event data to update participant count
+      fetchEventDetails();
+    } catch (e) {
+      console.error("Registration failed:", e);
+      toast({
+        title: "Registration Failed",
+        description: (e instanceof Error ? e.message : "Could not complete registration."),
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingRegistration(false);
+    }
+  };
+  
+  const isEventPast = event && (event.eventDate instanceof Timestamp ? event.eventDate.toDate() : event.eventDate) < new Date();
+
+  if (isLoading || authLoading || checkingRegistration) {
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6 overflow-auto">
@@ -81,7 +209,9 @@ export default function PublicViewEventPage() {
               </div>
               <Skeleton className="h-6 w-1/4" />
             </CardContent>
-            {/* No footer skeleton for public view initially */}
+             <CardFooter className="bg-muted/30 p-4 md:p-6 border-t flex justify-center">
+                <Skeleton className="h-12 w-48" />
+           </CardFooter>
           </Card>
         </main>
       </AppShell>
@@ -142,10 +272,9 @@ export default function PublicViewEventPage() {
                 <div className="space-y-1">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Users className="h-4 w-4 mr-2 text-primary" />
-                    Participants Expected:
+                    Participants Registered:
                   </div>
-                  {/* Participant count might not be public, or could be displayed as "Registrations: Open/Closed" */}
-                  <p className="text-lg font-semibold text-foreground">{event.participantCount > 0 ? `${event.participantCount} registered` : "To be announced"}</p>
+                  <p className="text-lg font-semibold text-foreground">{event.participantCount || 0}</p>
                 </div>
             </div>
 
@@ -159,14 +288,110 @@ export default function PublicViewEventPage() {
               </p>
             </div>
           </CardContent>
-          {/* CardFooter can be used for actions like "Register" or "Share" in the future */}
            <CardFooter className="bg-muted/30 p-4 md:p-6 border-t flex justify-center">
-                <Button variant="default" size="lg" className="bg-green-600 hover:bg-green-700 text-white" disabled> {/* Registration not yet implemented */}
-                    Register for Event (Coming Soon)
-                </Button>
+                {isRegistered ? (
+                  <Button variant="success" size="lg" className="bg-green-600 hover:bg-green-700 text-white" disabled>
+                    <CheckCircle className="mr-2 h-5 w-5" /> You are Registered!
+                  </Button>
+                ) : isEventPast ? (
+                  <Button variant="outline" size="lg" disabled>
+                     Event has passed
+                  </Button>
+                ) : (
+                  <Dialog open={isRegistrationDialogOpen} onOpenChange={(open) => {
+                    setIsRegistrationDialogOpen(open);
+                    if (!open) {
+                      setConfirmJoin(undefined); // Reset confirmation on dialog close
+                      registrationForm.reset();
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                        <Button variant="default" size="lg" className="bg-green-600 hover:bg-green-700 text-white">
+                            Register for this Event
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Event Registration</DialogTitle>
+                        <DialogDescription>
+                          Confirm your participation for "{event.title}".
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-2">
+                        <Label>Are you sure you want to join this event?</Label>
+                        <RadioGroup value={confirmJoin} onValueChange={(value: "yes" | "no") => setConfirmJoin(value)}>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id={`confirm-yes-${event.id}`} />
+                            <Label htmlFor={`confirm-yes-${event.id}`} className="font-normal">Yes, I want to join</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id={`confirm-no-${event.id}`} />
+                            <Label htmlFor={`confirm-no-${event.id}`} className="font-normal">No, not at this time</Label>
+                          </div>
+                        </RadioGroup>
+
+                        {confirmJoin === "yes" && (
+                          <Form {...registrationForm}>
+                            <form onSubmit={registrationForm.handleSubmit(handleRegistrationSubmit)} id="event-registration-form" className="space-y-4 pt-4">
+                              <FormField
+                                control={registrationForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Your Name</FormLabel>
+                                    <FormControl><Input placeholder="Full Name" {...field} disabled={isSubmittingRegistration} /></FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={registrationForm.control}
+                                name="mobileNumber"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Mobile Number</FormLabel>
+                                    <FormControl><Input type="tel" placeholder="e.g., +1234567890" {...field} disabled={isSubmittingRegistration} /></FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={registrationForm.control}
+                                name="wardNo"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Ward No.</FormLabel>
+                                    <FormControl><Input placeholder="Your Ward Number" {...field} disabled={isSubmittingRegistration} /></FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </form>
+                          </Form>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button type="button" variant="outline" disabled={isSubmittingRegistration}>
+                            Cancel
+                          </Button>
+                        </DialogClose>
+                        <Button
+                          type="submit"
+                          form="event-registration-form"
+                          disabled={isSubmittingRegistration || confirmJoin !== "yes" || !registrationForm.formState.isValid}
+                        >
+                          {isSubmittingRegistration && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Submit Registration
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
            </CardFooter>
         </Card>
       </main>
     </AppShell>
   )
 }
+

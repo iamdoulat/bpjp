@@ -1,7 +1,7 @@
 
 // src/services/eventService.ts
 import { db, storage, auth } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, getDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot, updateDoc, deleteDoc, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 export interface EventData {
@@ -13,7 +13,7 @@ export interface EventData {
   imagePath?: string | null; // To help with potential future deletion/updates
   createdAt: Timestamp;
   lastUpdated?: Timestamp;
-  participantCount: number; // Added participant count
+  participantCount: number; 
 }
 
 export interface NewEventInput {
@@ -27,8 +27,16 @@ export interface UpdateEventInput {
   title?: string;
   details?: string;
   eventDate?: Date;
-  attachmentFile?: File | null; // File for new/replace, null to remove, undefined for no change
-  // participantCount is not directly updatable here, it's managed by registrations
+  attachmentFile?: File | null; 
+}
+
+export interface EventRegistrationData {
+  userId: string;
+  userEmail?: string;
+  name: string;
+  mobileNumber: string;
+  wardNo: string;
+  registeredAt: Timestamp;
 }
 
 
@@ -66,7 +74,7 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
       eventDate: Timestamp.fromDate(eventInput.eventDate),
       imageUrl: imageUrl || null,
       imagePath: imagePath || null,
-      participantCount: 0, // Initialize participant count
+      participantCount: 0, 
       createdAt: serverTimestamp() as Timestamp,
     };
 
@@ -96,7 +104,7 @@ export async function getEvents(order: 'asc' | 'desc' = 'asc'): Promise<EventDat
         eventDate: data.eventDate as Timestamp,
         imageUrl: data.imageUrl || null,
         imagePath: data.imagePath || null,
-        participantCount: data.participantCount || 0, // Retrieve participant count
+        participantCount: data.participantCount || 0, 
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
       });
@@ -133,7 +141,7 @@ export async function getEventById(id: string): Promise<EventData | null> {
         eventDate: data.eventDate as Timestamp,
         imageUrl: data.imageUrl || null,
         imagePath: data.imagePath || null,
-        participantCount: data.participantCount || 0, // Retrieve participant count
+        participantCount: data.participantCount || 0, 
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
       } as EventData;
@@ -174,10 +182,10 @@ async function deleteEventAttachment(filePath?: string | null): Promise<void> {
 export async function updateEvent(
   eventId: string,
   updates: UpdateEventInput,
-  currentEventData: EventData | null // Pass current data to know existing imagePath
+  currentEventData: EventData | null 
 ): Promise<void> {
   const eventDocRef = doc(db, "events", eventId);
-  const dataToUpdate: Partial<Omit<EventData, 'id' | 'createdAt' | 'participantCount'>> & { lastUpdated: Timestamp } = { // participantCount not directly updated
+  const dataToUpdate: Partial<Omit<EventData, 'id' | 'createdAt' | 'participantCount'>> & { lastUpdated: Timestamp } = { 
     lastUpdated: serverTimestamp() as Timestamp,
   };
 
@@ -186,18 +194,16 @@ export async function updateEvent(
   if (updates.eventDate !== undefined) dataToUpdate.eventDate = Timestamp.fromDate(updates.eventDate);
 
   try {
-    // Handle attachment update
-    if (updates.attachmentFile === null) { // Explicit request to remove attachment
+    if (updates.attachmentFile === null) { 
       if (currentEventData?.imagePath) {
         await deleteEventAttachment(currentEventData.imagePath);
       }
       dataToUpdate.imageUrl = null;
       dataToUpdate.imagePath = null;
-    } else if (updates.attachmentFile) { // New attachment provided
-      if (currentEventData?.imagePath) { // Delete old image if it exists
+    } else if (updates.attachmentFile) { 
+      if (currentEventData?.imagePath) { 
         await deleteEventAttachment(currentEventData.imagePath);
       }
-      // Upload new image
       const timestamp = new Date().getTime();
       const uniqueFileName = `event_${timestamp}_${updates.attachmentFile.name.replace(/\s+/g, '_')}`;
       const storagePath = `event_attachments/${uniqueFileName}`;
@@ -207,14 +213,13 @@ export async function updateEvent(
       dataToUpdate.imageUrl = await getDownloadURL(snapshot.ref);
       dataToUpdate.imagePath = storagePath;
     }
-    // If updates.attachmentFile is undefined, no change to attachment is made.
 
     await updateDoc(eventDocRef, dataToUpdate);
     console.log(`[eventService.updateEvent] Event ${eventId} updated successfully.`);
   } catch (error) {
     console.error(`[eventService.updateEvent] Error updating event ${eventId}:`, error);
     if (error instanceof Error) {
-      if (updates.attachmentFile && (error.message.includes('storage/unauthorized') || error.code?.includes('storage/unauthorized') )) {
+      if (updates.attachmentFile && (error.message.includes('storage/unauthorized') || (error as any).code?.includes('storage/unauthorized') )) {
         throw new Error(`Failed to update event image: Firebase Storage permission denied. Please check Storage security rules.`);
       }
       throw new Error(`Failed to update event: ${error.message}`);
@@ -230,13 +235,15 @@ export async function deleteEvent(eventId: string): Promise<void> {
     const eventSnap = await getDoc(eventDocRef);
     if (!eventSnap.exists()) {
       console.warn(`[eventService.deleteEvent] Event ${eventId} not found for deletion.`);
-      return; // Or throw new Error("Event not found");
+      return; 
     }
     const eventData = eventSnap.data() as EventData;
 
     if (eventData.imagePath) {
       await deleteEventAttachment(eventData.imagePath);
     }
+    // Also delete registrations subcollection - this requires listing and deleting each doc or using Firebase CLI/Cloud Functions for bulk delete
+    // For client-side, we'll skip deleting subcollections for now due to complexity. Best handled by a Cloud Function on event delete.
     await deleteDoc(eventDocRef);
     console.log(`[eventService.deleteEvent] Event ${eventId} deleted successfully.`);
   } catch (error) {
@@ -248,36 +255,58 @@ export async function deleteEvent(eventId: string): Promise<void> {
   }
 }
 
-// Placeholder for function to increment participant count - to be implemented
-// export async function incrementParticipantCount(eventId: string): Promise<void> {
-//   const eventRef = doc(db, "events", eventId);
-//   try {
-//     await updateDoc(eventRef, {
-//       participantCount: increment(1) // Firestore's increment operation
-//     });
-//   } catch (error) {
-//     console.error("Error incrementing participant count for event " + eventId, error);
-//     throw error;
-//   }
-// }
-// Placeholder for function to decrement participant count - to be implemented
-// export async function decrementParticipantCount(eventId: string): Promise<void> {
-//   const eventRef = doc(db, "events", eventId);
-//   try {
-//     await updateDoc(eventRef, {
-//       participantCount: increment(-1) // Firestore's increment operation
-//     });
-//   } catch (error) {
-//     console.error("Error decrementing participant count for event " + eventId, error);
-//     throw error;
-//   }
-// }
+export async function registerForEvent(
+  eventId: string,
+  userId: string,
+  registrationDetails: { name: string; mobileNumber: string; wardNo: string; userEmail?: string }
+): Promise<void> {
+  if (!userId) throw new Error("User ID is required for registration.");
 
-// Placeholder for function to register a user for an event - to be implemented
-// This would typically involve adding a document to a subcollection like 'events/{eventId}/participants/{userId}'
-// and then updating the main event document's participantCount (perhaps via a Cloud Function trigger).
-// export async function registerForEvent(eventId: string, userId: string): Promise<void> {
-//   // 1. Add user to participants subcollection
-//   // 2. Increment participantCount on the event document (ideally via trigger or transaction)
-//   console.log(`User ${userId} attempting to register for event ${eventId}`);
-// }
+  const eventDocRef = doc(db, "events", eventId);
+  const registrationDocRef = doc(db, "events", eventId, "registrations", userId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const eventSnap = await transaction.get(eventDocRef);
+      if (!eventSnap.exists()) {
+        throw new Error(`Event ${eventId} not found.`);
+      }
+
+      const registrationSnap = await transaction.get(registrationDocRef);
+      if (registrationSnap.exists()) {
+        throw new Error("You are already registered for this event.");
+      }
+
+      const registrationData: EventRegistrationData = {
+        userId,
+        userEmail: registrationDetails.userEmail,
+        name: registrationDetails.name,
+        mobileNumber: registrationDetails.mobileNumber,
+        wardNo: registrationDetails.wardNo,
+        registeredAt: Timestamp.now(),
+      };
+      transaction.set(registrationDocRef, registrationData);
+      transaction.update(eventDocRef, { participantCount: increment(1) });
+    });
+    console.log(`[eventService.registerForEvent] User ${userId} successfully registered for event ${eventId}.`);
+  } catch (error) {
+    console.error(`[eventService.registerForEvent] Error registering user ${userId} for event ${eventId}:`, error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to register for event: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred during registration.');
+  }
+}
+
+export async function checkIfUserRegistered(eventId: string, userId: string): Promise<boolean> {
+  if (!userId) return false;
+  try {
+    const registrationDocRef = doc(db, "events", eventId, "registrations", userId);
+    const docSnap = await getDoc(registrationDocRef);
+    return docSnap.exists();
+  } catch (error) {
+    console.error(`[eventService.checkIfUserRegistered] Error checking registration for user ${userId}, event ${eventId}:`, error);
+    // Default to false on error to avoid blocking registration due to a check failure
+    return false; 
+  }
+}
