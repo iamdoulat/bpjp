@@ -27,6 +27,7 @@ import { getEvents, type EventData } from "@/services/eventService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Timestamp } from "firebase/firestore";
+import { useAuth } from "@/contexts/AuthContext";
 
 function formatDisplayDate(date: Timestamp | Date | undefined) {
   if (!date) return "N/A";
@@ -44,6 +45,7 @@ export default function ManageEventsPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const router = useRouter();
+  const { user } = useAuth(); // Get user from auth context
 
   React.useEffect(() => {
     async function fetchEventsData() {
@@ -112,7 +114,17 @@ export default function ManageEventsPage() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <ShadCNAlertTitle>Error Fetching Events</ShadCNAlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {error}
+              {(error.toLowerCase().includes("missing or insufficient permissions") || error.toUpperCase().includes("PERMISSION_DENIED")) && (
+                <p className="mt-2 text-xs font-medium">
+                  <strong>Suggestion:</strong> This error often indicates a problem with your Firestore security rules.
+                  Please ensure that the user ({user?.email || 'current user'}) has
+                  read permissions for the 'events' collection in your Firebase project.
+                  You can refer to the `example.firestore.rules` file in your project root for guidance on rule structure.
+                </p>
+              )}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -171,3 +183,4 @@ export default function ManageEventsPage() {
     </AppShell>
   );
 }
+
