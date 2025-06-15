@@ -209,7 +209,10 @@ export default function ManageEventsPage() {
                     <TableCell>{formatDisplayDate(event.eventDate)}</TableCell>
                     <TableCell className="text-center">
                       {event.id ? (
-                         <Link href={`/admin/events/${event.id}/registrations`} className="text-primary hover:underline">
+                         <Link 
+                            href={`/admin/events/${event.id}/registrations`}
+                            className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-green-600 text-white hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 no-underline"
+                         >
                           {event.participantCount || 0}
                          </Link>
                        ) : (
