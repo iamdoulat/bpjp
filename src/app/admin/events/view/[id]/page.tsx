@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
 import { getEventById, type EventData } from '@/services/eventService';
-import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Edit } from "lucide-react"
+import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Edit, Users } from "lucide-react" // Added Users icon
 import { Timestamp } from "firebase/firestore"
 
 function formatDisplayDateTime(date: Timestamp | Date | undefined): string {
@@ -78,6 +78,7 @@ export default function ViewEventPage() {
                  <Skeleton className="h-4 w-1/3" />
                  <Skeleton className="h-6 w-2/3" />
               </div>
+              <Skeleton className="h-6 w-1/4" /> {/* For participant count skeleton */}
             </CardContent>
             <CardFooter>
               <Skeleton className="h-10 w-32" />
@@ -124,12 +125,21 @@ export default function ViewEventPage() {
                 <Image src={event.imageUrl} alt={event.title} layout="fill" objectFit="cover" data-ai-hint="event poster conference" />
               </div>
             )}
-            <div className="space-y-1">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <CalendarDays className="h-4 w-4 mr-2 text-primary" />
-                Event Date & Time:
-              </div>
-              <p className="text-lg font-semibold text-foreground">{formatDisplayDateTime(event.eventDate)}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <CalendarDays className="h-4 w-4 mr-2 text-primary" />
+                    Event Date & Time:
+                  </div>
+                  <p className="text-lg font-semibold text-foreground">{formatDisplayDateTime(event.eventDate)}</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Users className="h-4 w-4 mr-2 text-primary" />
+                    Participants:
+                  </div>
+                  <p className="text-lg font-semibold text-foreground">{event.participantCount || 0}</p>
+                </div>
             </div>
             
             <div className="space-y-1">

@@ -13,6 +13,7 @@ export interface EventData {
   imagePath?: string | null; // To help with potential future deletion/updates
   createdAt: Timestamp;
   lastUpdated?: Timestamp;
+  participantCount: number; // Added participant count
 }
 
 export interface NewEventInput {
@@ -27,6 +28,7 @@ export interface UpdateEventInput {
   details?: string;
   eventDate?: Date;
   attachmentFile?: File | null; // File for new/replace, null to remove, undefined for no change
+  // participantCount is not directly updatable here, it's managed by registrations
 }
 
 
@@ -49,7 +51,6 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
         console.warn(`[eventService.addEvent] Storage permission denied for event attachment: ${uploadError.message}. The event will be created without this attachment. Please check your Firebase Storage security rules to allow writes to 'event_attachments/'.`);
       } else {
         console.error("[eventService.addEvent] Error uploading event attachment, this is not a permission issue: ", uploadError);
-        // Re-throwing with a more user-friendly message for permission issues, otherwise original.
         if (uploadError.code === 'storage/unauthorized') {
              throw new Error(`Failed to add event: Firebase Storage permission denied for attachment. Please check Storage security rules.`);
         }
@@ -65,6 +66,7 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
       eventDate: Timestamp.fromDate(eventInput.eventDate),
       imageUrl: imageUrl || null,
       imagePath: imagePath || null,
+      participantCount: 0, // Initialize participant count
       createdAt: serverTimestamp() as Timestamp,
     };
 
@@ -94,6 +96,7 @@ export async function getEvents(order: 'asc' | 'desc' = 'asc'): Promise<EventDat
         eventDate: data.eventDate as Timestamp,
         imageUrl: data.imageUrl || null,
         imagePath: data.imagePath || null,
+        participantCount: data.participantCount || 0, // Retrieve participant count
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
       });
@@ -108,6 +111,7 @@ export async function getEvents(order: 'asc' | 'desc' = 'asc'): Promise<EventDat
         const indexCreationLinkMatch = error.message.match(/(https?:\/\/[^\s]+)/);
         const indexLink = indexCreationLinkMatch ? indexCreationLinkMatch[0] : "No link provided in error message.";
         console.error(`[eventService.getEvents] FIRESTORE_INDEX_REQUIRED: The query on 'events' collection (ordered by eventDate ${order}, createdAt desc) requires a composite index. Please create it in your Firebase console. Link from error: ${indexLink}`);
+         throw new Error(`Failed to fetch events: The query requires an index. You can create it here: ${indexLink}`);
       }
       throw new Error(`Failed to fetch events: ${error.message}`);
     }
@@ -129,6 +133,7 @@ export async function getEventById(id: string): Promise<EventData | null> {
         eventDate: data.eventDate as Timestamp,
         imageUrl: data.imageUrl || null,
         imagePath: data.imagePath || null,
+        participantCount: data.participantCount || 0, // Retrieve participant count
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
       } as EventData;
@@ -172,7 +177,7 @@ export async function updateEvent(
   currentEventData: EventData | null // Pass current data to know existing imagePath
 ): Promise<void> {
   const eventDocRef = doc(db, "events", eventId);
-  const dataToUpdate: Partial<Omit<EventData, 'id' | 'createdAt'>> & { lastUpdated: Timestamp } = {
+  const dataToUpdate: Partial<Omit<EventData, 'id' | 'createdAt' | 'participantCount'>> & { lastUpdated: Timestamp } = { // participantCount not directly updated
     lastUpdated: serverTimestamp() as Timestamp,
   };
 
@@ -242,3 +247,37 @@ export async function deleteEvent(eventId: string): Promise<void> {
     throw new Error('An unknown error occurred while deleting the event.');
   }
 }
+
+// Placeholder for function to increment participant count - to be implemented
+// export async function incrementParticipantCount(eventId: string): Promise<void> {
+//   const eventRef = doc(db, "events", eventId);
+//   try {
+//     await updateDoc(eventRef, {
+//       participantCount: increment(1) // Firestore's increment operation
+//     });
+//   } catch (error) {
+//     console.error("Error incrementing participant count for event " + eventId, error);
+//     throw error;
+//   }
+// }
+// Placeholder for function to decrement participant count - to be implemented
+// export async function decrementParticipantCount(eventId: string): Promise<void> {
+//   const eventRef = doc(db, "events", eventId);
+//   try {
+//     await updateDoc(eventRef, {
+//       participantCount: increment(-1) // Firestore's increment operation
+//     });
+//   } catch (error) {
+//     console.error("Error decrementing participant count for event " + eventId, error);
+//     throw error;
+//   }
+// }
+
+// Placeholder for function to register a user for an event - to be implemented
+// This would typically involve adding a document to a subcollection like 'events/{eventId}/participants/{userId}'
+// and then updating the main event document's participantCount (perhaps via a Cloud Function trigger).
+// export async function registerForEvent(eventId: string, userId: string): Promise<void> {
+//   // 1. Add user to participants subcollection
+//   // 2. Increment participantCount on the event document (ideally via trigger or transaction)
+//   console.log(`User ${userId} attempting to register for event ${eventId}`);
+// }

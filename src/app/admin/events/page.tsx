@@ -33,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CalendarDays, Search, PlusCircle, MoreHorizontal, Eye, Edit, Trash2, AlertCircle, Loader2 } from "lucide-react";
+import { CalendarDays, Search, PlusCircle, MoreHorizontal, Eye, Edit, Trash2, AlertCircle, Loader2, Users } from "lucide-react"; // Added Users icon
 import { getEvents, deleteEvent, type EventData } from "@/services/eventService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
@@ -148,7 +148,12 @@ export default function ManageEventsPage() {
         {loading && (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-md" />
+                <div key={i} className="grid grid-cols-[minmax(250px,1fr)_150px_100px_100px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
+                    <Skeleton className="h-4 w-3/4" /> {/* Title */}
+                    <Skeleton className="h-4 w-full" /> {/* Date */}
+                    <Skeleton className="h-4 w-12 justify-self-center" /> {/* Participants */}
+                    <Skeleton className="h-6 w-8 rounded-md justify-self-end" /> {/* Actions */}
+                </div>
             ))}
           </div>
         )}
@@ -193,6 +198,7 @@ export default function ManageEventsPage() {
                 <TableRow>
                   <TableHead className="w-[300px] md:w-[400px]">Event Title</TableHead>
                   <TableHead>Event Date</TableHead>
+                  <TableHead className="text-center w-[120px]">Participants</TableHead> {/* New Header */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -201,6 +207,7 @@ export default function ManageEventsPage() {
                   <TableRow key={event.id}>
                     <TableCell className="font-medium truncate max-w-[250px] md:max-w-none">{event.title}</TableCell>
                     <TableCell>{formatDisplayDate(event.eventDate)}</TableCell>
+                    <TableCell className="text-center">{event.participantCount || 0}</TableCell> {/* Display participant count */}
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
