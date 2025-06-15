@@ -1,3 +1,4 @@
+
 // src/components/layout/sidebar-nav-items.tsx
 "use client";
 
@@ -7,7 +8,7 @@ import {
   LayoutDashboard, Megaphone, UserCircle2, ShieldCheck, Users,
   CreditCard, ClipboardList, PlusCircle, LogIn, UserPlus as UserPlusIcon,
   History as HistoryIcon, ReceiptText, FilePlus2, CalendarCheck2, CalendarPlus,
-  Settings, Info, Target, FileEdit, ListChecks, Landmark // Using Landmark as a generic fallback
+  Settings, Info, Target, FileEdit, ListChecks, Landmark
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -20,7 +21,6 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-// Defined navigation lists based on user's request
 const generalNavLinks: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone },
@@ -46,7 +46,6 @@ const adminNavLinks: NavItem[] = [
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
 ];
 
-// For unauthenticated users - public pages from the general list + auth actions
 const publicPagesForUnauthenticated: NavItem[] = [
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone },
   { href: '/our-mission', label: 'Our Mission', icon: Target },
@@ -62,11 +61,8 @@ const authActionPages: NavItem[] = [
 
 export function SidebarNavItems() {
   const pathname = usePathname();
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth(); // Get isAdmin from context
   
-  // Simplified admin check for now. Actual role checking should be more robust.
-  const isPotentiallyAdmin = !!user; 
-
   if (loading) {
     return (
       <SidebarMenu>
@@ -86,14 +82,11 @@ export function SidebarNavItems() {
   const adminItemsToRender: NavItem[] = [];
 
   if (user) {
-    // Authenticated users see all generalNavLinks
     generalNavLinks.forEach(item => itemsToRender.push(item));
-    // If potentially admin, prepare admin links
-    if (isPotentiallyAdmin) {
+    if (isAdmin) { // Only prepare admin links if user is admin
       adminNavLinks.forEach(item => adminItemsToRender.push(item));
     }
   } else {
-    // Unauthenticated users see public pages and auth actions
     publicPagesForUnauthenticated.forEach(item => itemsToRender.push(item));
     authActionPages.forEach(item => itemsToRender.push(item));
   }
@@ -116,7 +109,7 @@ export function SidebarNavItems() {
   return (
     <SidebarMenu>
       {itemsToRender.map(renderItem)}
-      {adminItemsToRender.length > 0 && ( // Only show admin section if there are admin items
+      {user && isAdmin && adminItemsToRender.length > 0 && ( // Only show admin section if user is admin AND there are admin items
         <>
           <SidebarSeparator className="my-2" />
           <li className="px-3 py-2 text-xs font-semibold text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden tracking-wider uppercase">
