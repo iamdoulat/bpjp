@@ -4,107 +4,99 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check for admin role
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    // User Profiles:
-    // - Authenticated users can read their own profile.
-    // - Authenticated users can create their own profile (e.g., on first login completion).
-    // - Authenticated users can update their own profile (displayName, mobileNumber, photoURL).
-    // - Admins can read, list, create, update any user profile.
-    // - Admins can delete user profiles (Firestore document only).
+    // Helper function to check if the user is an admin
+    function isAdmin() {
+      return request.auth != null && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // User Profiles
     match /userProfiles/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin(); // Only admins can list all profiles
-      allow create: if request.auth != null && request.auth.uid == userId; // User creating their own profile
+      allow create: if request.auth != null; // Allow any authenticated user to create their profile (e.g., on signup)
+      // Allow update by self or admin. Ensure sensitive fields like 'role' or 'walletBalance' are protected if updated by self.
+      // For simplicity, if user updates own, they can only update specific fields like displayName, mobileNumber, photoURL.
       allow update: if request.auth != null && (
-                      (request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'mobileNumber', 'photoURL', 'lastUpdated', 'lastLoginDate'])) ||
-                      (isAdmin() && (request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayName', 'mobileNumber', 'role', 'status', 'photoURL', 'lastUpdated', 'walletBalance'])))
+                      (request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'mobileNumber', 'photoURL', 'lastUpdated'])) ||
+                      isAdmin()
                     );
-      allow delete: if isAdmin(); // Only admins can delete profiles
+      // Delete should generally be restricted, perhaps only by admin or through a specific secure process
+      allow delete: if isAdmin();
     }
 
-    // Campaigns:
-    // - All users (even unauthenticated) can read/list campaigns.
-    // - Admins can create, update, delete campaigns.
-    // - Reactions (likes/supports) can be added/removed by authenticated users for their own reaction.
+    // Campaigns
     match /campaigns/{campaignId} {
-      allow read, list: true; // Publicly readable
-      allow create, update, delete: if isAdmin();
+      allow get, list: if true; // Anyone can read campaigns
+      allow create, delete: if isAdmin();
+      // Allow updates by admin.
+      // Allow specific updates for reactions by any authenticated user (likeCount, supportCount)
+      allow update: if isAdmin() ||
+                       (request.auth != null &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount', 'supportCount']) &&
+                        (request.resource.data.likeCount == resource.data.get('likeCount', 0) + 1 || request.resource.data.likeCount == resource.data.get('likeCount', 0) - 1 ||
+                         request.resource.data.supportCount == resource.data.get('supportCount', 0) + 1 || request.resource.data.supportCount == resource.data.get('supportCount', 0) - 1)
+                       );
 
       // Likes subcollection
       match /likes/{userId} {
-        allow read: true; // Anyone can read who liked (for counts)
-        allow create, delete: if request.auth != null && request.auth.uid == userId; // User can like/unlike
-        allow list: if isAdmin(); // Admins can list all likes for a campaign
-        allow update: if false; // No updates, only create/delete
+        allow read: if true; // Anyone can read who liked (optional, could be restricted)
+        allow create, delete: if request.auth != null && request.auth.uid == userId; // User can like/unlike for themselves
       }
 
       // Supports subcollection
       match /supports/{userId} {
-        allow read: true; // Anyone can read who supported (for counts)
-        allow create, delete: if request.auth != null && request.auth.uid == userId; // User can support/unsupport
-        allow list: if isAdmin(); // Admins can list all supports for a campaign
-        allow update: if false; // No updates, only create/delete
+        allow read: if true; // Anyone can read who supported (optional, could be restricted)
+        allow create, delete: if request.auth != null && request.auth.uid == userId; // User can support/unsupport for themselves
       }
     }
 
-    // Expenses:
-    // - Authenticated users can list and read expenses.
-    // - Admins can create, update, delete expenses.
+    // Expenses
     match /expenses/{expenseId} {
-      allow get, list: if request.auth != null;
-      allow create, update, delete: if isAdmin();
+      allow get, list: if request.auth != null; // Authenticated users can view expenses list and details
+      allow create, update, delete: if isAdmin(); // Only admins can manage expenses
     }
 
-    // Payment Transactions:
-    // - Authenticated users can create their own payment transactions.
-    // - Authenticated users can read their own payment transactions.
-    // - Admins can read, list, update, delete all payment transactions.
+    // Payment Transactions
     match /paymentTransactions/{transactionId} {
+      // User can read their own transactions, Admin can read all.
+      allow get, list: if request.auth != null && (isAdmin() || (resource.data.userId == request.auth.uid && request.auth.uid != null));
+      // User can create their own transaction. userId in request data must match their auth uid.
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, list: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Only admins can update status or delete.
       allow update, delete: if isAdmin();
     }
 
-    // Events:
-    // - All users (even unauthenticated) can read/list events.
-    // - Admins can create, update, delete events.
+    // Events
     match /events/{eventId} {
-      allow read, list: true; // Publicly readable
+      allow get, list: if true; // Anyone can read events
       allow create, delete: if isAdmin();
-      // Allow update for participantCount increment by any authenticated user,
-      // other updates by admin only.
-      allow update: if request.auth != null && (
-                      (request.writeFields.hasOnly(['participantCount']) &&
-                       request.resource.data.participantCount == resource.data.get('participantCount', 0) + 1) ||
-                      isAdmin()
-                    );
+      // Allow updates by admin.
+      // Allow participantCount updates by any authenticated user (during registration transaction)
+      allow update: if isAdmin() ||
+                       (request.auth != null &&
+                        request.writeFields.hasOnly(['participantCount']) &&
+                        request.resource.data.participantCount == resource.data.get('participantCount', 0) + 1
+                       );
 
-      // Registrations subcollection
+      // Event Registrations subcollection
       match /registrations/{userId} {
-        allow read, list: if isAdmin(); // Only admins can list all registrations for an event.
-                                       // Individual users can check their own registration via a function if needed,
-                                       // but direct read here is admin-only to prevent listing other users.
-                                       // For client-side checks by user, a backend function call or a more specific rule is better.
-                                       // However, client side "checkIfUserRegistered" reads this doc.
-                                       // So allow user to read their own registration doc.
-                                       // Allow create if user is registering themselves.
+        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin()); // User can read their own, admin can read any
+        allow list: if isAdmin(); // Only admins can list all registrations for an event
+        // Authenticated user can register themselves. userId in path must match their auth.uid.
         allow create: if request.auth != null && request.auth.uid == userId;
-        allow get: if request.auth != null && (request.auth.uid == userId || isAdmin()); // User can get their own, admin can get any.
-        allow update, delete: if isAdmin(); // Only admins can modify/delete registrations.
+        // Delete/update of registration could be allowed for user or admin
+        allow delete, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
       }
     }
 
-    // Site Content (Mission, Organization Settings):
-    // - All users (even unauthenticated) can read site content.
-    // - Admins can create/update site content.
-    match /siteContent/{contentId} {
-      allow read: true;
-      allow create, update, delete: if isAdmin();
+    // Site Content (Mission, Organization Settings, etc.)
+    match /siteContent/{documentId} {
+      allow get, list: if true; // Anyone can read site content
+      allow create, update, delete: if isAdmin(); // Only admins can manage site content
     }
   }
 }
