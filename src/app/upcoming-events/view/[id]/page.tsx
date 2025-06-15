@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { useForm } from "react-hook-form"; // Added this import
 import { getUserProfile } from "@/services/userService"
 
 const registrationFormSchema = z.object({
@@ -290,7 +291,7 @@ export default function PublicViewEventPage() {
           </CardContent>
            <CardFooter className="bg-muted/30 p-4 md:p-6 border-t flex justify-center">
                 {isRegistered ? (
-                  <Button variant="success" size="lg" className="bg-green-600 hover:bg-green-700 text-white" disabled>
+                  <Button variant="default" size="lg" className="bg-green-600 hover:bg-green-700 text-white" disabled>
                     <CheckCircle className="mr-2 h-5 w-5" /> You are Registered!
                   </Button>
                 ) : isEventPast ? (
@@ -394,4 +395,3 @@ export default function PublicViewEventPage() {
     </AppShell>
   )
 }
-
