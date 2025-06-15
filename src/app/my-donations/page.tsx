@@ -29,6 +29,8 @@ export interface UserDonationEntry {
   amount: number;
   status: "Succeeded" | "Pending" | "Failed" | "Refunded";
   method: string;
+  receiverBkashNo?: string; // Added
+  lastFourDigits?: string;  // Added
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -63,6 +65,8 @@ export default function MyDonationsPage() {
           amount: tx.amount,
           status: tx.status,
           method: tx.method,
+          receiverBkashNo: tx.receiverBkashNo, // Map new field
+          lastFourDigits: tx.lastFourDigits,   // Map new field
         }));
         // Sort by date descending
         setDonations(mappedDonations.sort((a, b) => b.date.getTime() - a.date.getTime()));
@@ -137,11 +141,13 @@ export default function MyDonationsPage() {
            <Skeleton className="h-10 w-24 self-end mb-4" />
            <div className="border rounded-lg shadow-sm">
             {[...Array(ITEMS_PER_PAGE)].map((_, i) => (
-              <div key={i} className="grid grid-cols-5 items-center gap-4 p-4 border-b last:border-b-0">
+              <div key={i} className="grid grid-cols-7 items-center gap-4 p-4 border-b last:border-b-0">
+                <Skeleton className="h-4 w-10" /> {/* No. */}
                 <Skeleton className="h-4 w-3/4" /> {/* Date */}
                 <Skeleton className="h-4 w-full" /> {/* Campaign */}
+                <Skeleton className="h-4 w-3/4" /> {/* Receiver Bkash */}
+                <Skeleton className="h-4 w-1/2" /> {/* Last 4 */}
                 <Skeleton className="h-4 w-3/4 justify-self-end" /> {/* Amount */}
-                <Skeleton className="h-4 w-full" /> {/* Method */}
                 <Skeleton className="h-6 w-20 rounded-full justify-self-center" /> {/* Status */}
               </div>
             ))}
@@ -212,18 +218,24 @@ export default function MyDonationsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[60px] text-xs">No.</TableHead>
                   <TableHead className="w-[120px] text-xs">Date</TableHead>
                   <TableHead className="text-xs">Campaign</TableHead>
+                  <TableHead className="text-center w-[150px] text-xs">Receiver Bkash No.</TableHead>
+                  <TableHead className="text-center w-[100px] text-xs">Last 4 Digits</TableHead>
                   <TableHead className="text-right w-[100px] text-xs">Amount</TableHead>
                   <TableHead className="text-center w-[120px] text-xs">Method</TableHead>
                   <TableHead className="text-center w-[120px] text-xs">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentDonations.map((donation) => (
+                {currentDonations.map((donation, index) => (
                   <TableRow key={donation.id}>
+                    <TableCell className="text-xs">{startIndex + index + 1}</TableCell>
                     <TableCell className="text-xs">{formatDate(donation.date)}</TableCell>
                     <TableCell className="font-medium text-xs truncate max-w-[150px] md:max-w-xs">{donation.campaignName || "N/A"}</TableCell>
+                    <TableCell className="text-center text-xs">{donation.receiverBkashNo || "N/A"}</TableCell>
+                    <TableCell className="text-center text-xs">{donation.lastFourDigits || "N/A"}</TableCell>
                     <TableCell className="text-right text-xs">{formatCurrency(donation.amount)}</TableCell>
                     <TableCell className="text-center text-xs">{donation.method}</TableCell>
                     <TableCell className="text-center text-xs">
@@ -274,3 +286,4 @@ export default function MyDonationsPage() {
     </AppShell>
   );
 }
+
