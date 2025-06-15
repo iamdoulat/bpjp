@@ -98,7 +98,7 @@ export function AppShell({ children }: AppShellProps) {
     <SidebarProvider defaultOpen>
       <div className="flex min-h-screen">
         <Sidebar collapsible="icon">
-          <SidebarHeader className="p-4 border-b border-sidebar-border">
+          <SidebarHeader className="h-14 px-4 border-b border-sidebar-border flex items-center"> {/* MODIFIED LINE */}
             <div className="flex items-center justify-between w-full gap-3">
               {/* Left side: Logo - hides when sidebar is expanded on desktop */}
               <div className="flex items-center gap-2 group-data-[state=collapsed]:hidden">
