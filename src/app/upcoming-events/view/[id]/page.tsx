@@ -1,3 +1,4 @@
+
 // src/app/upcoming-events/view/[id]/page.tsx
 "use client"
 
