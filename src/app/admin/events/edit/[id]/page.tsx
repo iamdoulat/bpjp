@@ -26,7 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCard
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, CalendarEdit, AlertCircle, X, ArrowLeft } from "lucide-react";
+import { Loader2, Save, Edit3, AlertCircle, X, ArrowLeft } from "lucide-react"; // Changed CalendarEdit to Edit3
 import { getEventById, updateEvent, type EventData, type UpdateEventInput } from "@/services/eventService";
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
 import { Timestamp } from "firebase/firestore";
@@ -160,9 +160,16 @@ export default function EditEventPage() {
       router.push("/admin/events");
     } catch (error) {
       console.error("Failed to update event:", error);
+      let errorMessage = "An unexpected error occurred.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+         if (errorMessage.includes("Firebase Storage permission denied")) {
+           errorMessage = "Failed to update event image due to Firebase Storage permission issues. Please check your Storage security rules to allow writes to 'event_attachments/'.";
+        }
+      }
       toast({
         title: "Error Updating Event",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -225,7 +232,7 @@ export default function EditEventPage() {
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
         <div className="flex items-center gap-3 mb-6">
-          <CalendarEdit className="h-8 w-8 text-green-600" />
+          <Edit3 className="h-8 w-8 text-green-600" /> {/* Changed CalendarEdit to Edit3 */}
           <div>
             <h1 className="text-2xl font-headline font-semibold">Edit Event</h1>
             <p className="text-muted-foreground text-sm">
