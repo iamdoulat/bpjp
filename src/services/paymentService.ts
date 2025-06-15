@@ -160,6 +160,9 @@ export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
   } catch (error) {
     console.error("[paymentService.getPaymentTransactions] Error fetching payment transactions from Firestore: ", error);
     if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
+        console.error(`[paymentService.getPaymentTransactions] FIREBASE PERMISSION_DENIED: Firestore security rules for collection '${PAYMENT_TRANSACTIONS_COLLECTION}' do not allow read access for the current user (${auth.currentUser?.email || 'unauthenticated'}). Please check your Firebase console.`);
+      }
       throw new Error(`Failed to fetch payment transactions: ${error.message}`);
     }
     throw new Error('An unknown error occurred while fetching payment transactions.');
@@ -500,3 +503,4 @@ export async function debitWallet(userId: string, amount: number): Promise<void>
     throw new Error('An unknown error occurred while debiting wallet.');
   }
 }
+
