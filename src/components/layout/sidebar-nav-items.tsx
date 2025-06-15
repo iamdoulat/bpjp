@@ -35,7 +35,7 @@ const generalNavLinks: NavItem[] = [
 
 const adminNavLinks: NavItem[] = [
   { href: '/admin/overview', label: 'Admin Overview', icon: ShieldCheck },
-  { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle },
+  // { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle }, // Removed this link
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList },
   { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
   { href: '/admin/payments', label: 'Track Payments', icon: CreditCard },
@@ -127,3 +127,4 @@ export function SidebarNavItems() {
     </SidebarMenu>
   );
 }
+
