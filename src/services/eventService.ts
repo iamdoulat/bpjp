@@ -1,6 +1,6 @@
 
 // src/services/eventService.ts
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, getDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -38,11 +38,11 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
     } catch (uploadError: any) {
       // Check if it's a Firebase Storage permission error specifically for the attachment
       if (uploadError.code === 'storage/unauthorized' || (uploadError.message && uploadError.message.includes('storage/unauthorized'))) {
-        console.warn(`Storage permission denied for event attachment: ${uploadError.message}. The event will be created without this attachment. Please check your Firebase Storage security rules to allow writes to 'event_attachments/'.`);
+        console.warn(`[eventService.addEvent] Storage permission denied for event attachment: ${uploadError.message}. The event will be created without this attachment. Please check your Firebase Storage security rules to allow writes to 'event_attachments/'.`);
         // imageUrl and imagePath will remain undefined/null, so the event is saved without them.
       } else {
         // If it's a different upload error, re-throw it to fail the whole event creation.
-        console.error("Error uploading event attachment, this is not a permission issue: ", uploadError);
+        console.error("[eventService.addEvent] Error uploading event attachment, this is not a permission issue: ", uploadError);
         // This specific error will be caught by the outer try-catch block
         throw new Error(`Failed to upload event attachment: ${uploadError.message}`);
       }
@@ -62,7 +62,7 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
     const docRef = await addDoc(collection(db, 'events'), dataToSave);
     return docRef.id;
   } catch (error) {
-    console.error("Error adding event to Firestore (after attachment handling): ", error);
+    console.error("[eventService.addEvent] Error adding event to Firestore (after attachment handling): ", error);
     if (error instanceof Error) {
       // The specific permission error for attachment is handled above.
       // This will catch errors from Firestore save or other attachment upload errors.
@@ -93,8 +93,11 @@ export async function getEvents(order: 'asc' | 'desc' = 'asc'): Promise<EventDat
     });
     return events;
   } catch (error) {
-    console.error("Error fetching events from Firestore: ", error);
+    console.error("[eventService.getEvents] Error fetching events from Firestore: ", error);
     if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
+        console.error(`[eventService.getEvents] FIREBASE PERMISSION_DENIED: User ${auth.currentUser?.email || '(unknown user)'} does not have permission to read the 'events' collection. Please check Firestore security rules.`);
+      }
       throw new Error(`Failed to fetch events: ${error.message}`);
     }
     throw new Error('An unknown error occurred while fetching events.');
@@ -122,10 +125,14 @@ export async function getEventById(id: string): Promise<EventData | null> {
       return null;
     }
   } catch (error) {
-    console.error(`Error fetching event by ID (${id}) from Firestore: `, error);
+    console.error(`[eventService.getEventById] Error fetching event by ID (${id}) from Firestore: `, error);
     if (error instanceof Error) {
+       if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
+        console.error(`[eventService.getEventById] FIREBASE PERMISSION_DENIED: User ${auth.currentUser?.email || '(unknown user)'} does not have permission to read 'events/${id}'. Please check Firestore security rules.`);
+      }
       throw new Error(`Failed to fetch event: ${error.message}`);
     }
     throw new Error('An unknown error occurred while fetching the event.');
   }
 }
+
