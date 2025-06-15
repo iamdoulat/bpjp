@@ -265,14 +265,14 @@ export default function PublicViewEventPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 <div className="space-y-1">
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <CalendarDays className="h-4 w-4 mr-2 text-primary" />
+                    <CalendarDays className="h-4 w-4 mr-2 text-green-600" />
                     Event Date & Time:
                   </div>
                   <p className="text-lg font-semibold text-foreground">{formatDisplayDateTime(event.eventDate)}</p>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <Users className="h-4 w-4 mr-2 text-primary" />
+                    <Users className="h-4 w-4 mr-2 text-green-600" />
                     Participants Registered:
                   </div>
                   <p className="text-lg font-semibold text-foreground">{event.participantCount || 0}</p>
@@ -281,7 +281,7 @@ export default function PublicViewEventPage() {
 
             <div className="space-y-2">
               <div className="flex items-center text-md font-semibold text-foreground">
-                <FileText className="h-5 w-5 mr-2 text-primary" />
+                <FileText className="h-5 w-5 mr-2 text-green-600" />
                 Event Details:
               </div>
               <p className="text-foreground whitespace-pre-line text-sm leading-relaxed p-3 bg-muted/20 rounded-md border">
