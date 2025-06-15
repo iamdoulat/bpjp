@@ -22,11 +22,11 @@ export interface NewEventInput {
 }
 
 export async function addEvent(eventInput: NewEventInput): Promise<string> {
-  try {
-    let imageUrl: string | undefined = undefined;
-    let imagePath: string | undefined = undefined;
+  let imageUrl: string | undefined = undefined;
+  let imagePath: string | undefined = undefined;
 
-    if (eventInput.attachmentFile) {
+  if (eventInput.attachmentFile) {
+    try {
       const timestamp = new Date().getTime();
       const uniqueFileName = `event_${timestamp}_${eventInput.attachmentFile.name.replace(/\s+/g, '_')}`;
       const storagePath = `event_attachments/${uniqueFileName}`;
@@ -35,8 +35,21 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
       const snapshot = await uploadBytes(storageRef, eventInput.attachmentFile);
       imageUrl = await getDownloadURL(snapshot.ref);
       imagePath = storagePath;
+    } catch (uploadError: any) {
+      // Check if it's a Firebase Storage permission error specifically for the attachment
+      if (uploadError.code === 'storage/unauthorized' || (uploadError.message && uploadError.message.includes('storage/unauthorized'))) {
+        console.warn(`Storage permission denied for event attachment: ${uploadError.message}. The event will be created without this attachment. Please check your Firebase Storage security rules to allow writes to 'event_attachments/'.`);
+        // imageUrl and imagePath will remain undefined/null, so the event is saved without them.
+      } else {
+        // If it's a different upload error, re-throw it to fail the whole event creation.
+        console.error("Error uploading event attachment, this is not a permission issue: ", uploadError);
+        // This specific error will be caught by the outer try-catch block
+        throw new Error(`Failed to upload event attachment: ${uploadError.message}`);
+      }
     }
+  }
 
+  try {
     const dataToSave: Omit<EventData, 'id' | 'createdAt' | 'eventDate'> & { createdAt: Timestamp, eventDate: Timestamp } = {
       title: eventInput.title,
       details: eventInput.details,
@@ -49,12 +62,10 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
     const docRef = await addDoc(collection(db, 'events'), dataToSave);
     return docRef.id;
   } catch (error) {
-    console.error("Error adding event to Firestore: ", error);
+    console.error("Error adding event to Firestore (after attachment handling): ", error);
     if (error instanceof Error) {
-      // Check if it's a Firebase Storage permission error
-      if ((error as any).code === 'storage/unauthorized' || (error.message && error.message.includes('storage/unauthorized'))) {
-        throw new Error(`Failed to add event: Firebase Storage permission denied. Please check your Storage security rules to allow writes to 'event_attachments/'. Original error: ${error.message}`);
-      }
+      // The specific permission error for attachment is handled above.
+      // This will catch errors from Firestore save or other attachment upload errors.
       throw new Error(`Failed to add event: ${error.message}`);
     }
     throw new Error('An unknown error occurred while adding the event.');
@@ -118,4 +129,3 @@ export async function getEventById(id: string): Promise<EventData | null> {
     throw new Error('An unknown error occurred while fetching the event.');
   }
 }
-
