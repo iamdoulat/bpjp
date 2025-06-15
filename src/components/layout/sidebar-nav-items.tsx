@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Megaphone, UserCircle2, ShieldCheck, Users,
   CreditCard, ClipboardList, PlusCircle, LogIn, UserPlus as UserPlusIcon,
   History as HistoryIcon, ReceiptText, FilePlus2, CalendarCheck2, CalendarPlus,
-  Settings, Info, Target, FileEdit, ListChecks, Landmark
+  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays // Added CalendarDays
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -37,11 +37,12 @@ const adminNavLinks: NavItem[] = [
   { href: '/admin/overview', label: 'Admin Overview', icon: ShieldCheck },
   { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle },
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList },
+  { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus },
+  { href: '/admin/events', label: 'Manage Events', icon: CalendarDays }, // Changed Icon for Manage Events
   { href: '/admin/payments', label: 'Track Payments', icon: CreditCard },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
   { href: '/admin/expenses/create', label: 'Create Expense', icon: FilePlus2 },
   { href: '/expenses/history-list', label: 'Expenses History List', icon: ListChecks },
-  { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus },
   { href: '/admin/mission/edit', label: 'Edit Mission Page', icon: FileEdit },
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
 ];
@@ -61,7 +62,7 @@ const authActionPages: NavItem[] = [
 
 export function SidebarNavItems() {
   const pathname = usePathname();
-  const { user, loading, isAdmin } = useAuth(); // Get isAdmin from context
+  const { user, loading, isAdmin } = useAuth(); 
   
   if (loading) {
     return (
@@ -83,19 +84,26 @@ export function SidebarNavItems() {
 
   if (user) {
     generalNavLinks.forEach(item => itemsToRender.push(item));
-    if (isAdmin) { // Only prepare admin links if user is admin
+    if (isAdmin) { 
       adminNavLinks.forEach(item => adminItemsToRender.push(item));
     }
   } else {
+    // For unauthenticated users, always add the login page as the first item if not already on login/signup
+    if (pathname !== '/login' && pathname !== '/signup') {
+      itemsToRender.push({ href: '/login', label: 'Login', icon: LogIn });
+    }
     publicPagesForUnauthenticated.forEach(item => itemsToRender.push(item));
-    authActionPages.forEach(item => itemsToRender.push(item));
+    // Only add signup if not on login/signup
+     if (pathname !== '/login' && pathname !== '/signup') {
+      itemsToRender.push({ href: '/signup', label: 'Sign Up', icon: UserPlusIcon });
+    }
   }
   
   const renderItem = (item: NavItem) => (
     <SidebarMenuItem key={item.href}>
       <SidebarMenuButton
         asChild
-        isActive={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))}
+        isActive={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && item.href.split('/').length > 1)}
         tooltip={item.label}
       >
         <Link href={item.href}>
@@ -109,7 +117,7 @@ export function SidebarNavItems() {
   return (
     <SidebarMenu>
       {itemsToRender.map(renderItem)}
-      {user && isAdmin && adminItemsToRender.length > 0 && ( // Only show admin section if user is admin AND there are admin items
+      {user && isAdmin && adminItemsToRender.length > 0 && ( 
         <>
           <SidebarSeparator className="my-2" />
           <li className="px-3 py-2 text-xs font-semibold text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden tracking-wider uppercase">
