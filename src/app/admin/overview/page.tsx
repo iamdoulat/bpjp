@@ -1,4 +1,3 @@
-
 // src/app/admin/overview/page.tsx
 "use client";
 
@@ -23,12 +22,23 @@ import {
   RefreshCw,
   FileText,
   AlertCircle as AlertIcon,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
-import { getNetPlatformFundsAvailable, getPendingPaymentsCount } from "@/services/paymentService"; // Updated to use net funds
+import { getNetPlatformFundsAvailable, getPendingPaymentsCount, getPaymentTransactions, type PaymentTransaction } from "@/services/paymentService";
 import { getCampaigns, type CampaignData } from "@/services/campaignService";
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { Timestamp } from "firebase/firestore";
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -36,10 +46,24 @@ function formatCurrency(amount: number) {
 
 interface AdminStatsData {
   totalUsers: number;
-  netPlatformFunds: number; // Changed from totalDonations
+  netPlatformFunds: number;
   activeCampaigns: number;
   pendingPayments: number;
 }
+
+interface DailyDonationChartData {
+  date: string; // Formatted for display (e.g., "MMM d")
+  fullDate: string; // YYYY-MM-DD for sorting
+  donations: number;
+}
+
+const chartConfig = {
+  donations: {
+    label: "Daily Donations",
+    color: "hsl(var(--chart-1))",
+    icon: TrendingUp,
+  },
+} satisfies ChartConfig;
 
 export default function AdminOverviewPage() {
   const router = useRouter();
@@ -49,35 +73,81 @@ export default function AdminOverviewPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+  const [dailyDonationData, setDailyDonationData] = React.useState<DailyDonationChartData[]>([]);
+  const [chartLoading, setChartLoading] = React.useState(true);
+  const [chartError, setChartError] = React.useState<string | null>(null);
+
   React.useEffect(() => {
-    async function fetchAdminStats() {
+    async function fetchAdminData() {
       setLoading(true);
+      setChartLoading(true);
       setError(null);
+      setChartError(null);
+
       try {
-        const [userProfiles, netFunds, allCampaigns, pendingCount] = await Promise.all([
+        // Fetch platform stats
+        const [userProfiles, netFunds, allCampaignsData, pendingCount, transactions] = await Promise.all([
           getAllUserProfiles(),
-          getNetPlatformFundsAvailable(), // Fetch net funds
+          getNetPlatformFundsAvailable(),
           getCampaigns(),
           getPendingPaymentsCount(),
+          getPaymentTransactions(),
         ]);
 
-        const activeCampaignsCount = allCampaigns.filter(c => c.initialStatus === 'active').length;
+        const activeCampaignsCount = allCampaignsData.filter(c => c.initialStatus === 'active').length;
 
         setStats({
           totalUsers: userProfiles.length,
-          netPlatformFunds: netFunds, // Store net funds
+          netPlatformFunds: netFunds,
           activeCampaigns: activeCampaignsCount,
           pendingPayments: pendingCount,
         });
 
+        // Process transactions for chart
+        const succeededTransactions = transactions.filter(tx => tx.status === "Succeeded");
+        const dailyTotals: { [key: string]: number } = {};
+        const last30Days: DailyDonationChartData[] = [];
+        const today = new Date();
+
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          const dateString = d.toISOString().split('T')[0]; // YYYY-MM-DD
+          dailyTotals[dateString] = 0;
+        }
+
+        succeededTransactions.forEach(tx => {
+          const txDate = tx.date instanceof Timestamp ? tx.date.toDate() : tx.date as Date;
+          const dateString = txDate.toISOString().split('T')[0];
+          if (dailyTotals.hasOwnProperty(dateString)) {
+            dailyTotals[dateString] += tx.amount;
+          }
+        });
+        
+        for (const dateString in dailyTotals) {
+            const dateObj = new Date(dateString + 'T00:00:00'); // Ensure consistent date object from string
+            last30Days.push({
+                date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), // Formatted for X-axis display
+                fullDate: dateString, // YYYY-MM-DD for sorting if needed
+                donations: dailyTotals[dateString],
+            });
+        }
+        // Sort by fullDate to ensure correct order on chart if map iteration order is not guaranteed
+        last30Days.sort((a,b) => a.fullDate.localeCompare(b.fullDate));
+
+        setDailyDonationData(last30Days);
+
       } catch (e) {
-        console.error("Failed to fetch admin overview stats:", e);
-        setError(e instanceof Error ? e.message : "An unknown error occurred while fetching statistics.");
+        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
+        console.error("Failed to fetch admin overview data:", e);
+        setError(errorMessage);
+        setChartError(errorMessage);
       } finally {
         setLoading(false);
+        setChartLoading(false);
       }
     }
-    fetchAdminStats();
+    fetchAdminData();
   }, []);
 
   const handleQuickAction = (actionName: string, path?: string) => {
@@ -91,7 +161,7 @@ export default function AdminOverviewPage() {
     }
   };
 
-  if (error) {
+  if (error && !loading) { // Prioritize general error for page
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 flex items-center justify-center">
@@ -145,9 +215,9 @@ export default function AdminOverviewPage() {
                 icon={<Users className="h-5 w-5 text-green-600" />}
               />
               <StatsCard
-                title="Platform Net Funds" // Updated title
-                value={formatCurrency(stats.netPlatformFunds)} // Use net funds
-                subtitle="Net funds after expenses" // Updated subtitle
+                title="Platform Net Funds"
+                value={formatCurrency(stats.netPlatformFunds)}
+                subtitle="Net funds after expenses"
                 icon={<DollarSign className="h-5 w-5 text-green-600" />}
               />
               <StatsCard
@@ -179,14 +249,70 @@ export default function AdminOverviewPage() {
                 <BarChart3 className="h-5 w-5 text-green-600" />
                 <CardTitle className="font-headline">Platform Analytics</CardTitle>
               </div>
-              <CardDescription>Key performance indicators and trends.</CardDescription>
+              <CardDescription>Daily donations for the last 30 days.</CardDescription>
             </CardHeader>
-            <CardContent className="h-[250px] md:h-[300px] flex items-center justify-center bg-muted/30 rounded-md">
-              {loading ? <Skeleton className="h-full w-full" /> : <p className="text-muted-foreground">Analytics chart will be displayed here.</p>}
+            <CardContent className="h-[250px] md:h-[300px] bg-card rounded-md p-0 pl-2 pr-1 pb-1">
+              {chartLoading && <Skeleton className="h-full w-full" />}
+              {!chartLoading && chartError && (
+                <div className="flex items-center justify-center h-full">
+                  <Alert variant="destructive" className="w-auto">
+                    <AlertIcon className="h-4 w-4" />
+                    <ShadCNAlertTitle>Chart Error</ShadCNAlertTitle>
+                    <ShadCNAlertDescription>{chartError}</ShadCNAlertDescription>
+                  </Alert>
+                </div>
+              )}
+              {!chartLoading && !chartError && dailyDonationData.length > 0 && (
+                <ChartContainer config={chartConfig} className="h-full w-full">
+                  <BarChart data={dailyDonationData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(value) => value} // Already formatted as "MMM d"
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(value) => `$${value / 1000}k`}
+                      width={50}
+                    />
+                     <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent
+                        labelFormatter={(label, payload) => {
+                           const dataPoint = payload?.[0]?.payload as DailyDonationChartData | undefined;
+                           if (dataPoint?.fullDate) {
+                            return new Date(dataPoint.fullDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                           }
+                           return label;
+                        }}
+                        formatter={(value) => formatCurrency(value as number)}
+                        indicator="dot"
+                        nameKey="donations"
+                       />}
+                    />
+                    <Bar
+                      dataKey="donations"
+                      fill="var(--color-donations)"
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              )}
+              {!chartLoading && !chartError && dailyDonationData.length === 0 && (
+                 <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No donation data available for the last 30 days.
+                </div>
+              )}
             </CardContent>
             <div className="p-4 border-t">
-              <Button variant="outline" onClick={() => handleQuickAction("View Detailed Reports")} disabled={loading}>
-                View Detailed Reports
+              <Button variant="outline" onClick={() => handleQuickAction("View Detailed Reports", "/admin/payments")} disabled={loading}>
+                View Transaction History
               </Button>
             </div>
           </Card>
