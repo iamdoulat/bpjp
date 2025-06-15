@@ -3,69 +3,58 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Default deny all
-    match /{allPaths=**} {
-      allow read, write: if false;
+
+    // Helper function to check if a user is an admin by looking up their profile in Firestore
+    // This requires your Firestore rules to allow admins to read userProfiles
+    function isAdmin() {
+      return request.auth != null && get(/databases/(default)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Profile Images:
-    // Allow users to read and write their own profile images.
-    // Public read can be useful if profile images are displayed publicly.
-    match /profile-images/{userId}/{fileName} {
+    // Users can read anyone's profile image (if public).
+    // Users can only write (upload/update/delete) their own profile image.
+    match /profile-images/{userId}/{allPaths=*} {
       allow read: if true; // Or restrict to authenticated users: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Campaign Images:
-    // Allow authenticated users to upload campaign images.
-    // Public read is typical for campaign images.
-    match /campaign_images/{fileName} {
+    // Publicly readable.
+    // Writable by authenticated users (e.g., admins or users creating campaigns).
+    // Adjust write rule based on who can create/edit campaigns.
+    match /campaign_images/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
-    }
-    match /campaign_images/{campaignId}/{fileName} { // If using campaignId in path
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null && isAdmin(); // Only admins can upload/modify campaign images
     }
 
+    // Event Attachments:
+    // Publicly readable.
+    // Writable by admin users.
+    match /event_attachments/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && isAdmin();
+    }
 
     // Expense Attachments:
-    // Allow authenticated users to upload (write) expense attachments.
-    // Allow authenticated users to read their own or all expense attachments.
-    // Adjust read access based on your app's requirements (e.g., only admins or specific users).
-    match /expense_attachments/{fileName} {
-      allow read: if request.auth != null; // Allow any authenticated user to read (e.g., for admin review)
-      allow write: if request.auth != null; // Allow any authenticated user to write (e.g., admins or designated users creating expenses)
+    // Readable by admin users (or potentially by the user who created the expense if needed).
+    // Writable by admin users.
+    match /expense_attachments/{allPaths=**} {
+      allow read: if request.auth != null && isAdmin(); // Or more specific if users need to see their own.
+      allow write: if request.auth != null && isAdmin();
     }
 
-    // Organization Setting Images (President, Secretary, Cover Images):
-    // Allow authenticated users (presumably admins) to upload these.
-    // Public read for display on About Us page.
-    match /organization/{settingsDocId}/{imageType}.{extension} {
-      allow read: if true;
-      allow write: if request.auth != null; // Assuming admins are authenticated users who can access the settings page
-    }
-    match /organization/{settingsDocId}/president_image.{extension} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    match /organization/{settingsDocId}/secretary_image.{extension} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-     match /organization/{settingsDocId}/cover_image.{extension} {
-      allow read: if true;
-      allow write: if request.auth != null;
+    // Organization Setting Images (e.g., president, secretary, cover images for About Us)
+    // Path: organization/organizationDetails/{image_type_filename}
+    match /organization/organizationDetails/{fileName} {
+      allow read: if true; // Publicly readable
+      allow write: if request.auth != null && isAdmin(); // Only admins can write/update these images
     }
 
-
-    // Example: More restrictive rules for expense_attachments if needed
-    // Only allow the user who created the expense (or an admin) to read/write.
-    // This would require storing the uploader's UID with the expense document in Firestore
-    // and then checking against that here.
-    // match /expense_attachments/{expenseId}/{fileName} {
-    //   allow read, write: if request.auth != null &&
-    //                       (request.auth.uid == resource.metadata.ownerUid || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin');
+    // Default deny all other paths if not explicitly matched
+    // match /{allPaths=**} {
+    //   allow read, write: if false;
     // }
   }
 }
+
+    
