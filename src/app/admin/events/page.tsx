@@ -198,7 +198,7 @@ export default function ManageEventsPage() {
                 <TableRow>
                   <TableHead className="w-[300px] md:w-[400px]">Event Title</TableHead>
                   <TableHead>Event Date</TableHead>
-                  <TableHead className="text-center w-[120px]">Participants</TableHead> {/* New Header */}
+                  <TableHead className="text-center w-[120px]">Participants</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -207,7 +207,7 @@ export default function ManageEventsPage() {
                   <TableRow key={event.id}>
                     <TableCell className="font-medium truncate max-w-[250px] md:max-w-none">{event.title}</TableCell>
                     <TableCell>{formatDisplayDate(event.eventDate)}</TableCell>
-                    <TableCell className="text-center">{event.participantCount || 0}</TableCell> {/* Display participant count */}
+                    <TableCell className="text-center">{event.participantCount || 0}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
