@@ -1,4 +1,3 @@
-
 // src/app/admin/events/page.tsx
 "use client";
 
@@ -33,13 +32,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CalendarDays, Search, PlusCircle, MoreHorizontal, Eye, Edit, Trash2, AlertCircle, Loader2, Users } from "lucide-react"; // Added Users icon
+import { CalendarDays, Search, PlusCircle, MoreHorizontal, Eye, Edit, Trash2, AlertCircle, Loader2, Users } from "lucide-react";
 import { getEvents, deleteEvent, type EventData } from "@/services/eventService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 function formatDisplayDate(date: Timestamp | Date | undefined) {
   if (!date) return "N/A";
@@ -207,7 +207,15 @@ export default function ManageEventsPage() {
                   <TableRow key={event.id}>
                     <TableCell className="font-medium truncate max-w-[250px] md:max-w-none">{event.title}</TableCell>
                     <TableCell>{formatDisplayDate(event.eventDate)}</TableCell>
-                    <TableCell className="text-center">{event.participantCount || 0}</TableCell>
+                    <TableCell className="text-center">
+                      {event.id ? (
+                         <Link href={`/admin/events/${event.id}/registrations`} className="text-primary hover:underline">
+                          {event.participantCount || 0}
+                         </Link>
+                       ) : (
+                         <span>{event.participantCount || 0}</span>
+                       )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

@@ -3,6 +3,7 @@
 import { db, storage, auth } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, getDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot, updateDoc, deleteDoc, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import type { UserProfileData } from './userService'; // For enriching registration data
 
 export interface EventData {
   id?: string;
@@ -10,7 +11,7 @@ export interface EventData {
   details: string;
   eventDate: Timestamp;
   imageUrl?: string | null;
-  imagePath?: string | null; // To help with potential future deletion/updates
+  imagePath?: string | null; 
   createdAt: Timestamp;
   lastUpdated?: Timestamp;
   participantCount: number; 
@@ -31,12 +32,19 @@ export interface UpdateEventInput {
 }
 
 export interface EventRegistrationData {
+  id?: string; // Registration document ID
   userId: string;
   userEmail?: string;
-  name: string;
-  mobileNumber: string;
+  name: string; // Name provided at registration
+  mobileNumber: string; // Mobile provided at registration
   wardNo: string;
   registeredAt: Timestamp;
+}
+
+// For displaying in the admin registrations list
+export interface EnrichedEventRegistrationData extends EventRegistrationData {
+  userProfileDisplayName?: string | null; // DisplayName from userProfiles, can be different from registration 'name'
+  userProfileAvatarUrl?: string | null;
 }
 
 
@@ -306,7 +314,54 @@ export async function checkIfUserRegistered(eventId: string, userId: string): Pr
     return docSnap.exists();
   } catch (error) {
     console.error(`[eventService.checkIfUserRegistered] Error checking registration for user ${userId}, event ${eventId}:`, error);
-    // Default to false on error to avoid blocking registration due to a check failure
     return false; 
+  }
+}
+
+export async function getEventRegistrationsWithDetails(eventId: string): Promise<EnrichedEventRegistrationData[]> {
+  try {
+    const registrationsRef = collection(db, "events", eventId, "registrations");
+    const q = query(registrationsRef, orderBy("registeredAt", "desc"));
+    const registrationsSnapshot = await getDocs(q);
+
+    const enrichedRegistrations: EnrichedEventRegistrationData[] = [];
+
+    for (const regDoc of registrationsSnapshot.docs) {
+      const registrationData = regDoc.data() as Omit<EventRegistrationData, 'id'>; // Raw data from Firestore
+      
+      let userProfileDisplayName: string | null = registrationData.name; // Default to registration name
+      let userProfileAvatarUrl: string | null = null;
+
+      // Attempt to fetch user profile for avatar and potentially more accurate display name
+      const userProfileDocRef = doc(db, "userProfiles", registrationData.userId);
+      const userProfileSnap = await getDoc(userProfileDocRef);
+      if (userProfileSnap.exists()) {
+        const profile = userProfileSnap.data() as UserProfileData;
+        userProfileDisplayName = profile.displayName || registrationData.name; // Prefer profile display name if available
+        userProfileAvatarUrl = profile.photoURL || null;
+      }
+
+      enrichedRegistrations.push({
+        id: regDoc.id, // Add the registration document ID
+        userId: registrationData.userId,
+        userEmail: registrationData.userEmail,
+        name: registrationData.name, // This is the name provided during registration
+        mobileNumber: registrationData.mobileNumber,
+        wardNo: registrationData.wardNo,
+        registeredAt: registrationData.registeredAt,
+        userProfileDisplayName, // This could be the same as `name` or from the user's profile
+        userProfileAvatarUrl,
+      });
+    }
+    return enrichedRegistrations;
+  } catch (error) {
+    console.error(`[eventService.getEventRegistrationsWithDetails] Error fetching registrations for event ${eventId}:`, error);
+    if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+        console.error(`[eventService.getEventRegistrationsWithDetails] FIREBASE PERMISSION_DENIED: User ${auth.currentUser?.email || '(unknown user)'} does not have permission to read the 'events/${eventId}/registrations' subcollection. Please check Firestore security rules.`);
+      }
+      throw new Error(`Failed to fetch event registrations: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while fetching event registrations.');
   }
 }
