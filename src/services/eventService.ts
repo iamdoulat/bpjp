@@ -51,6 +51,10 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
   } catch (error) {
     console.error("Error adding event to Firestore: ", error);
     if (error instanceof Error) {
+      // Check if it's a Firebase Storage permission error
+      if ((error as any).code === 'storage/unauthorized' || (error.message && error.message.includes('storage/unauthorized'))) {
+        throw new Error(`Failed to add event: Firebase Storage permission denied. Please check your Storage security rules to allow writes to 'event_attachments/'. Original error: ${error.message}`);
+      }
       throw new Error(`Failed to add event: ${error.message}`);
     }
     throw new Error('An unknown error occurred while adding the event.');
@@ -114,3 +118,4 @@ export async function getEventById(id: string): Promise<EventData | null> {
     throw new Error('An unknown error occurred while fetching the event.');
   }
 }
+
