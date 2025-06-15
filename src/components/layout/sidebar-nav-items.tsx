@@ -35,12 +35,14 @@ const generalNavLinks: NavItem[] = [
 
 const adminNavLinks: NavItem[] = [
   { href: '/admin/overview', label: 'Admin Overview', icon: ShieldCheck },
-  // { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle }, // Removed this link
+  { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle },
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList },
-  { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
   { href: '/admin/payments', label: 'Track Payments', icon: CreditCard },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
+  { href: '/admin/expenses/create', label: 'Create Expense', icon: FilePlus2 },
   { href: '/expenses/history-list', label: 'Expenses History List', icon: ListChecks },
+  { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus },
+  { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
   { href: '/admin/mission/edit', label: 'Edit Mission Page', icon: FileEdit },
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
 ];
