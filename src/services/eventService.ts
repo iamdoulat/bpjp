@@ -36,15 +36,11 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
       imageUrl = await getDownloadURL(snapshot.ref);
       imagePath = storagePath;
     } catch (uploadError: any) {
-      // Check if it's a Firebase Storage permission error specifically for the attachment
       if (uploadError.code === 'storage/unauthorized' || (uploadError.message && uploadError.message.includes('storage/unauthorized'))) {
         console.warn(`[eventService.addEvent] Storage permission denied for event attachment: ${uploadError.message}. The event will be created without this attachment. Please check your Firebase Storage security rules to allow writes to 'event_attachments/'.`);
-        // imageUrl and imagePath will remain undefined/null, so the event is saved without them.
       } else {
-        // If it's a different upload error, re-throw it to fail the whole event creation.
         console.error("[eventService.addEvent] Error uploading event attachment, this is not a permission issue: ", uploadError);
-        // This specific error will be caught by the outer try-catch block
-        throw new Error(`Failed to upload event attachment: ${uploadError.message}`);
+        throw new Error(`Failed to add event: Firebase Storage permission denied. Please check your Storage security rules to allow writes to 'event_attachments/'. Original error: ${uploadError.message}`);
       }
     }
   }
@@ -64,8 +60,6 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
   } catch (error) {
     console.error("[eventService.addEvent] Error adding event to Firestore (after attachment handling): ", error);
     if (error instanceof Error) {
-      // The specific permission error for attachment is handled above.
-      // This will catch errors from Firestore save or other attachment upload errors.
       throw new Error(`Failed to add event: ${error.message}`);
     }
     throw new Error('An unknown error occurred while adding the event.');
@@ -75,7 +69,6 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
 export async function getEvents(order: 'asc' | 'desc' = 'asc'): Promise<EventData[]> {
   try {
     const eventsCollectionRef = collection(db, "events");
-    // Order by eventDate to show upcoming events first, then by createdAt for same-day events
     const q = query(eventsCollectionRef, orderBy("eventDate", order), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     const events: EventData[] = [];
@@ -97,6 +90,10 @@ export async function getEvents(order: 'asc' | 'desc' = 'asc'): Promise<EventDat
     if (error instanceof Error) {
       if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
         console.error(`[eventService.getEvents] FIREBASE PERMISSION_DENIED: User ${auth.currentUser?.email || '(unknown user)'} does not have permission to read the 'events' collection. Please check Firestore security rules.`);
+      } else if (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("the query requires an index")) {
+        const indexCreationLinkMatch = error.message.match(/(https?:\/\/[^\s]+)/);
+        const indexLink = indexCreationLinkMatch ? indexCreationLinkMatch[0] : "No link provided in error message.";
+        console.error(`[eventService.getEvents] FIRESTORE_INDEX_REQUIRED: The query on 'events' collection (ordered by eventDate ${order}, createdAt desc) requires a composite index. Please create it in your Firebase console. Link from error: ${indexLink}`);
       }
       throw new Error(`Failed to fetch events: ${error.message}`);
     }
