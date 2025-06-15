@@ -30,7 +30,7 @@ import ImageCropDialog from "@/components/ui/image-crop-dialog";
 const eventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
   details: z.string().min(20, { message: "Details must be at least 20 characters." }).max(5000),
-  eventDate: z.date({ required_error: "An event date is required." }),
+  eventDate: z.date({ required_error: "An event date and time is required." }),
   attachmentFile: z.instanceof(File).optional().nullable(),
 });
 
@@ -177,17 +177,20 @@ export default function CreateEventPage() {
                   name="eventDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Event Date</FormLabel>
+                      <FormLabel>Event Date & Time</FormLabel>
                       <DatePicker
                         date={field.value}
                         setDate={field.onChange}
-                        placeholder="Select event date"
+                        placeholder="Select event date and time"
                         disabled={(date) => {
                           const today = new Date();
                           today.setHours(0, 0, 0, 0); // Compare dates without time
                           return date < today || isSubmitting;
                         }}
                       />
+                       <FormDescription>
+                        Select the start date. The time will default to the beginning of the day (00:00).
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

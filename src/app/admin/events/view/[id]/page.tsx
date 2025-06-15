@@ -120,9 +120,20 @@ export default function ViewEventPage() {
             <CardDescription>Detailed view of the upcoming event.</CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-6">
-            {event.imageUrl && (
+            {event.imageUrl ? (
               <div className="relative aspect-[16/9] w-full rounded-md overflow-hidden border">
-                <Image src={event.imageUrl} alt={event.title} layout="fill" objectFit="cover" data-ai-hint="event poster conference" />
+                <Image 
+                    src={event.imageUrl} 
+                    alt={event.title} 
+                    layout="fill" 
+                    objectFit="cover" 
+                    data-ai-hint="event poster conference" 
+                    priority
+                />
+              </div>
+            ) : (
+              <div className="aspect-[16/9] w-full rounded-md overflow-hidden border bg-muted flex items-center justify-center">
+                <CalendarDays className="h-24 w-24 text-muted-foreground" />
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

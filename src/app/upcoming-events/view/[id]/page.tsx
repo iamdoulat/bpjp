@@ -250,7 +250,7 @@ export default function PublicViewEventPage() {
             <CardDescription className="text-sm md:text-base">Event Details</CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-6">
-            {event.imageUrl && (
+            {event.imageUrl ? (
               <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden border shadow-inner">
                 <Image
                   src={event.imageUrl}
@@ -260,6 +260,10 @@ export default function PublicViewEventPage() {
                   priority
                   data-ai-hint="event poster conference"
                 />
+              </div>
+            ) : (
+              <div className="aspect-[16/9] w-full rounded-md overflow-hidden border bg-muted flex items-center justify-center">
+                <CalendarDays className="h-24 w-24 text-muted-foreground" />
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -395,3 +399,4 @@ export default function PublicViewEventPage() {
     </AppShell>
   )
 }
+
