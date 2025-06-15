@@ -93,8 +93,11 @@ export async function getCampaigns(): Promise<CampaignData[]> {
     });
     return campaigns;
   } catch (error) {
-    console.error("Error fetching campaigns from Firestore: ", error);
+    console.error("[campaignService.getCampaigns] Error fetching campaigns from Firestore: ", error);
     if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+        console.error("[campaignService.getCampaigns] FIREBASE PERMISSION_DENIED: Check Firestore security rules for the 'campaigns' collection to allow read access.");
+      }
       throw new Error(`Failed to fetch campaigns: ${error.message}`);
     }
     throw new Error('An unknown error occurred while fetching campaigns.');
@@ -131,6 +134,9 @@ export async function getCampaignById(id: string): Promise<CampaignData | null> 
   } catch (error) {
     console.error("Error fetching campaign by ID from Firestore: ", error);
     if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+        console.error(`[campaignService.getCampaignById] FIREBASE PERMISSION_DENIED: Check Firestore security rules for reading document from 'campaigns/${id}'.`);
+      }
       throw new Error(`Failed to fetch campaign: ${error.message}`);
     }
     throw new Error('An unknown error occurred while fetching the campaign.');
@@ -226,3 +232,4 @@ export async function toggleCampaignReaction(campaignId: string, userId: string,
     throw new Error(`An unknown error occurred while toggling ${reactionType}.`);
   }
 }
+
