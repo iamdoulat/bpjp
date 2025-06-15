@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Megaphone, UserCircle2, ShieldCheck, Users,
   CreditCard, ClipboardList, PlusCircle, LogIn, UserPlus as UserPlusIcon,
   History as HistoryIcon, ReceiptText, FilePlus2, CalendarCheck2, CalendarPlus,
-  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays // Added CalendarDays
+  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -37,8 +37,8 @@ const adminNavLinks: NavItem[] = [
   { href: '/admin/overview', label: 'Admin Overview', icon: ShieldCheck },
   { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle },
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList },
-  { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus },
-  { href: '/admin/events', label: 'Manage Events', icon: CalendarDays }, // Changed Icon for Manage Events
+  // { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus }, // Removed this link
+  { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
   { href: '/admin/payments', label: 'Track Payments', icon: CreditCard },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
   { href: '/admin/expenses/create', label: 'Create Expense', icon: FilePlus2 },
