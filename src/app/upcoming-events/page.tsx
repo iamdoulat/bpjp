@@ -1,9 +1,9 @@
-
 // src/app/upcoming-events/page.tsx
 "use client";
 
 import * as React from "react";
 import Image from "next/image";
+import Link from "next/link"; // Import Link
 import { AppShell } from "@/components/layout/app-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -41,9 +41,14 @@ export default function UpcomingEventsPage() {
       try {
         const fetchedEvents = await getEvents('asc'); // Fetch events sorted by date ascending
         const now = new Date();
-        const futureEvents = fetchedEvents.filter(event => 
-            (event.eventDate instanceof Timestamp ? event.eventDate.toDate() : event.eventDate) >= now
-        );
+        // Filter for events whose eventDate is in the future or today
+        const futureEvents = fetchedEvents.filter(event => {
+            const eventDate = event.eventDate instanceof Timestamp ? event.eventDate.toDate() : event.eventDate;
+            // Compare dates without time for "today"
+            const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+            const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            return eventDateOnly >= todayOnly;
+        });
         setEvents(futureEvents);
       } catch (e) {
         console.error("Failed to fetch upcoming events:", e);
@@ -178,11 +183,12 @@ function EventCard({ event }: EventCardProps) {
         <p className="line-clamp-3">{event.details}</p>
       </CardContent>
       <CardFooter>
-        <Button variant="outline" size="sm" className="w-full" disabled> {/* Public view page not yet implemented */}
-          <Eye className="mr-2 h-4 w-4" /> View Details (Soon)
+        <Button variant="outline" size="sm" className="w-full" asChild>
+            <Link href={`/upcoming-events/view/${event.id}`}>
+                <Eye className="mr-2 h-4 w-4" /> View Details
+            </Link>
         </Button>
       </CardFooter>
     </Card>
   );
 }
-
