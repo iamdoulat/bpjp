@@ -1,7 +1,9 @@
+
 // src/app/expenses/history-list/page.tsx
 "use client";
 
 import * as React from "react";
+import Link from 'next/link'; // Added Link import
 import { useRouter } from 'next/navigation';
 import { AppShell } from "@/components/layout/app-shell";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
@@ -33,7 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ListChecks, MoreHorizontal, Eye, Edit, Trash2, ServerCrash, Search, FileText, Download, Loader2, ChevronLeft, ChevronRight } from "lucide-react"; // Changed icon
+import { ListChecks, MoreHorizontal, Eye, Edit, Trash2, ServerCrash, Search, FileText, Download, Loader2, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react"; // Changed icon & Added PlusCircle
 import { PlatformDonationsCard } from "@/components/stats/platform-donations-card";
 import { getExpenses, deleteExpense, type ExpenseData } from "@/services/expenseService";
 import { Timestamp } from "firebase/firestore";
@@ -165,6 +167,12 @@ export default function ExpensesHistoryListPage() {
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1);}}
             />
           </div>
+          <Button asChild>
+            <Link href="/admin/expenses/create">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Expense
+            </Link>
+          </Button>
         </div>
 
 
