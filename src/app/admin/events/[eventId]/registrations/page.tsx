@@ -1,3 +1,4 @@
+
 // src/app/admin/events/[eventId]/registrations/page.tsx
 "use client";
 
@@ -19,14 +20,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { getEventById, getEventRegistrationsWithDetails, type EventData, type EnrichedEventRegistrationData } from '@/services/eventService';
-import { Loader2, AlertCircle, ArrowLeft, Users, CalendarDays, Mail, Phone, MapPin } from "lucide-react";
+import { Loader2, AlertCircle, ArrowLeft, Users, CalendarDays, Mail, Phone, MapPin, Download } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const ITEMS_PER_PAGE = 20;
 
-function formatDisplayDateTime(date: Timestamp | Date | undefined): string {
+function formatDisplayDateTime(date: Timestamp | Date | undefined, forPDF: boolean = false): string {
   if (!date) return "N/A";
   const jsDate = date instanceof Timestamp ? date.toDate() : date;
+  if (forPDF) {
+    return new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(jsDate);
+  }
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "long",
@@ -97,6 +109,51 @@ export default function EventRegistrationsPage() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  const handleDownloadPdf = () => {
+    if (!event || registrations.length === 0) return;
+
+    const doc = new jsPDF();
+    const tableColumn = ["#", "Participant Name", "Email", "Registered At", "Mobile No.", "Ward No."];
+    const tableRows: (string | null | undefined)[][] = [];
+
+    registrations.forEach((reg, index) => {
+      const rowData = [
+        (index + 1).toString(),
+        reg.name,
+        reg.userEmail || "N/A",
+        formatDisplayDateTime(reg.registeredAt, true),
+        reg.mobileNumber,
+        reg.wardNo,
+      ];
+      tableRows.push(rowData);
+    });
+
+    doc.setFontSize(18);
+    doc.text(`Registered Participants: ${event.title}`, 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Event Date: ${formatDisplayDateTime(event.eventDate, true)} | Total Registered: ${event.participantCount}`, 14, 30);
+
+    (doc as any).autoTable({
+      startY: 35,
+      head: [tableColumn],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: { fillColor: [22, 160, 133] }, // Example primary color
+      styles: { fontSize: 8 },
+    });
+    
+    doc.setFontSize(10);
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 10);
+    }
+
+    doc.save(`event_${eventId}_participants.pdf`);
+  };
+
+
   if (isLoading) {
     return (
       <AppShell>
@@ -158,12 +215,19 @@ export default function EventRegistrationsPage() {
 
         <Card className="shadow-lg">
           <CardHeader className="bg-muted/30 p-4 md:p-6 border-b">
-            <CardTitle className="text-xl md:text-2xl font-headline">
-              Registered Participants for: {event.title}
-            </CardTitle>
-            <CardDescription className="text-sm md:text-base">
-              Event Date: {formatDisplayDateTime(event.eventDate)} | Total Registered: {event.participantCount}
-            </CardDescription>
+           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <CardTitle className="text-xl md:text-2xl font-headline">
+                  Registered Participants for: {event.title}
+                </CardTitle>
+                <CardDescription className="text-sm md:text-base mt-1">
+                  Event Date: {formatDisplayDateTime(event.eventDate)} | Total Registered: {event.participantCount}
+                </CardDescription>
+              </div>
+              <Button onClick={handleDownloadPdf} variant="outline" size="sm" disabled={registrations.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Download PDF
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {registrations.length === 0 ? (
@@ -244,3 +308,4 @@ export default function EventRegistrationsPage() {
     </AppShell>
   );
 }
+
