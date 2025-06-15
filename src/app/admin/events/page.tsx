@@ -21,13 +21,25 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { CalendarDays, Search, PlusCircle, MoreHorizontal, Eye, AlertCircle } from "lucide-react";
-import { getEvents, type EventData } from "@/services/eventService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { CalendarDays, Search, PlusCircle, MoreHorizontal, Eye, Edit, Trash2, AlertCircle, Loader2 } from "lucide-react";
+import { getEvents, deleteEvent, type EventData } from "@/services/eventService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 function formatDisplayDate(date: Timestamp | Date | undefined) {
   if (!date) return "N/A";
@@ -45,29 +57,60 @@ export default function ManageEventsPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const router = useRouter();
-  const { user } = useAuth(); // Get user from auth context
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const [eventToDelete, setEventToDelete] = React.useState<EventData | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const fetchEventsData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedEvents = await getEvents('asc'); 
+      setEvents(fetchedEvents);
+    } catch (e) {
+      console.error("Failed to fetch events:", e);
+      setError(e instanceof Error ? e.message : "An unknown error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   React.useEffect(() => {
-    async function fetchEventsData() {
-      try {
-        setLoading(true);
-        setError(null);
-        // Fetch events, order by eventDate ascending for upcoming first
-        const fetchedEvents = await getEvents('asc'); 
-        setEvents(fetchedEvents);
-      } catch (e) {
-        console.error("Failed to fetch events:", e);
-        setError(e instanceof Error ? e.message : "An unknown error occurred.");
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchEventsData();
-  }, []);
+  }, [fetchEventsData]);
 
   const filteredEvents = events.filter(event =>
     event.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleDeleteConfirmation = (event: EventData) => {
+    setEventToDelete(event);
+  };
+
+  const executeDeleteEvent = async () => {
+    if (!eventToDelete || !eventToDelete.id) return;
+    setIsDeleting(true);
+    try {
+      await deleteEvent(eventToDelete.id);
+      toast({
+        title: "Event Deleted",
+        description: `Event "${eventToDelete.title}" has been successfully deleted.`,
+      });
+      setEvents(prev => prev.filter(e => e.id !== eventToDelete.id));
+      setEventToDelete(null);
+    } catch (e) {
+      console.error("Failed to delete event:", e);
+      toast({
+        title: "Error Deleting Event",
+        description: e instanceof Error ? e.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <AppShell>
@@ -124,6 +167,11 @@ export default function ManageEventsPage() {
                   You can refer to the `example.firestore.rules` file in your project root for guidance on rule structure.
                 </p>
               )}
+               {(error.toLowerCase().includes("query requires an index") || error.toLowerCase().includes("the query requires an index")) && (
+                 <p className="mt-2 text-xs font-medium">
+                   <strong>Suggestion:</strong> A Firestore index is required for this query. Please check the browser console for a link to create it in your Firebase console.
+                 </p>
+               )}
             </AlertDescription>
           </Alert>
         )}
@@ -166,7 +214,19 @@ export default function ManageEventsPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          {/* Add Edit/Delete options here later if needed */}
+                          <DropdownMenuItem onSelect={() => router.push(`/admin/events/edit/${event.id}`)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Event
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                            onSelect={() => handleDeleteConfirmation(event)}
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Event
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -180,7 +240,31 @@ export default function ManageEventsPage() {
           </div>
         )}
       </main>
+      {eventToDelete && (
+        <AlertDialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this event?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the event
+                <span className="font-semibold"> "{eventToDelete.title}"</span>.
+                Any associated image will also be removed from storage.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setEventToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={executeDeleteEvent}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                disabled={isDeleting}
+              >
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </AppShell>
   );
 }
-

@@ -143,8 +143,8 @@ export default function ViewEventPage() {
             </div>
           </CardContent>
           <CardFooter className="bg-muted/30 p-4 md:p-6 border-t">
-            <Button onClick={() => router.push(`/admin/events/edit/${eventId}`)} disabled> {/* Edit page not yet implemented */}
-              <Edit className="mr-2 h-4 w-4" /> Edit Event (Coming Soon)
+            <Button onClick={() => router.push(`/admin/events/edit/${eventId}`)}>
+              <Edit className="mr-2 h-4 w-4" /> Edit Event
             </Button>
           </CardFooter>
         </Card>
