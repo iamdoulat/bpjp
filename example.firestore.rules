@@ -1,0 +1,73 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if a user is an admin
+    function isAdmin(userId) {
+      return get(/databases/$(database)/documents/userProfiles/$(userId)).data.role == 'admin';
+    }
+
+    // User Profiles
+    // Users can read and write their own profile.
+    // Admins can read any profile (for user management).
+    match /userProfiles/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null; // Allows users to create their own profile upon signup if not already present
+      allow get, list: if request.auth != null && isAdmin(request.auth.uid); // Admins can get/list user profiles
+    }
+
+    // Campaigns
+    // Campaigns are publicly readable.
+    // Creating, updating, and deleting campaigns is restricted to admins.
+    // Authenticated users can add/remove reactions (likes/supports).
+    match /campaigns/{campaignId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null && isAdmin(request.auth.uid);
+
+      // Reactions subcollections (likes, supports)
+      match /likes/{userId} {
+        allow read: if true; // Likes can be public if counts are displayed
+        allow create, delete: if request.auth != null && request.auth.uid == userId;
+      }
+      match /supports/{userId} {
+        allow read: if true; // Supports can be public if counts are displayed
+        allow create, delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Events
+    // Events are publicly readable.
+    // Creating, updating, and deleting events is restricted to admins.
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // Payment Transactions
+    // Users can create their own payment transactions (donations).
+    // Users can read their own payment transactions.
+    // Admins can read all payment transactions and update/delete them.
+    match /paymentTransactions/{transactionId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read: if request.auth != null &&
+                     (request.auth.uid == resource.data.userId || isAdmin(request.auth.uid));
+      allow update, delete: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    
+    // Expenses
+    // Creating, reading, updating, and deleting expenses is restricted to admins.
+    match /expenses/{expenseId} {
+      allow read, write, create, update, delete: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // Site Content (e.g., Mission statement, Organization Settings)
+    // Site content is publicly readable.
+    // Updating site content is restricted to admins.
+    match /siteContent/{contentId} {
+      allow read: if true;
+      allow write: if request.auth != null && isAdmin(request.auth.uid); // Covers create and update
+    }
+  }
+}
