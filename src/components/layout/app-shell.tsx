@@ -10,29 +10,79 @@ import { AppHeader } from './app-header';
 import { LayoutGrid } from 'lucide-react';
 import { MobileBottomNav } from './mobile-bottom-nav';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
+import { useToast } from '@/hooks/use-toast'; // Added useToast
 
 interface AppShellProps {
   children: ReactNode;
 }
 
+const adminOnlyPaths = [
+  '/admin/overview',
+  '/new-campaign',
+  '/admin/campaigns', // covers /edit, /view subpaths
+  '/admin/payments',
+  '/admin/users',
+  '/admin/expenses/create',
+  '/expenses/history-list',
+  '/admin/events/create',
+  '/admin/events', // covers /edit, /view, /registrations subpaths
+  '/admin/mission/edit',
+  '/admin/settings',
+];
+
+const publicPaths = [
+  '/login',
+  '/signup',
+  '/campaigns', // Main listing page
+  '/our-mission',
+  '/about-us',
+  '/upcoming-events', // Main listing page
+  '/donors-list',
+  '/', // Homepage (page.tsx handles its own auth redirect for unauthenticated)
+];
+
+const publicPathPrefixes = [
+  '/campaigns/view/', // Dynamic campaign view
+  '/upcoming-events/view/', // Dynamic event view
+];
+
+
 export function AppShell({ children }: AppShellProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth(); // Added isAdmin
   const { appName } = useAppContext();
   const router = useRouter();
+  const pathname = usePathname(); // Get current pathname
+  const { toast } = useToast(); // For access denied messages
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
   useEffect(() => {
-    if (!loading && !user) {
-      const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/signup' && !currentPath.startsWith('/campaigns') && currentPath !== '/our-mission' && currentPath !== '/about-us' && currentPath !== '/upcoming-events' && currentPath !== '/') {
-        // router.push('/login'); // Allow certain public pages
+    if (loading) {
+      return; // Wait until auth state is resolved
+    }
+
+    const isCurrentPathPublic = publicPaths.includes(pathname) || publicPathPrefixes.some(prefix => pathname.startsWith(prefix));
+    const isCurrentPathAdmin = adminOnlyPaths.some(adminPath => pathname.startsWith(adminPath));
+
+    if (!user) { // User is not logged in
+      if (!isCurrentPathPublic) {
+        router.push('/login');
+      }
+    } else { // User is logged in
+      if (isCurrentPathAdmin && !isAdmin) {
+        // Logged-in user is trying to access an admin path, but is not an admin
+        toast({
+          title: "Access Denied",
+          description: "You do not have permission to access this page.",
+          variant: "destructive",
+        });
+        router.push('/'); // Redirect to home page
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, isAdmin, router, pathname, toast]);
 
 
   if (loading) {
