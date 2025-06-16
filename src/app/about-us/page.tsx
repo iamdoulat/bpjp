@@ -87,7 +87,7 @@ export default function AboutUsPage() {
           <div>
             <h1 className="text-2xl font-headline font-bold">About Us</h1>
             <p className="text-muted-foreground text-md">
-              Learn more about our organization and mission.
+              Learn more about our organization.
             </p>
           </div>
         </div>
