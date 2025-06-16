@@ -7,7 +7,7 @@ import Image from "next/image";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck } from "lucide-react"; // Added CalendarCheck
+import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck, FileText } from "lucide-react"; // Added FileText
 import { useAppContext } from "@/contexts/AppContext"; // Use AppContext to get settings
 import type { OrganizationSettingsData } from "@/services/organizationSettingsService";
 
@@ -116,11 +116,14 @@ export default function AboutUsPage() {
               <CardTitle className="text-2xl font-headline">{settingsToDisplay.organizationName}</CardTitle>
             </div>
             {(settingsToDisplay.registrationNumber || settingsToDisplay.establishedYear) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 pt-1 pl-10"> {/* Removed text-white */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 pt-1 pl-10">
                 {settingsToDisplay.registrationNumber && (
-                  <CardDescription>
-                    Registration No: {settingsToDisplay.registrationNumber}
-                  </CardDescription>
+                   <div className="flex items-center">
+                    <FileText className="h-4 w-4 mr-1.5 text-muted-foreground" />
+                    <CardDescription>
+                      Registration No: {settingsToDisplay.registrationNumber}
+                    </CardDescription>
+                  </div>
                 )}
                 {settingsToDisplay.establishedYear && (
                   <div className="flex items-center">
