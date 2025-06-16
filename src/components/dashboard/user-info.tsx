@@ -88,7 +88,7 @@ export function UserInfo() {
         </div>
       </div>
       <p className="text-sm text-muted-foreground">
-        Welcome to Your Dashboard – Here's an overview of your activity, ongoing campaigns, and platform impact.
+        Welcome to Your Dashboard – Here's an overview of your donations activity, ongoing campaigns, etc.
       </p>
     </div>
   );

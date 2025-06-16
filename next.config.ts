@@ -1,5 +1,15 @@
 
 import type {NextConfig} from 'next';
+import WithPWAInit from '@ducanh2912/next-pwa';
+
+const withPWA = WithPWAInit({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true, // Explicitly set to true
+  skipWaiting: true, // Recommended for smoother updates
+  cacheOnFrontEndNav: true, // Cache pages navigated to on the client
+  reloadOnOnline: true, // Reload the app when it comes back online
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -27,4 +37,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);
