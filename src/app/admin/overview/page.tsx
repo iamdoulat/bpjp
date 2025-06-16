@@ -23,6 +23,7 @@ import {
   FileText,
   AlertCircle as AlertIcon,
   TrendingUp,
+  CheckCircle2, // Added CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
@@ -49,6 +50,7 @@ interface AdminStatsData {
   netPlatformFunds: number;
   activeCampaigns: number;
   pendingPayments: number;
+  completedCampaigns: number; // Added completed campaigns
 }
 
 interface DailyDonationChartData {
@@ -95,12 +97,14 @@ export default function AdminOverviewPage() {
         ]);
 
         const activeCampaignsCount = allCampaignsData.filter(c => c.initialStatus === 'active').length;
+        const completedCampaignsCount = allCampaignsData.filter(c => c.initialStatus === 'completed').length; // Count completed campaigns
 
         setStats({
           totalUsers: userProfiles.length,
           netPlatformFunds: netFunds,
           activeCampaigns: activeCampaignsCount,
           pendingPayments: pendingCount,
+          completedCampaigns: completedCampaignsCount, // Set completed campaigns
         });
 
         // Process transactions for chart
@@ -198,13 +202,14 @@ export default function AdminOverviewPage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"> {/* Adjusted grid for potential 5 cards */}
           {loading || !stats ? (
             <>
               <StatsCardSkeleton />
               <StatsCardSkeleton />
               <StatsCardSkeleton />
-              <StatsCardSkeleton variant="destructive" />
+              <StatsCardSkeleton />
+              <StatsCardSkeleton variant="destructive" /> {/* Covers pending payments and completed */}
             </>
           ) : (
             <>
@@ -225,6 +230,12 @@ export default function AdminOverviewPage() {
                 value={stats.activeCampaigns.toString()}
                 subtitle="Manage campaigns"
                 icon={<ListChecks className="h-5 w-5 text-green-600" />}
+              />
+              <StatsCard
+                title="Completed Campaigns"
+                value={stats.completedCampaigns.toString()}
+                subtitle="Successfully concluded campaigns"
+                icon={<CheckCircle2 className="h-5 w-5 text-green-600" />}
               />
               <Card className={cn("shadow-lg", stats.pendingPayments > 0 ? "border-destructive border-2" : "")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
