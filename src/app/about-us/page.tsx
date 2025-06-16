@@ -108,15 +108,19 @@ export default function AboutUsPage() {
               <Building className="h-7 w-7 text-green-600" />
               <CardTitle className="text-2xl font-headline">{settingsToDisplay.organizationName}</CardTitle>
             </div>
-             {settingsToDisplay.registrationNumber && (
-              <CardDescription className="pt-1 pl-10">
-                Registration No: {settingsToDisplay.registrationNumber}
-              </CardDescription>
-            )}
-             {settingsToDisplay.committeePeriod && (
-                <CardDescription className="pt-1 pl-10">
+            {(settingsToDisplay.registrationNumber || settingsToDisplay.committeePeriod) && (
+              <div className="grid grid-cols-2 gap-x-4 pt-1 pl-10">
+                {settingsToDisplay.registrationNumber && (
+                  <CardDescription>
+                    Registration No: {settingsToDisplay.registrationNumber}
+                  </CardDescription>
+                )}
+                {settingsToDisplay.committeePeriod && (
+                  <CardDescription>
                     Committee Period: {settingsToDisplay.committeePeriod}
-                </CardDescription>
+                  </CardDescription>
+                )}
+              </div>
             )}
           </CardHeader>
           <CardContent className="p-6 space-y-6">
