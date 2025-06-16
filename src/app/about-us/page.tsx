@@ -45,6 +45,9 @@ export default function AboutUsPage() {
                   </div>
                 </div>
               ))}
+              <div className="text-center pt-6 mt-2">
+                <Skeleton className="h-5 w-1/3 mx-auto" />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                 {[...Array(2)].map((_, i) => (
                   <div key={i} className="flex flex-col items-center text-center space-y-3">
@@ -108,28 +111,29 @@ export default function AboutUsPage() {
               <Building className="h-7 w-7 text-green-600" />
               <CardTitle className="text-2xl font-headline">{settingsToDisplay.organizationName}</CardTitle>
             </div>
-            {(settingsToDisplay.registrationNumber || settingsToDisplay.committeePeriod) && (
-              <div className="grid grid-cols-2 gap-x-4 pt-1 pl-10">
-                {settingsToDisplay.registrationNumber && (
-                  <CardDescription>
-                    Registration No: {settingsToDisplay.registrationNumber}
-                  </CardDescription>
-                )}
-                {settingsToDisplay.committeePeriod && (
-                  <CardDescription>
-                    Committee Period: {settingsToDisplay.committeePeriod}
-                  </CardDescription>
-                )}
+            {settingsToDisplay.registrationNumber && (
+              <div className="grid grid-cols-1 gap-x-4 pt-1 pl-10 text-white">
+                <CardDescription>
+                  Registration No: {settingsToDisplay.registrationNumber}
+                </CardDescription>
               </div>
             )}
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
               <InfoItem icon={<MapPin className="text-green-600"/>} label="Address" value={settingsToDisplay.address} />
-              <InfoItem icon={<Mail className="text-green-600"/>} label="Contact Email" value={<a href={`mailto:${settingsToDisplay.contactEmail}`} className="text-primary hover:underline">{settingsToDisplay.contactEmail}</a>} />
+              <InfoItem icon={<Mail className="text-green-600"/>} label="Contact Email" value={<a href={`mailto:${settingsToDisplay.contactEmail}`} className="text-green-600 hover:underline">{settingsToDisplay.contactEmail}</a>} />
               <InfoItem icon={<UserCircle className="text-green-600"/>} label="Contact Person" value={settingsToDisplay.contactPersonName} />
               <InfoItem icon={<Phone className="text-green-600"/>} label="Contact Cell" value={settingsToDisplay.contactPersonCell || "Not Provided"} />
             </div>
+
+            {settingsToDisplay.committeePeriod && (
+              <div className="text-center pt-6 mt-2">
+                <p className="text-lg font-semibold text-foreground">
+                  Committee Period: {settingsToDisplay.committeePeriod}
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t mt-8">
               <LeadershipProfile

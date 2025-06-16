@@ -346,9 +346,9 @@ export default function AdminSettingsPage() {
                     <FormItem>
                       <FormLabel>Committee Period (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 2024-2026" {...field} value={field.value ?? ""} disabled={isSubmitting} />
+                        <Input placeholder="e.g., 2025-2026" {...field} value={field.value ?? ""} disabled={isSubmitting} />
                       </FormControl>
-                      <FormDescription>Current committee's term.</FormDescription>
+                      <FormDescription>The current committee's term period (e.g., 2025-2026).</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
