@@ -60,7 +60,7 @@ import { getAllUserProfiles, type UserProfileData } from "@/services/userService
 import { auth } from '@/lib/firebase';
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT" });
 }
 
 function formatDisplayDateTime(date: Date | undefined) {

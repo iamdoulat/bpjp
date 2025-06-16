@@ -52,7 +52,7 @@ const TOP_DONORS_COUNT = 10;
 const ITEMS_PER_PAGE_ALL_DONORS = 20;
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDisplayDate(date?: Date): string {

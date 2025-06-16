@@ -1,4 +1,3 @@
-
 // src/components/stats/platform-donations-card.tsx
 "use client";
 
@@ -9,7 +8,7 @@ import { getNetPlatformFundsAvailable } from '@/services/paymentService'; // Upd
 import { Skeleton } from '@/components/ui/skeleton';
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return amount.toLocaleString("en-US", { style: "currency", currency: "BDT", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 export function PlatformDonationsCard() {

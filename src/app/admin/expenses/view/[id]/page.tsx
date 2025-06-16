@@ -15,7 +15,7 @@ import { Loader2, AlertCircle, ArrowLeft, Edit, CalendarDays, FileText, DollarSi
 import { Timestamp } from "firebase/firestore"
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT" });
 }
 
 function formatDisplayDateTime(date: Date | Timestamp | undefined): string {

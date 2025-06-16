@@ -63,7 +63,7 @@ const DonationHistoryItem: FC<DonationHistoryItemProps> = ({ donation }) => {
   };
 
   const formatCurrency = (amount: number) => {
-    return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+    return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT" });
   };
 
 

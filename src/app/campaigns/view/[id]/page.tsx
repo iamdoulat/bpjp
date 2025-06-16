@@ -33,7 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { addPaymentTransaction, type NewPaymentTransactionInput } from "@/services/paymentService";
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT" });
 }
 
 function formatDisplayDate(date: Date | undefined, options?: Intl.DateTimeFormatOptions) {
