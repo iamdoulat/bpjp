@@ -133,7 +133,7 @@ export function StatsGrid() {
   const statsToDisplay = user ? [...userSpecificStats, ...baseStats] : baseStats;
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"> {/* Adjusted for potentially more cards */}
+    <div className="grid grid-cols-2 gap-6 lg:grid-cols-3 xl:grid-cols-4"> {/* Adjusted for 2 columns on mobile */}
       {statsToDisplay.map((stat) => (
          stat.isLoading ? (
           <CardSkeleton key={stat.title} />
@@ -163,3 +163,4 @@ function CardSkeleton() {
     </div>
   );
 }
+
