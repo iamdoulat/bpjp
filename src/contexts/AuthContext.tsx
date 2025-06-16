@@ -1,4 +1,3 @@
-
 // src/contexts/AuthContext.tsx
 "use client";
 
@@ -15,13 +14,20 @@ import {
   reload
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { getUserProfile, type UserProfileData } from '@/services/userService'; // Import getUserProfile
+import { getUserProfile, createUserProfileDocument, type UserProfileData, type NewUserProfileFirestoreData } from '@/services/userService'; // Import createUserProfileDocument & NewUserProfileFirestoreData
+import { Timestamp } from 'firebase/firestore'; // Import Timestamp
 
 interface AuthContextType {
   user: User | null;
-  isAdmin: boolean; // Added isAdmin flag
+  isAdmin: boolean;
   loading: boolean;
-  signup: (email: string, password: string, displayName?: string) => Promise<User | AuthError | undefined>;
+  signup: (
+    email: string,
+    password: string,
+    displayName?: string,
+    whatsAppNumber?: string, // Added whatsAppNumber
+    wardNo?: string         // Added wardNo
+  ) => Promise<User | AuthError | undefined>;
   login: (email: string, password: string) => Promise<User | AuthError | undefined>;
   logout: () => Promise<void>;
   refreshAuthUser: () => Promise<void>;
@@ -31,7 +37,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false); // State for isAdmin
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -42,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAdmin(userProfile?.role === 'admin');
       } catch (error) {
         console.error("Error fetching user role:", error);
-        setIsAdmin(false); // Default to not admin on error
+        setIsAdmin(false);
       }
     } else {
       setIsAdmin(false);
@@ -53,15 +59,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      await fetchUserRole(currentUser); // Fetch role when auth state changes
+      await fetchUserRole(currentUser);
       setLoading(false);
     });
     return () => unsubscribe();
   }, [fetchUserRole]);
 
-  const signup = async (email: string, password: string, displayName?: string): Promise<User | AuthError | undefined> => {
+  const signup = async (
+    email: string,
+    password: string,
+    displayName?: string,
+    whatsAppNumber?: string,
+    wardNo?: string
+  ): Promise<User | AuthError | undefined> => {
     setLoading(true);
-    setIsAdmin(false); // Reset admin status on new signup
+    setIsAdmin(false);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const nameToSet = displayName || email.split('@')[0];
@@ -69,9 +81,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await userCredential.user.reload();
       const refreshedUser = auth.currentUser;
       setUser(refreshedUser);
-      // Firestore profile creation (including role) is handled by createUserProfileDocument in Manage Users page now.
-      // We will fetch the role after this via onAuthStateChanged or refreshAuthUser.
-      // For a new signup, they will likely be 'user' role by default unless createUserProfileDocument sets them as admin.
+
+      if (refreshedUser) {
+        const profileData: NewUserProfileFirestoreData = {
+          displayName: nameToSet,
+          email: refreshedUser.email,
+          mobileNumber: null, // Default mobileNumber, can be updated in profile
+          whatsAppNumber: whatsAppNumber || null,
+          wardNo: wardNo || null,
+          role: 'user', // Default role
+          status: 'Active', // Default status
+          joinedDate: Timestamp.now(),
+          photoURL: refreshedUser.photoURL || null,
+        };
+        await createUserProfileDocument(refreshedUser.uid, profileData);
+      }
+
       await fetchUserRole(refreshedUser);
       return refreshedUser ?? undefined;
     } catch (error) {
@@ -87,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       setUser(userCredential.user);
-      await fetchUserRole(userCredential.user); // Fetch role on login
+      await fetchUserRole(userCredential.user);
       return userCredential.user;
     } catch (error) {
       console.error("Login error:", error);
@@ -103,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await signOut(auth);
       setUser(null);
-      setIsAdmin(false); // Reset admin status on logout
+      setIsAdmin(false);
       router.push('/login');
     } catch (error) {
       console.error("Logout error:", error);
@@ -118,7 +143,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(true);
         await reload(auth.currentUser);
         setUser(auth.currentUser);
-        await fetchUserRole(auth.currentUser); // Re-fetch role on refresh
+        await fetchUserRole(auth.currentUser);
       } catch (error) {
         console.error("Error refreshing auth user:", error);
          if ((error as AuthError).code === 'auth/user-token-expired') {
@@ -128,7 +153,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     } else {
-        // If no auth.currentUser, ensure local state reflects that
         setUser(null);
         setIsAdmin(false);
         setLoading(false);
@@ -137,7 +161,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     user,
-    isAdmin, // Expose isAdmin
+    isAdmin,
     loading,
     signup,
     login,

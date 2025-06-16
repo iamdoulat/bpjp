@@ -27,9 +27,12 @@ import { useAppContext } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
 const signupFormSchema = z.object({
+  displayName: z.string().min(2, { message: "Name must be at least 2 characters." }).max(50, {message: "Name must be at most 50 characters."}),
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string(),
+  whatsAppNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid WhatsApp number format.").optional().or(z.literal('')),
+  wardNo: z.string().min(1, { message: "Ward No. is required."}).max(20, {message: "Ward No. must be at most 20 characters."}),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match.",
   path: ["confirmPassword"],
@@ -48,16 +51,26 @@ export default function SignupPage() {
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema),
     defaultValues: {
+      displayName: "",
       email: "",
       password: "",
       confirmPassword: "",
+      whatsAppNumber: "",
+      wardNo: "",
     },
     mode: "onChange",
   });
 
   async function onSubmit(data: SignupFormValues) {
     setIsSubmitting(true);
-    const result = await signup(data.email, data.password);
+    // Pass all form data to the signup function
+    const result = await signup(
+      data.email,
+      data.password,
+      data.displayName,
+      data.whatsAppNumber,
+      data.wardNo
+    );
     setIsSubmitting(false);
 
     if (result && 'code' in result) { // AuthError
@@ -106,13 +119,26 @@ export default function SignupPage() {
             </div>
             </Link>
         </div>
-        <CardHeader className="text-center pt-2"> {/* Adjusted pt-2 for spacing */}
+        <CardHeader className="text-center pt-2">
           <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
           <CardDescription>Join {appName} to start making a difference.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="displayName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Your full name" {...field} disabled={isSubmitting || authLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"
@@ -147,6 +173,32 @@ export default function SignupPage() {
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting || authLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="whatsAppNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp Number (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="Your WhatsApp number" {...field} value={field.value ?? ""} disabled={isSubmitting || authLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="wardNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ward No.</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Your ward number" {...field} disabled={isSubmitting || authLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

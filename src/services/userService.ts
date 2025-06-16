@@ -1,4 +1,3 @@
-
 // src/services/userService.ts
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, type QueryDocumentSnapshot, type DocumentData, deleteDoc } from 'firebase/firestore';
@@ -10,25 +9,29 @@ export interface UserProfileData {
   displayName?: string | null;
   email?: string | null;
   mobileNumber?: string | null;
+  whatsAppNumber?: string | null; // Added whatsAppNumber
+  wardNo?: string | null;         // Added wardNo
   photoURL?: string | null;
-  role?: 'admin' | 'user'; // Lowercase as typically stored in Firestore
+  role?: 'admin' | 'user';
   status?: 'Active' | 'Suspended' | 'Pending Verification';
-  joinedDate?: Timestamp | null; // Firestore Timestamp
-  lastLoginDate?: Timestamp | null; // Firestore Timestamp
+  joinedDate?: Timestamp | null;
+  lastLoginDate?: Timestamp | null;
   lastUpdated?: Timestamp;
-  walletBalance?: number; // Added wallet balance
+  walletBalance?: number;
 }
 
 export interface NewUserProfileFirestoreData {
   email: string | null;
   displayName: string | null;
   mobileNumber?: string | null;
+  whatsAppNumber?: string | null; // Added whatsAppNumber
+  wardNo?: string | null;         // Added wardNo
   role: 'admin' | 'user';
   status: 'Active' | 'Suspended' | 'Pending Verification';
   joinedDate: Timestamp;
-  lastLoginDate?: Timestamp | null; // Can be set on first login by new user
+  lastLoginDate?: Timestamp | null;
   photoURL?: string | null;
-  walletBalance?: number; // Added wallet balance
+  walletBalance?: number;
 }
 
 
@@ -44,23 +47,26 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
         displayName: data.displayName || null,
         email: data.email || null,
         mobileNumber: data.mobileNumber || null,
+        whatsAppNumber: data.whatsAppNumber || null, // Retrieve whatsAppNumber
+        wardNo: data.wardNo || null,                 // Retrieve wardNo
         photoURL: data.photoURL || null,
         role: data.role || 'user',
         status: data.status || 'Active',
         joinedDate: data.joinedDate || null,
         lastLoginDate: data.lastLoginDate || null,
         lastUpdated: data.lastUpdated || null,
-        walletBalance: data.walletBalance !== undefined ? data.walletBalance : 0, // Default to 0 if undefined
+        walletBalance: data.walletBalance !== undefined ? data.walletBalance : 0,
       } as UserProfileData;
     }
-    // If document doesn't exist, return a default structure with walletBalance 0
-    return { 
-      uid, 
-      email: auth.currentUser?.email || null, // Try to get email from auth context if available
+    return {
+      uid,
+      email: auth.currentUser?.email || null,
       displayName: auth.currentUser?.displayName || null,
       walletBalance: 0,
       role: 'user',
       status: 'Active',
+      whatsAppNumber: null, // Default for new/non-existent profile
+      wardNo: null,         // Default for new/non-existent profile
     };
   } catch (error) {
     console.error("Error fetching user profile:", error);
@@ -81,6 +87,8 @@ export async function getAllUserProfiles(): Promise<UserProfileData[]> {
         displayName: data.displayName || null,
         email: data.email || null,
         mobileNumber: data.mobileNumber || null,
+        whatsAppNumber: data.whatsAppNumber || null, // Retrieve whatsAppNumber
+        wardNo: data.wardNo || null,                 // Retrieve wardNo
         photoURL: data.photoURL || null,
         role: data.role || 'user',
         status: data.status || 'Active',
@@ -104,7 +112,7 @@ export async function getAllUserProfiles(): Promise<UserProfileData[]> {
 // Function for a user to update their own profile
 export async function updateUserProfileService(
   authUser: AuthUser,
-  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber'>>
+  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'whatsAppNumber' | 'wardNo'>> // Added new fields
 ): Promise<void> {
   if (!authUser) throw new Error("User not authenticated.");
 
@@ -123,6 +131,13 @@ export async function updateUserProfileService(
   if (profileUpdates.mobileNumber !== undefined) {
     dataToStore.mobileNumber = profileUpdates.mobileNumber;
   }
+  if (profileUpdates.whatsAppNumber !== undefined) { // Save whatsAppNumber
+    dataToStore.whatsAppNumber = profileUpdates.whatsAppNumber;
+  }
+  if (profileUpdates.wardNo !== undefined) { // Save wardNo
+    dataToStore.wardNo = profileUpdates.wardNo;
+  }
+
 
   try {
     if (profileUpdates.displayName !== undefined && profileUpdates.displayName !== authUser.displayName) {
@@ -132,14 +147,15 @@ export async function updateUserProfileService(
     if (currentProfile) {
       await updateDoc(userDocRef, dataToStore);
     } else {
+      // This case should ideally be handled by createUserProfileDocument on signup
       dataToStore.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
       dataToStore.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
-      dataToStore.photoURL = authUser.photoURL; 
+      dataToStore.photoURL = authUser.photoURL;
       dataToStore.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
       dataToStore.status = 'Active';
-      dataToStore.walletBalance = 0; // Initialize wallet balance
+      dataToStore.walletBalance = 0;
       await setDoc(userDocRef, {
-        ...dataToStore, 
+        ...dataToStore,
         displayName: dataToStore.displayName || authUser.displayName,
       });
     }
@@ -152,7 +168,7 @@ export async function updateUserProfileService(
 // Function for an admin to update any user's profile in Firestore
 export async function updateUserProfileAdmin(
   userId: string,
-  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'role' | 'status' | 'walletBalance'>> // Added walletBalance
+  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'role' | 'status' | 'walletBalance' | 'whatsAppNumber' | 'wardNo'>> // Added new fields
 ): Promise<void> {
   if (!userId) throw new Error("User ID is required.");
   const userDocRef = doc(db, 'userProfiles', userId);
@@ -197,14 +213,18 @@ export async function uploadProfilePictureAndUpdate(
     if (currentProfile) {
         await updateDoc(userDocRef, dataToUpdate);
     } else {
+        // This case should ideally be handled by createUserProfileDocument on signup
         dataToUpdate.uid = authUser.uid;
         dataToUpdate.email = authUser.email;
-        dataToUpdate.displayName = authUser.displayName; 
+        dataToUpdate.displayName = authUser.displayName;
         dataToUpdate.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
         dataToUpdate.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
         dataToUpdate.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
         dataToUpdate.status = 'Active';
-        dataToUpdate.walletBalance = 0; // Initialize wallet balance
+        dataToUpdate.walletBalance = 0;
+        // Ensure new fields are also initialized if profile is created here
+        dataToUpdate.whatsAppNumber = currentProfile?.whatsAppNumber || null;
+        dataToUpdate.wardNo = currentProfile?.wardNo || null;
         await setDoc(userDocRef, dataToUpdate);
     }
 
@@ -230,14 +250,14 @@ export async function deleteUserProfileDocument(userId: string): Promise<void> {
 // Function to create the Firestore user profile document for a new user
 export async function createUserProfileDocument(
   uid: string,
-  profileData: NewUserProfileFirestoreData
+  profileData: NewUserProfileFirestoreData // This type now includes whatsAppNumber and wardNo
 ): Promise<void> {
   try {
     const userDocRef = doc(db, 'userProfiles', uid);
     await setDoc(userDocRef, {
-      uid, 
-      ...profileData,
-      walletBalance: profileData.walletBalance || 0, // Initialize to 0 if not provided
+      uid,
+      ...profileData, // Spread all received profile data
+      walletBalance: profileData.walletBalance || 0,
       lastUpdated: serverTimestamp() as Timestamp,
     });
   } catch (error) {
