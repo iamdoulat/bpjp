@@ -3,41 +3,46 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Profile images: Authenticated users can read/write their own.
+    // Profile Images: Allow users to read their own, and write (upload/delete) their own.
     match /profile-images/{userId}/{allPaths=**} {
-      allow read; // Allow public read if desired, or restrict to `if request.auth != null;`
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Campaign images: Authenticated users (admins for write) can manage.
+    // Campaign Images: Allow public read. Allow write only by admins.
     match /campaign_images/{allPaths=**} {
-      allow read; // Public read for campaign images
+      allow read; // Publicly readable
       allow write: if request.auth != null && 
                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Event attachments: Authenticated users (admins for write) can manage.
+    // Event Attachments: Allow public read. Allow write only by admins.
     match /event_attachments/{allPaths=**} {
-      allow read; // Public read for event attachments
+      allow read; // Publicly readable
       allow write: if request.auth != null && 
                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Expense attachments: Authenticated users (admins for write) can manage.
-    // Note: Expenses are often sensitive, so write access is typically admin-only.
-    // Read access might also need to be restricted depending on requirements.
-    match /expense_attachments/{allPaths=**} {
+    // Expense Attachments: Only allow read/write by the user who created the expense (or admins).
+    // This rule assumes expense documents in Firestore have a 'createdBy' field with the userId.
+    // And that admins can manage all expenses.
+    match /expense_attachments/{fileName} {
       allow read: if request.auth != null && 
-                     get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin'; // Admins can read all
-      // If users should read their own expense attachments, add:
-      // allow read: if request.auth != null && resource.metadata.ownerUid == request.auth.uid; 
-      // (Requires setting 'ownerUid' in metadata on upload)
-
-      allow write: if request.auth != null && 
-                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+                     (request.auth.uid == resource.metadata.ownerUid || 
+                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin');
+      allow write: if request.auth != null &&
+                      (request.auth.uid == request.resource.metadata.ownerUid || // Check on new file upload
+                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin'); 
+                      // For updates/deletes, you might check existing resource.metadata.ownerUid if available
+                      // Or simply rely on Firestore rules to control who can trigger the update/delete flow.
     }
+    // Note for expense_attachments: When uploading, you'd typically set custom metadata like `ownerUid: userId`.
+    // Example: const metadata = { customMetadata: { 'ownerUid': userId } }; uploadBytes(storageRef, file, metadata);
+    // This example rule above is a simplified placeholder for 'ownerUid' in metadata. Adjust as per your implementation.
+    // A more robust rule for expense_attachments might depend on how you link storage objects to Firestore expense documents.
 
-    // Organization settings images (president, secretary, cover): Admins can manage.
+    // Organization Settings Images (e.g., president, secretary, cover photos):
+    // Allow public read. Allow write only by admins.
     match /organization/{settingsDocId}/{imageName} {
       allow read; // Publicly readable
       allow write: if request.auth != null &&
