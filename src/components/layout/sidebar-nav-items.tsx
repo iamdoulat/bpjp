@@ -104,7 +104,10 @@ export function SidebarNavItems() {
   const renderItem = (item: NavItem, isLastAdminItem: boolean = false) => (
     <SidebarMenuItem 
         key={item.href} 
-        className={cn(item.label === 'Platform Settings' && isLastAdminItem ? "mb-[15px]" : "")}
+        className={cn(
+            item.label === 'Profile' ? "mb-[10px]" : "",
+            item.label === 'Platform Settings' && isLastAdminItem ? "mb-[15px]" : ""
+        )}
     >
       <SidebarMenuButton
         asChild
