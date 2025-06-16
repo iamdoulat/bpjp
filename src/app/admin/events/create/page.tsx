@@ -114,10 +114,7 @@ export default function CreateEventPage() {
       console.error("Failed to save event:", error);
       let errorMessage = "An unexpected error occurred.";
       if (error instanceof Error) {
-        errorMessage = error.message;
-        if (errorMessage.includes("Firebase Storage permission denied")) {
-          errorMessage = "Failed to upload event image due to Firebase Storage permission issues. Please check your Storage security rules to allow writes to 'event_attachments/'.";
-        }
+        errorMessage = error.message; // Use the specific message from eventService or other caught errors
       }
       toast({
         title: "Error Creating Event",
@@ -309,4 +306,3 @@ export default function CreateEventPage() {
     </AppShell>
   );
 }
-
