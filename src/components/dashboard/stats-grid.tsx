@@ -3,16 +3,17 @@
 
 import { useEffect, useState } from 'react';
 import { StatsCard } from './stats-card';
-import { DollarSign, CalendarClock, Landmark, ListChecks, HeartPulse } from 'lucide-react';
+import { DollarSign, CalendarClock, Landmark, ListChecks, HeartPulse, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2
 import { useAuth } from '@/contexts/AuthContext';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
 import { getNetPlatformFundsAvailable, getUniqueCampaignsSupportedByUser, getTotalDonationsByUser } from '@/services/paymentService';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PlatformStats {
-  netPlatformFunds: number; // Changed from totalSucceededDonations
+  netPlatformFunds: number;
   activeCampaigns: number;
   upcomingCampaigns: number;
+  completedCampaigns: number; // New field for completed campaigns
 }
 
 interface UserFetchedStats {
@@ -38,19 +39,21 @@ export function StatsGrid() {
     async function fetchAllStats() {
       setLoadingPlatformStats(true);
       try {
-        const netFunds = await getNetPlatformFundsAvailable(); // Fetch net funds
+        const netFunds = await getNetPlatformFundsAvailable();
         const campaigns = await getCampaigns();
         const activeCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'active').length;
         const upcomingCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'upcoming').length;
+        const completedCampaigns = campaigns.filter(campaign => campaign.initialStatus === 'completed').length; // Count completed
         setPlatformStats({ 
-          netPlatformFunds: netFunds, // Store net funds
+          netPlatformFunds: netFunds,
           activeCampaigns, 
-          upcomingCampaigns 
+          upcomingCampaigns,
+          completedCampaigns, // Add to state
         });
       } catch (e) {
         console.error("Failed to fetch platform stats:", e);
         setError(e instanceof Error ? e.message : "Could not load platform statistics.");
-        setPlatformStats({ netPlatformFunds: 0, activeCampaigns: 0, upcomingCampaigns: 0 });
+        setPlatformStats({ netPlatformFunds: 0, activeCampaigns: 0, upcomingCampaigns: 0, completedCampaigns: 0 }); // Include completed in error state
       } finally {
         setLoadingPlatformStats(false);
       }
@@ -72,13 +75,12 @@ export function StatsGrid() {
           setLoadingUserStats(false);
         }
       } else {
-        // Reset user stats if no user or user logs out
         setUserFetchedStats({ campaignsSupportedCount: null, totalDonatedByUser: null });
         setLoadingUserStats(false);
       }
     }
     fetchAllStats();
-  }, [user]); // Rerun effect if user changes
+  }, [user]);
 
   const userSpecificStats = user ? [
     { 
@@ -119,12 +121,19 @@ export function StatsGrid() {
       icon: <CalendarClock className="h-5 w-5 text-green-600" />,
       isLoading: loadingPlatformStats || !platformStats
     },
+    { 
+      title: "Completed Campaigns", 
+      value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-12 inline-block" /> : platformStats.completedCampaigns.toString(), 
+      subtitle: "Successfully concluded initiatives.", 
+      icon: <CheckCircle2 className="h-5 w-5 text-green-600" />, // New card for completed
+      isLoading: loadingPlatformStats || !platformStats
+    },
   ];
 
   const statsToDisplay = user ? [...userSpecificStats, ...baseStats] : baseStats;
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"> {/* Adjusted for potentially more cards */}
       {statsToDisplay.map((stat) => (
          stat.isLoading ? (
           <CardSkeleton key={stat.title} />
