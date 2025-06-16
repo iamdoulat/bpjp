@@ -33,9 +33,9 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 function formatCurrency(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) {
-    return "$0.00";
+    return "BDT0.00"; // Changed to BDT
   }
-  return amount.toLocaleString("en-US", { style: "currency", currency: "BDT", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return amount.toLocaleString("en-US", { style: "currency", currency: "BDT", minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Changed to BDT
 }
 
 export default function ProfilePage() {
@@ -53,10 +53,9 @@ export default function ProfilePage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   
-  // State for image cropping
   const [imageToCropSrc, setImageToCropSrc] = React.useState<string | null>(null);
   const [isCropDialogOpen, setIsCropDialogOpen] = React.useState(false);
-  const [isUploadingCroppedImage, setIsUploadingCroppedImage] = React.useState(false); // Renamed from isUploading
+  const [isUploadingCroppedImage, setIsUploadingCroppedImage] = React.useState(false);
 
   const [displayWalletBalance, setDisplayWalletBalance] = React.useState<string | React.ReactNode>(<Skeleton className="h-5 w-16 inline-block" />);
   const profileCoverUrl = process.env.NEXT_PUBLIC_PROFILE_COVER_URL || "https://placehold.co/1200x300.png";
@@ -188,13 +187,12 @@ export default function ProfilePage() {
       toast({ title: "Upload Failed", description: (e as Error).message || "Could not upload picture.", variant: "destructive" });
     } finally {
       setIsUploadingCroppedImage(false);
-      setIsCropDialogOpen(false); // Close dialog after processing
+      setIsCropDialogOpen(false); 
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Reset file input
+        fileInputRef.current.value = ""; 
       }
     }
   };
-
 
   if (authLoading || isLoading) {
     return (
@@ -258,7 +256,6 @@ export default function ProfilePage() {
   const currentDisplayName = profileData?.displayName || user.displayName || "User";
   const currentPhotoURL = profileData?.photoURL || user.photoURL;
   const currentUserRole = profileData?.role ? profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1) : "User";
-
 
   return (
     <AppShell>
@@ -326,81 +323,82 @@ export default function ProfilePage() {
           </CardHeader>
 
           <CardContent className="mt-6 space-y-6">
-           <Form {...form}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
-                <Mail className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="font-semibold">{user.email || "No email provided"}</p>
+            <Form {...form}>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                  <Mail className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="font-semibold">{user.email || "No email provided"}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
-                <CalendarDays className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
-                 <div>
-                  <p className="text-xs text-muted-foreground">Joined</p>
-                  <p className="font-semibold">{user.metadata.creationTime ? format(new Date(user.metadata.creationTime), "MMMM d, yyyy") : "N/A"}</p>
+                <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                  <CalendarDays className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
+                   <div>
+                    <p className="text-xs text-muted-foreground">Joined</p>
+                    <p className="font-semibold">{user.metadata.creationTime ? format(new Date(user.metadata.creationTime), "MMMM d, yyyy") : "N/A"}</p>
+                  </div>
                 </div>
+                {!isEditing && (
+                  <>
+                    <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                      <Smartphone className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Mobile Number</p>
+                        <p className="font-semibold">{profileData?.mobileNumber || "Not set"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                      <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total Approved Donations</p>
+                        {isLoadingTotalDonations ? (
+                          <Skeleton className="h-6 w-20" />
+                        ) : (
+                          <p className="font-semibold">{formatCurrency(totalUserDonations)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
 
-            {isEditing ? (
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                 <div className="space-y-2">
-                    <FormField
-                      control={form.control}
-                      name="mobileNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel htmlFor="mobileNumber">Mobile Number</FormLabel>
-                          <div className="flex items-center space-x-2">
-                            <Smartphone className="h-5 w-5 text-muted-foreground" />
-                            <FormControl>
-                              <Input
-                                id="mobileNumber"
-                                {...field}
-                                placeholder="e.g., +1 123 456 7890"
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={handleEditToggle} disabled={isSubmitting}>
-                    <XCircle className="mr-2 h-4 w-4" /> Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting || !form.formState.isDirty || !form.formState.isValid}>
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save Changes
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
-                    <Smartphone className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Mobile Number</p>
-                      <p className="font-semibold">{profileData?.mobileNumber || "Not set"}</p>
+              {isEditing ? (
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-6">
+                   <div className="space-y-2">
+                      <FormField
+                        control={form.control}
+                        name="mobileNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel htmlFor="mobileNumber">Mobile Number</FormLabel>
+                            <div className="flex items-center space-x-2">
+                              <Smartphone className="h-5 w-5 text-muted-foreground" />
+                              <FormControl>
+                                <Input
+                                  id="mobileNumber"
+                                  {...field}
+                                  placeholder="e.g., +1 123 456 7890"
+                                  disabled={isSubmitting}
+                                />
+                              </FormControl>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={handleEditToggle} disabled={isSubmitting}>
+                      <XCircle className="mr-2 h-4 w-4" /> Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting || !form.formState.isDirty || !form.formState.isValid}>
+                      {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                      Save Changes
+                    </Button>
                   </div>
-                  <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
-                    <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Total Approved Donations</p>
-                      {isLoadingTotalDonations ? (
-                        <Skeleton className="h-6 w-20" />
-                      ) : (
-                        <p className="font-semibold">{formatCurrency(totalUserDonations)}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                </form>
+              ) : (
                 <div className="flex justify-between items-center mt-6">
                   <Button
                     variant="outline"
@@ -415,9 +413,8 @@ export default function ProfilePage() {
                     <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
                   </Button>
                 </div>
-              </>
-            )}
-           </Form>
+              )}
+            </Form>
           </CardContent>
         </Card>
 
@@ -430,17 +427,16 @@ export default function ProfilePage() {
               setIsCropDialogOpen(false);
               setImageToCropSrc(null);
               if (fileInputRef.current) {
-                fileInputRef.current.value = ""; // Reset file input
+                fileInputRef.current.value = "";
               }
             }}
             imageSrc={imageToCropSrc}
             onCropComplete={handleCroppedImageUpload}
-            aspectRatio={1} // 1:1 for profile picture
-            targetWidth={100} // Target 100px width
-            targetHeight={100} // Target 100px height
+            aspectRatio={1}
+            targetWidth={100}
+            targetHeight={100}
           />
         )}
-
       </main>
     </AppShell>
   );
