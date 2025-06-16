@@ -10,6 +10,7 @@ export interface OrganizationSettingsData {
   organizationName: string;
   address: string;
   registrationNumber?: string | null;
+  establishedYear?: string | null; // Added establishedYear
   committeePeriod?: string | null;
   contactPersonName: string;
   contactPersonCell?: string | null;
@@ -71,6 +72,7 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
         secretaryMobileNumber: data.secretaryMobileNumber || null,
         appName: data.appName || process.env.NEXT_PUBLIC_APP_NAME || "BPJP",
         registrationNumber: data.registrationNumber || null,
+        establishedYear: data.establishedYear || null, // Handle new field
         committeePeriod: data.committeePeriod || null,
         contactPersonCell: data.contactPersonCell || null,
         presidentImageURL: data.presidentImageURL || null,
@@ -85,6 +87,7 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       organizationName: "BPJP Default Org Name",
       address: "123 Main Street, Anytown, USA",
       registrationNumber: null,
+      establishedYear: null, // Default for new field
       committeePeriod: null,
       contactPersonName: "John Doe",
       contactPersonCell: null,
@@ -116,6 +119,7 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       lastUpdated: undefined,
       // ensure all required fields are present
       registrationNumber: null,
+      establishedYear: null, // Default for new field on error
       committeePeriod: null,
       contactPersonCell: null,
       presidentImageURL: null,
@@ -136,7 +140,7 @@ export async function saveOrganizationSettings(
     const currentSettings = await getOrganizationSettings(); // Fetch current settings to get existing image URLs
 
     const dataToSave: Partial<OrganizationSettingsData> = {
-      ...settingsData, // This now includes presidentMobileNumber and secretaryMobileNumber
+      ...settingsData, // This now includes presidentMobileNumber and secretaryMobileNumber, and establishedYear
       lastUpdated: serverTimestamp() as Timestamp,
     };
 

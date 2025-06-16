@@ -34,6 +34,7 @@ const organizationSettingsSchema = z.object({
   organizationName: z.string().min(3, { message: "Organization name must be at least 3 characters." }).max(100),
   address: z.string().min(10, { message: "Address must be at least 10 characters." }).max(250),
   registrationNumber: z.string().max(50).optional().or(z.literal('')),
+  establishedYear: z.string().regex(/^\d{4}$/, { message: "Must be a 4-digit year." }).optional().or(z.literal('')), // Added establishedYear
   committeePeriod: z.string().max(50).optional().or(z.literal('')),
   contactPersonName: z.string().min(3, { message: "Contact person name must be at least 3 characters." }).max(100),
   contactPersonCell: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid contact person cell number." }).optional().or(z.literal('')),
@@ -82,6 +83,7 @@ export default function AdminSettingsPage() {
       organizationName: "",
       address: "",
       registrationNumber: "",
+      establishedYear: "", // Added establishedYear
       committeePeriod: "",
       contactPersonName: "",
       contactPersonCell: "",
@@ -109,6 +111,7 @@ export default function AdminSettingsPage() {
             organizationName: settings.organizationName,
             address: settings.address,
             registrationNumber: settings.registrationNumber || "",
+            establishedYear: settings.establishedYear || "", // Handle new field
             committeePeriod: settings.committeePeriod || "",
             contactPersonName: settings.contactPersonName,
             contactPersonCell: settings.contactPersonCell || "",
@@ -240,7 +243,7 @@ export default function AdminSettingsPage() {
               <Skeleton className="h-4 w-4/5" />
             </CardHeader>
             <CardContent className="space-y-8 pt-6">
-              {[...Array(12)].map((_, i) => ( // Increased skeleton items
+              {[...Array(13)].map((_, i) => ( // Increased skeleton items for established year
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-4 w-1/4" />
                   <Skeleton className="h-10 w-full" />
@@ -335,6 +338,20 @@ export default function AdminSettingsPage() {
                       <FormControl>
                         <Input placeholder="e.g., 12345/AB/2024" {...field} value={field.value ?? ""} disabled={isSubmitting} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="establishedYear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Established Year (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="text" placeholder="e.g., 2010" {...field} value={field.value ?? ""} disabled={isSubmitting} maxLength={4} />
+                      </FormControl>
+                      <FormDescription>The year the organization was established (4 digits).</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

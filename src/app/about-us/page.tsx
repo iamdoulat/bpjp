@@ -7,7 +7,7 @@ import Image from "next/image";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle } from "lucide-react";
+import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck } from "lucide-react"; // Added CalendarCheck
 import { useAppContext } from "@/contexts/AppContext"; // Use AppContext to get settings
 import type { OrganizationSettingsData } from "@/services/organizationSettingsService";
 
@@ -34,6 +34,10 @@ export default function AboutUsPage() {
             <CardHeader>
               <Skeleton className="h-8 w-1/2 mb-1" />
               <Skeleton className="h-4 w-3/4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 pt-1">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {[...Array(4)].map((_, i) => (
@@ -111,11 +115,21 @@ export default function AboutUsPage() {
               <Building className="h-7 w-7 text-green-600" />
               <CardTitle className="text-2xl font-headline">{settingsToDisplay.organizationName}</CardTitle>
             </div>
-            {settingsToDisplay.registrationNumber && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 pt-1 pl-10 text-white">
-                <CardDescription>
-                  Registration No: {settingsToDisplay.registrationNumber}
-                </CardDescription>
+            {(settingsToDisplay.registrationNumber || settingsToDisplay.establishedYear) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 pt-1 pl-10"> {/* Removed text-white */}
+                {settingsToDisplay.registrationNumber && (
+                  <CardDescription>
+                    Registration No: {settingsToDisplay.registrationNumber}
+                  </CardDescription>
+                )}
+                {settingsToDisplay.establishedYear && (
+                  <div className="flex items-center">
+                    <CalendarCheck className="h-4 w-4 mr-1.5 text-muted-foreground" />
+                    <CardDescription>
+                      Established: {settingsToDisplay.establishedYear}
+                    </CardDescription>
+                  </div>
+                )}
               </div>
             )}
           </CardHeader>
