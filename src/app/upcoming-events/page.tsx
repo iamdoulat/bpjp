@@ -1,3 +1,4 @@
+
 // src/app/upcoming-events/page.tsx
 "use client";
 
@@ -176,7 +177,7 @@ function EventCard({ event }: EventCardProps) {
         )}
       </div>
       <CardHeader className="pb-2 pt-4">
-        <CardTitle className="font-headline text-lg leading-tight truncate">{event.title}</CardTitle>
+        <CardTitle className="font-headline text-lg leading-tight truncate pt-[5px]">{event.title}</CardTitle>
         <p className="text-sm text-muted-foreground pt-1">{formatDisplayDate(event.eventDate)}</p>
       </CardHeader>
       <CardContent className="flex-grow text-sm text-muted-foreground">
@@ -192,3 +193,4 @@ function EventCard({ event }: EventCardProps) {
     </Card>
   );
 }
+
