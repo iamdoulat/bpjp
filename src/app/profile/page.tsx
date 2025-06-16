@@ -345,7 +345,7 @@ export default function ProfilePage() {
                       <Smartphone className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-muted-foreground">Mobile Number</p>
-                        <p className="font-semibold">{profileData?.mobileNumber || "Not set"}</p>
+                        <p className="font-semibold">{profileData?.mobileNumber?.trim() || "Not set"}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
@@ -441,3 +441,4 @@ export default function ProfilePage() {
     </AppShell>
   );
 }
+
