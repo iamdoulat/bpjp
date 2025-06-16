@@ -3,61 +3,59 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    // Profile Images:
+    // Users can read all profile images.
+    // Users can only write (upload/update/delete) their own profile image.
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
 
-    // Rule for campaign images
-    // Allows read by anyone.
-    // Allows write (upload, update, delete) only by authenticated users
-    // who are marked as 'admin' in their Firestore userProfile document.
+    // Campaign Images:
+    // Allow public read for campaign images.
+    // Only authenticated admins can write (upload/update/delete) campaign images.
     match /campaign_images/{allPaths=**} {
       allow read;
-      allow write: if request.auth != null &&
+      allow write: if request.auth != null && 
                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Rule for event attachments
-    // Allows read by anyone.
-    // Allows write only by authenticated users who are 'admin'.
+    // Event Attachments:
+    // Allow public read for event attachments.
+    // Only authenticated admins can write (upload/update/delete) event attachments.
     match /event_attachments/{allPaths=**} {
       allow read;
       allow write: if request.auth != null &&
                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Rule for expense attachments
-    // Allows read by anyone (e.g., if an admin needs to view an attachment).
-    // Allows write only by the user who created the expense (owns the file), or an admin.
-    // Path assumes expenses are stored like: expense_attachments/{userId}/{fileName} or just expense_attachments/{fileName}
-    // Adjust {userId} segment if your paths are different. If all attachments are in one folder:
+    // Expense Attachments:
+    // Users can read all expense attachments (if a public listing of expenses with attachments is ever implemented).
+    // For writing:
+    //   - Authenticated users (admins) can write attachments to any expense.
+    //   - (Future consideration: If users could submit their own expenses, you might add a rule for users to write to their own expense paths)
     match /expense_attachments/{allPaths=**} {
-      allow read; // Or: if request.auth != null;
+      allow read; // Or more restrictive if needed, e.g., if request.auth != null;
       allow write: if request.auth != null &&
-                      (request.auth.uid == resource.metadata.ownerId || // If you store ownerId in metadata
-                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin');
-      // If ownerId is not in metadata, you might need to adjust rules based on how you can identify the uploader or rely on admin-only uploads.
-      // A simpler rule for admin-only expense attachment uploads:
-      // allow write: if request.auth != null && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Rule for user profile images
-    // Allows read by anyone.
-    // Allows write only by the authenticated user whose UID matches the {userId} in the path.
-    // This means users can only update their own profile pictures.
-    match /profile-images/{userId}/{allPaths=**} {
+    // Organization Settings Images (President, Secretary, Cover):
+    // Allow public read.
+    // Only authenticated admins can write.
+    match /organization/{settingsDocId}/{imageType}/{allPaths=**} {
       allow read;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null &&
+                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
-
-    // Rule for organization setting images (e.g., president, secretary, cover photos)
-    // Allows read by anyone.
-    // Allows write only by authenticated 'admin' users.
-    match /organization/{settingsDocId}/{allPaths=**} {
+     match /organization/{settingsDocId}/{imageFilename} {
       allow read;
       allow write: if request.auth != null &&
                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Default deny all other paths if not explicitly matched above
-    // It's good practice to have this, but often implicit if no other rules match.
+
+    // Default deny all other paths if not explicitly allowed
     // match /{allPaths=**} {
     //   allow read, write: if false;
     // }
