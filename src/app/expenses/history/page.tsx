@@ -24,7 +24,7 @@ import { Timestamp } from "firebase/firestore";
 import { Input } from "@/components/ui/input";
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT" });
+  return amount.toLocaleString("en-US", { style: "currency", currency: "BDT" });
 }
 
 function formatDisplayDateTime(date: Date | Timestamp | undefined): string {

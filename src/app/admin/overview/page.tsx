@@ -41,7 +41,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 
 import { Timestamp } from "firebase/firestore";
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return amount.toLocaleString("en-US", { style: "currency", currency: "BDT", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 interface AdminStatsData {

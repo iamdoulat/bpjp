@@ -43,7 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return amount.toLocaleString("en-US", { style: "currency", currency: "BDT", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function formatDisplayDate(date: Date | undefined) {

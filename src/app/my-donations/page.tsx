@@ -123,7 +123,7 @@ export default function MyDonationsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return amount.toLocaleString("bn-BD", { style: "currency", currency: "BDT" });
+    return amount.toLocaleString("en-US", { style: "currency", currency: "BDT" });
   };
 
 
