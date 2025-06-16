@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CalendarPlus, UploadCloud } from "lucide-react";
@@ -30,7 +31,9 @@ import ImageCropDialog from "@/components/ui/image-crop-dialog";
 const eventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
   details: z.string().min(20, { message: "Details must be at least 20 characters." }).max(5000),
-  eventDate: z.date({ required_error: "An event date and time is required." }),
+  eventDate: z.date({ required_error: "An event date is required." }),
+  eventHour: z.string().regex(/^([01]\d|2[0-3])$/, { message: "Please select a valid hour (00-23)."}),
+  eventMinute: z.string().regex(/^[0-5]\d$/, { message: "Please select a valid minute (00-59)."}),
   attachmentFile: z.instanceof(File).optional().nullable(),
 });
 
@@ -40,8 +43,13 @@ const defaultValues: EventFormValues = {
   title: "",
   details: "",
   eventDate: new Date(new Date().setDate(new Date().getDate() + 1)), // Default to tomorrow
+  eventHour: "09", // Default to 09 AM
+  eventMinute: "00", // Default to 00 minutes
   attachmentFile: null,
 };
+
+const hourOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const minuteOptions = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
 export default function CreateEventPage() {
   const { toast } = useToast();
@@ -83,10 +91,13 @@ export default function CreateEventPage() {
   async function onSubmit(data: EventFormValues) {
     setIsSubmitting(true);
     try {
+      const combinedDateTime = new Date(data.eventDate);
+      combinedDateTime.setHours(parseInt(data.eventHour, 10), parseInt(data.eventMinute, 10), 0, 0);
+
       const eventInput: NewEventInput = {
         title: data.title,
         details: data.details,
-        eventDate: data.eventDate,
+        eventDate: combinedDateTime,
         attachmentFile: data.attachmentFile,
       };
       const eventId = await addEvent(eventInput);
@@ -177,11 +188,11 @@ export default function CreateEventPage() {
                   name="eventDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Event Date & Time</FormLabel>
+                      <FormLabel>Event Date</FormLabel>
                       <DatePicker
                         date={field.value}
                         setDate={field.onChange}
-                        placeholder="Select event date and time"
+                        placeholder="Select event date"
                         disabled={(date) => {
                           const today = new Date();
                           today.setHours(0, 0, 0, 0); // Compare dates without time
@@ -189,12 +200,65 @@ export default function CreateEventPage() {
                         }}
                       />
                        <FormDescription>
-                        Select the start date. The time will default to the beginning of the day (00:00).
+                        Select the date of the event.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                <div className="space-y-2">
+                  <FormLabel>Event Time</FormLabel>
+                  <div className="flex items-start gap-4">
+                    <FormField
+                      control={form.control}
+                      name="eventHour"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel htmlFor="eventHourSelect" className="text-xs text-muted-foreground">Hour (24h)</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                            <FormControl>
+                              <SelectTrigger id="eventHourSelect">
+                                <SelectValue placeholder="HH" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {hourOptions.map(hour => (
+                                <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="eventMinute"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel htmlFor="eventMinuteSelect" className="text-xs text-muted-foreground">Minute</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                            <FormControl>
+                              <SelectTrigger id="eventMinuteSelect">
+                                <SelectValue placeholder="MM" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {minuteOptions.map(minute => (
+                                <SelectItem key={minute} value={minute}>{minute}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormDescription>Select the hour and minute for the event.</FormDescription>
+                </div>
+
+
                 <FormItem>
                   <FormLabel>Event Image/Attachment (Optional)</FormLabel>
                   <FormControl>
@@ -236,9 +300,9 @@ export default function CreateEventPage() {
             }}
             imageSrc={imageToCropSrc}
             onCropComplete={handleCropComplete}
-            aspectRatio={16 / 9} // For event banners
-            targetWidth={800} // Example target width
-            targetHeight={450} // Example target height (maintaining 16:9)
+            aspectRatio={16 / 9} 
+            targetWidth={800} 
+            targetHeight={450} 
           />
         )}
       </main>

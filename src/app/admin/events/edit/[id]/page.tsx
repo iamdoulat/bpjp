@@ -22,11 +22,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Edit3, AlertCircle, X, ArrowLeft } from "lucide-react"; // Changed CalendarEdit to Edit3
+import { Loader2, Save, Edit3, AlertCircle, X, ArrowLeft } from "lucide-react"; 
 import { getEventById, updateEvent, type EventData, type UpdateEventInput } from "@/services/eventService";
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
 import { Timestamp } from "firebase/firestore";
@@ -34,11 +35,16 @@ import { Timestamp } from "firebase/firestore";
 const editEventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
   details: z.string().min(20, { message: "Details must be at least 20 characters." }).max(5000),
-  eventDate: z.date({ required_error: "An event date and time is required." }),
-  attachmentFile: z.instanceof(File).optional().nullable(), // For new/replacement attachment
+  eventDate: z.date({ required_error: "An event date is required." }),
+  eventHour: z.string().regex(/^([01]\d|2[0-3])$/, { message: "Please select a valid hour (00-23)."}),
+  eventMinute: z.string().regex(/^[0-5]\d$/, { message: "Please select a valid minute (00-59)."}),
+  attachmentFile: z.instanceof(File).optional().nullable(), 
 });
 
 type EditEventFormValues = z.infer<typeof editEventFormSchema>;
+
+const hourOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const minuteOptions = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
 export default function EditEventPage() {
   const { toast } = useToast();
@@ -73,10 +79,16 @@ export default function EditEventPage() {
           const fetchedEvent = await getEventById(eventId);
           if (fetchedEvent) {
             setEvent(fetchedEvent);
+            const eventDateObj = fetchedEvent.eventDate instanceof Timestamp 
+              ? fetchedEvent.eventDate.toDate() 
+              : new Date(fetchedEvent.eventDate);
+
             form.reset({
               title: fetchedEvent.title,
               details: fetchedEvent.details,
-              eventDate: fetchedEvent.eventDate instanceof Timestamp ? fetchedEvent.eventDate.toDate() : new Date(fetchedEvent.eventDate),
+              eventDate: eventDateObj,
+              eventHour: String(eventDateObj.getHours()).padStart(2, '0'),
+              eventMinute: String(eventDateObj.getMinutes()).padStart(2, '0'),
               attachmentFile: undefined,
             });
             setCurrentAttachmentPreview(fetchedEvent.imageUrl || null);
@@ -112,8 +124,8 @@ export default function EditEventPage() {
     const croppedFile = new File([croppedBlob], "event_attachment_cropped.png", { type: "image/png" });
     form.setValue("attachmentFile", croppedFile, { shouldValidate: true, shouldDirty: true });
     setNewCroppedImagePreview(URL.createObjectURL(croppedBlob));
-    setCurrentAttachmentPreview(null); // Hide old preview if new one is cropped
-    setRemoveExistingAttachment(false); // New image overrides removal intent
+    setCurrentAttachmentPreview(null); 
+    setRemoveExistingAttachment(false); 
     setIsCropDialogOpen(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -138,19 +150,21 @@ export default function EditEventPage() {
     }
     setIsSubmitting(true);
     try {
+      const combinedDateTime = new Date(data.eventDate);
+      combinedDateTime.setHours(parseInt(data.eventHour, 10), parseInt(data.eventMinute, 10), 0, 0);
+
       const updateInput: UpdateEventInput = {
         title: data.title,
         details: data.details,
-        eventDate: data.eventDate,
+        eventDate: combinedDateTime,
       };
 
       if (removeExistingAttachment) {
-        updateInput.attachmentFile = null; // Signal removal
+        updateInput.attachmentFile = null; 
       } else if (data.attachmentFile) {
-        updateInput.attachmentFile = data.attachmentFile; // New file provided
+        updateInput.attachmentFile = data.attachmentFile; 
       }
-      // If neither, attachmentFile remains undefined in updateInput, meaning no change to image
-
+      
       await updateEvent(event.id, updateInput, event);
       
       toast({
@@ -184,7 +198,7 @@ export default function EditEventPage() {
           <Card className="shadow-lg max-w-2xl mx-auto">
             <CardHeader><Skeleton className="h-8 w-3/5" /><Skeleton className="h-4 w-4/5 mt-1" /></CardHeader>
             <CardContent className="space-y-8 pt-6">
-              {[...Array(4)].map((_, i) => (
+              {[...Array(5)].map((_, i) => ( // Adjusted skeleton items
                 <div key={i} className="space-y-2"><Skeleton className="h-4 w-1/4" /><Skeleton className="h-10 w-full" /></div>
               ))}
               <Skeleton className="h-24 w-full" /> 
@@ -232,7 +246,7 @@ export default function EditEventPage() {
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
         <div className="flex items-center gap-3 mb-6">
-          <Edit3 className="h-8 w-8 text-green-600" /> {/* Changed CalendarEdit to Edit3 */}
+          <Edit3 className="h-8 w-8 text-green-600" />
           <div>
             <h1 className="text-2xl font-headline font-semibold">Edit Event</h1>
             <p className="text-muted-foreground text-sm">
@@ -255,22 +269,71 @@ export default function EditEventPage() {
                   <FormItem><FormLabel>Event Details</FormLabel><FormControl><Textarea placeholder="Describe the event..." className="resize-y min-h-[150px]" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={form.control} name="eventDate" render={({ field }) => (
-                  <FormItem className="flex flex-col"><FormLabel>Event Date & Time</FormLabel>
+                  <FormItem className="flex flex-col"><FormLabel>Event Date</FormLabel>
                     <DatePicker
                       date={field.value}
                       setDate={field.onChange}
-                      placeholder="Select event date and time"
+                      placeholder="Select event date"
                       disabled={(date) => {
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         return date < today || isSubmitting;
                       }}
                     />
-                    <FormDescription>
-                        Select the start date. The time will default to the beginning of the day (00:00).
-                    </FormDescription>
+                     <FormDescription>Select the date of the event.</FormDescription>
                   <FormMessage /></FormItem>
                 )}/>
+
+                <div className="space-y-2">
+                  <FormLabel>Event Time</FormLabel>
+                  <div className="flex items-start gap-4">
+                    <FormField
+                      control={form.control}
+                      name="eventHour"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                           <FormLabel htmlFor="eventHourSelectEdit" className="text-xs text-muted-foreground">Hour (24h)</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                            <FormControl>
+                              <SelectTrigger id="eventHourSelectEdit">
+                                <SelectValue placeholder="HH" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {hourOptions.map(hour => (
+                                <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="eventMinute"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                           <FormLabel htmlFor="eventMinuteSelectEdit" className="text-xs text-muted-foreground">Minute</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                            <FormControl>
+                              <SelectTrigger id="eventMinuteSelectEdit">
+                                <SelectValue placeholder="MM" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {minuteOptions.map(minute => (
+                                <SelectItem key={minute} value={minute}>{minute}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormDescription>Select the hour and minute for the event.</FormDescription>
+                </div>
                 
                 <FormItem>
                   <FormLabel>Event Image/Attachment</FormLabel>
