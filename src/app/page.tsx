@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 "use client";
 
@@ -7,6 +8,7 @@ import { UserInfo } from '@/components/dashboard/user-info';
 import { StatsGrid } from '@/components/dashboard/stats-grid';
 import { FeaturedCampaigns } from '@/components/dashboard/featured-campaigns';
 import { UpcomingCampaigns } from '@/components/dashboard/upcoming-campaigns';
+import { CompletedCampaignsDashboardSection } from '@/components/dashboard/completed-campaigns-dashboard'; // Added import
 import { useAuth } from '@/contexts/AuthContext';
 // Button and Link are not used when redirecting unauthenticated users from root
 // import { Button } from '@/components/ui/button';
@@ -44,6 +46,7 @@ export default function DashboardPage() {
         <StatsGrid />
         <FeaturedCampaigns />
         <UpcomingCampaigns />
+        <CompletedCampaignsDashboardSection /> {/* Added new section */}
       </main>
     </AppShell>
   );
