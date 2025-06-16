@@ -14,6 +14,7 @@ import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator } fro
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils'; // Import cn
 
 interface NavItem {
   href: string;
@@ -55,10 +56,11 @@ const publicPagesForUnauthenticated: NavItem[] = [
   { href: '/donors-list', label: 'Donors List', icon: Users },
 ];
 
-const authActionPages: NavItem[] = [
-  { href: '/login', label: 'Login', icon: LogIn },
-  { href: '/signup', label: 'Sign Up', icon: UserPlusIcon },
-];
+// authActionPages not actively used in rendering logic below, can be removed if not planned for other use
+// const authActionPages: NavItem[] = [
+//   { href: '/login', label: 'Login', icon: LogIn },
+//   { href: '/signup', label: 'Sign Up', icon: UserPlusIcon },
+// ];
 
 export function SidebarNavItems() {
   const pathname = usePathname();
@@ -99,8 +101,11 @@ export function SidebarNavItems() {
     }
   }
   
-  const renderItem = (item: NavItem) => (
-    <SidebarMenuItem key={item.href}>
+  const renderItem = (item: NavItem, isLastAdminItem: boolean = false) => (
+    <SidebarMenuItem 
+        key={item.href} 
+        className={cn(item.label === 'Platform Settings' && isLastAdminItem ? "mb-[15px]" : "")}
+    >
       <SidebarMenuButton
         asChild
         isActive={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && item.href.split('/').length > 1)}
@@ -116,17 +121,16 @@ export function SidebarNavItems() {
 
   return (
     <SidebarMenu>
-      {itemsToRender.map(renderItem)}
+      {itemsToRender.map((item) => renderItem(item))}
       {user && isAdmin && adminItemsToRender.length > 0 && ( 
         <>
           <SidebarSeparator className="my-2" />
           <li className="px-3 py-2 text-xs font-semibold text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden tracking-wider uppercase">
             Administration
           </li>
-          {adminItemsToRender.map(renderItem)}
+          {adminItemsToRender.map((item, index) => renderItem(item, index === adminItemsToRender.length - 1))}
         </>
       )}
     </SidebarMenu>
   );
 }
-
