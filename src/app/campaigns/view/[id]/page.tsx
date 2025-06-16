@@ -293,7 +293,7 @@ export default function PublicViewCampaignPage() {
                 <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{campaign.description}</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 bg-muted/30 p-6 rounded-lg border">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-6 bg-muted/30 p-6 rounded-lg border">
                 <div className="flex items-center space-x-3">
                   <TargetIcon className="h-6 w-6 text-green-600 flex-shrink-0" />
                   <div>
@@ -374,7 +374,7 @@ export default function PublicViewCampaignPage() {
                           value={donationAmount}
                           onChange={(e) => setDonationAmount(e.target.value)}
                           className="col-span-3"
-                          placeholder="USD"
+                          placeholder="BDT"
                           disabled={isSubmittingDonation}
                         />
                       </div>
