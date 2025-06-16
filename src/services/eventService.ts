@@ -227,8 +227,11 @@ export async function updateEvent(
   } catch (error) {
     console.error(`[eventService.updateEvent] Error updating event ${eventId}:`, error);
     if (error instanceof Error) {
-      if (updates.attachmentFile && (error.message.includes('storage/unauthorized') || (error as any).code?.includes('storage/unauthorized') )) {
-        throw new Error(`Failed to update event image: Firebase Storage permission denied. Please check Storage security rules.`);
+      const isStoragePermissionError = error.message.includes('storage/unauthorized') || 
+                                     (error as any).code?.includes('storage/unauthorized') ||
+                                     error.message.includes('Firebase Storage permission denied');
+      if (isStoragePermissionError && (updates.attachmentFile || updates.attachmentFile === null || currentEventData?.imagePath)) {
+          throw new Error(`Failed to update event image: Firebase Storage permission denied. Please check Storage security rules for 'event_attachments/'.`);
       }
       throw new Error(`Failed to update event: ${error.message}`);
     }
@@ -365,3 +368,4 @@ export async function getEventRegistrationsWithDetails(eventId: string): Promise
     throw new Error('An unknown error occurred while fetching event registrations.');
   }
 }
+
