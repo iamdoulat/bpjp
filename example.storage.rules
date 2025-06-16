@@ -1,49 +1,53 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Campaign Images: Public read, Admin write
-    match /campaign_images/{allPaths=**} {
-      allow read;
-      allow write: if request.auth != null && 
+    // Campaign Images
+    // Path: campaign_images/{campaignImageId}
+    match /campaign_images/{campaignImage=**} {
+      allow read; // Allow public read for campaign images
+      allow write: if request.auth != null &&
                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Event Attachments: Public read, Admin write
-    match /event_attachments/{allPaths=**} {
-      allow read;
-      allow write: if request.auth != null && 
+    // Event Attachments
+    // Path: event_attachments/{eventAttachmentId}
+    match /event_attachments/{eventAttachment=**} {
+      allow read; // Allow public read for event attachments
+      allow write: if request.auth != null &&
                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Expense Attachments: Public read, Admin write
-    // (Assuming admins are the ones creating/editing expenses with attachments. 
-    // If regular users can submit expenses with attachments, this rule needs adjustment.)
-    match /expense_attachments/{allPaths=**} {
-      allow read;
-      allow write: if request.auth != null && 
+    // Expense Attachments
+    // Path: expense_attachments/{expenseAttachmentId}
+    match /expense_attachments/{expenseAttachment=**} {
+      // Allow read only by authenticated users (e.g., admin viewing an expense, or user viewing their own - though not implemented for user view yet)
+      allow read: if request.auth != null;
+      // Allow write by any authenticated user (e.g., user creating an expense for themselves, or admin creating an expense)
+      // If only admins should create expenses, this should be restricted to admin role.
+      // The current expenseService.addExpense uses the logged-in user's ID.
+      allow write: if request.auth != null;
+    }
+
+    // Organization Settings Images (President, Secretary, Cover)
+    // Path: organization/{settingsDocId}/{imageType}.{extension}
+    match /organization/{documentId}/{fileName} {
+      allow read; // Allow public read for organization images (e.g., for About Us page)
+      allow write: if request.auth != null &&
                       get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // User Profile Images: Public read, User can write to their own path
-    match /profile-images/{userId}/{allPaths=**} {
-      allow read;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // User Profile Images
+    // Path: profile-images/{userId}/{profileImageName}
+    match /profile-images/{userId}/{profileImage=**} {
+      allow read; // Allow public read for profile images
+      allow write: if request.auth != null && request.auth.uid == userId; // User can only write to their own profile image path
     }
 
-    // Organization Settings Images (e.g., president, secretary, cover images)
-    // These are stored under a path like 'organization/organizationDetails/image_name.ext'
-    // Public read, Admin write
-    match /organization/{documentId}/{allPaths=**} {
-      allow read;
-      allow write: if request.auth != null && 
-                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Default rule: Deny all reads and writes to other paths if not explicitly allowed.
-    // Consider your specific needs; you might want to remove this if you have other paths
-    // that should be accessible by default or have their own rules.
+    // Default deny all other paths if not explicitly matched above.
+    // This is implicit if no other rules match. For clarity, you can add:
     // match /{allPaths=**} {
     //   allow read, write: if false;
     // }
