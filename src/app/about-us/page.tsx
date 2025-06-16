@@ -7,9 +7,17 @@ import Image from "next/image";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck, FileText } from "lucide-react"; // Added FileText
 import { useAppContext } from "@/contexts/AppContext"; // Use AppContext to get settings
 import type { OrganizationSettingsData } from "@/services/organizationSettingsService";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export default function AboutUsPage() {
   const { organizationSettings, isLoadingAppSettings } = useAppContext();
@@ -20,6 +28,15 @@ export default function AboutUsPage() {
       setSettingsToDisplay(organizationSettings);
     }
   }, [organizationSettings, isLoadingAppSettings]);
+
+  const advisoryBoardMembers = [
+    { name: "Dr. Eleanor Vance", title: "Chief Strategic Advisor", imageUrl: "https://placehold.co/150x150.png?text=EV" },
+    { name: "Mr. Samuel Roth", title: "Financial Oversight Advisor", imageUrl: "https://placehold.co/150x150.png?text=SR" },
+    { name: "Ms. Priya Chen", title: "Legal & Compliance Advisor", imageUrl: "https://placehold.co/150x150.png?text=PC" },
+    { name: "Mr. Marcus Bellwether", title: "Community Engagement Lead", imageUrl: "https://placehold.co/150x150.png?text=MB" },
+    { name: "Dr. Isabella Rossi", title: "Research & Development Advisor", imageUrl: "https://placehold.co/150x150.png?text=IR" },
+    { name: "Mr. Omar Abdullah", title: "Technology & Innovation Advisor", imageUrl: "https://placehold.co/150x150.png?text=OA" },
+  ];
 
   const coverImageUrlToUse = settingsToDisplay?.coverImageUrl || "https://placehold.co/1200x500.png";
 
@@ -61,6 +78,17 @@ export default function AboutUsPage() {
                     <Skeleton className="h-4 w-20 mt-1" /> {/* Skeleton for mobile number */}
                   </div>
                 ))}
+              </div>
+               {/* Skeleton for Advisory Board */}
+              <div className="pt-8 mt-8 border-t">
+                <Skeleton className="h-7 w-1/3 mx-auto mb-6" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {[...Array(3)].map((_,i) => (
+                        <div key={i} className="p-1">
+                            <Skeleton className="h-48 w-full" />
+                        </div>
+                    ))}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -145,14 +173,14 @@ export default function AboutUsPage() {
             </div>
 
             {settingsToDisplay.committeePeriod && (
-              <div className="text-center pt-6 mt-6 border-t">
+              <div className="text-center pt-6 mt-4 border-t">
                 <p className="text-lg font-semibold text-foreground">
                   Committee Period: {settingsToDisplay.committeePeriod}
                 </p>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t mt-4">
               <LeadershipProfile
                 name={settingsToDisplay.presidentName}
                 title="President"
@@ -167,6 +195,54 @@ export default function AboutUsPage() {
                 mobileNumber={settingsToDisplay.secretaryMobileNumber}
                 dataAiHint="person portrait"
               />
+            </div>
+
+            {/* Advisory Board Section */}
+            <div className="pt-8 mt-8 border-t">
+              <h2 className="text-2xl font-headline font-bold text-foreground mb-6 text-center">
+                Advisory Board
+              </h2>
+              {advisoryBoardMembers.length > 0 ? (
+                <Carousel
+                  opts={{
+                    align: "start",
+                    loop: advisoryBoardMembers.length > 3, 
+                  }}
+                  className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto"
+                >
+                  <CarouselContent className="-ml-4">
+                    {advisoryBoardMembers.map((member, index) => (
+                      <CarouselItem key={index} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                        <div className="p-1 h-full">
+                          <Card className="shadow-md h-full flex flex-col bg-card hover:shadow-lg transition-shadow">
+                            <CardContent className="flex flex-col items-center justify-start p-4 sm:p-6 flex-grow">
+                              <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40 shadow-sm">
+                                <Image
+                                  src={member.imageUrl}
+                                  alt={member.name}
+                                  layout="fill"
+                                  objectFit="cover"
+                                  data-ai-hint="person portrait"
+                                />
+                              </div>
+                              <p className="text-md sm:text-lg font-semibold text-center text-foreground">{member.name}</p>
+                              <p className="text-xs sm:text-sm text-muted-foreground text-center mt-1">{member.title}</p>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  {advisoryBoardMembers.length > 1 && (
+                    <>
+                      <CarouselPrevious className="absolute left-[-15px] sm:left-[-25px] md:left-[-35px] top-1/2 -translate-y-1/2 hidden md:flex text-foreground hover:text-primary disabled:opacity-50" />
+                      <CarouselNext className="absolute right-[-15px] sm:right-[-25px] md:right-[-35px] top-1/2 -translate-y-1/2 hidden md:flex text-foreground hover:text-primary disabled:opacity-50" />
+                    </>
+                  )}
+                </Carousel>
+              ) : (
+                 <p className="text-muted-foreground text-center">Advisory board members will be listed here soon.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -200,7 +276,7 @@ interface LeadershipProfileProps {
 }
 
 const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imageUrl, mobileNumber, dataAiHint }) => (
-  <div className="flex flex-col items-center text-center p-4 bg-card rounded-lg border shadow-sm">
+  <div className="flex flex-col items-center text-center p-4 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow">
     <div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg">
       <Image
         src={imageUrl || `https://placehold.co/150x150.png?text=${name ? name.charAt(0) : 'L'}`}
@@ -220,4 +296,3 @@ const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imag
     )}
   </div>
 );
-
