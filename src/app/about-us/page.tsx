@@ -120,7 +120,7 @@ export default function AboutUsPage() {
             )}
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <InfoItem icon={<MapPin className="text-green-600"/>} label="Address" value={settingsToDisplay.address} />
               <InfoItem icon={<Mail className="text-green-600"/>} label="Contact Email" value={<a href={`mailto:${settingsToDisplay.contactEmail}`} className="text-primary hover:underline">{settingsToDisplay.contactEmail}</a>} />
               <InfoItem icon={<UserCircle className="text-green-600"/>} label="Contact Person" value={settingsToDisplay.contactPersonName} />
