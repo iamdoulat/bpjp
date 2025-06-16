@@ -63,24 +63,25 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
       imageUrl = await getDownloadURL(snapshot.ref);
       imagePath = storagePath;
     } catch (uploadError: any) {
+      console.error("[eventService.addEvent] Error uploading event attachment: ", uploadError);
       if (uploadError.code === 'storage/unauthorized' || (uploadError.message && uploadError.message.includes('storage/unauthorized'))) {
-        console.warn(`[eventService.addEvent] Storage permission denied for event attachment: ${uploadError.message}. The event will be created without this attachment. Please check your Firebase Storage security rules to allow writes to 'event_attachments/'.`);
+        // Throw a specific, user-friendly error that the client can catch and display
+        throw new Error(`Failed to add event: Firebase Storage permission denied for attachment. Please check Storage security rules for 'event_attachments/'.`);
       } else {
-        console.error("[eventService.addEvent] Error uploading event attachment, this is not a permission issue: ", uploadError);
-        if (uploadError.code === 'storage/unauthorized') {
-             throw new Error(`Failed to add event: Firebase Storage permission denied for attachment. Please check Storage security rules.`);
-        }
-        throw new Error(`Failed to upload event attachment: ${uploadError.message}`);
+        // For other storage errors
+        throw new Error(`Failed to upload event attachment: ${uploadError.message || 'Unknown storage error'}`);
       }
     }
   }
 
+  // If we reach here and imageUrl is undefined (meaning an upload was attempted but failed and an error was thrown),
+  // the function would have already exited. If no attachmentFile was provided, imageUrl will be undefined, which is fine.
   try {
     const dataToSave: Omit<EventData, 'id' | 'createdAt' | 'eventDate' | 'lastUpdated'> & { createdAt: Timestamp, eventDate: Timestamp } = {
       title: eventInput.title,
       details: eventInput.details,
       eventDate: Timestamp.fromDate(eventInput.eventDate),
-      imageUrl: imageUrl || null,
+      imageUrl: imageUrl || null, // Will be null if no file or if upload succeeded but somehow imageUrl is still undefined (should not happen with await)
       imagePath: imagePath || null,
       participantCount: 0, 
       createdAt: serverTimestamp() as Timestamp,
