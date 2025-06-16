@@ -112,7 +112,7 @@ export default function AboutUsPage() {
               <CardTitle className="text-2xl font-headline">{settingsToDisplay.organizationName}</CardTitle>
             </div>
             {settingsToDisplay.registrationNumber && (
-              <div className="grid grid-cols-1 gap-x-4 pt-1 pl-10 text-white">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 pt-1 pl-10 text-white">
                 <CardDescription>
                   Registration No: {settingsToDisplay.registrationNumber}
                 </CardDescription>
@@ -128,7 +128,7 @@ export default function AboutUsPage() {
             </div>
 
             {settingsToDisplay.committeePeriod && (
-              <div className="text-center pt-6 mt-2">
+              <div className="text-center pt-6 mt-6 border-t">
                 <p className="text-lg font-semibold text-foreground">
                   Committee Period: {settingsToDisplay.committeePeriod}
                 </p>
