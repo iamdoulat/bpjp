@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Campaign Images: Public read, Admin write
+    match /campaign_images/{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null && 
+                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Event Attachments: Public read, Admin write
+    match /event_attachments/{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null && 
+                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Expense Attachments: Public read, Admin write
+    // (Assuming admins are the ones creating/editing expenses with attachments. 
+    // If regular users can submit expenses with attachments, this rule needs adjustment.)
+    match /expense_attachments/{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null && 
+                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // User Profile Images: Public read, User can write to their own path
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Organization Settings Images (e.g., president, secretary, cover images)
+    // These are stored under a path like 'organization/organizationDetails/image_name.ext'
+    // Public read, Admin write
+    match /organization/{documentId}/{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null && 
+                      get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Default rule: Deny all reads and writes to other paths if not explicitly allowed.
+    // Consider your specific needs; you might want to remove this if you have other paths
+    // that should be accessible by default or have their own rules.
+    // match /{allPaths=**} {
+    //   allow read, write: if false;
+    // }
+  }
+}
