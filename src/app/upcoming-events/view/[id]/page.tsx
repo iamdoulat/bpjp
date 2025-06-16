@@ -38,7 +38,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useForm } from "react-hook-form"; // Added this import
+import { useForm } from "react-hook-form";
 import { getUserProfile } from "@/services/userService"
 
 const registrationFormSchema = z.object({
@@ -262,7 +262,7 @@ export default function PublicViewEventPage() {
                 />
               </div>
             ) : (
-              <div className="aspect-[16/9] w-full rounded-md overflow-hidden border bg-muted flex items-center justify-center">
+              <div className="aspect-[16/9] w-full rounded-lg overflow-hidden border bg-muted flex items-center justify-center shadow-inner">
                 <CalendarDays className="h-24 w-24 text-muted-foreground" />
               </div>
             )}
