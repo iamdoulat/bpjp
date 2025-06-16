@@ -1,7 +1,7 @@
 {
-  "name": "ImpactBoard",
-  "short_name": "Impact",
-  "description": "Donor & Campaign Management Dashboard for Bhujpur Probashi Jobakollan Porisod.",
+  "name": "BPJP",
+  "short_name": "BPJP",
+  "description": "Dashboard for Bhujpur Probashi Jobakollan Porisod Donor & Campaign Management",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
