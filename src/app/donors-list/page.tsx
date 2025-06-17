@@ -29,6 +29,7 @@ interface DonorDisplayData {
   email: string;
   avatarUrl?: string | null;
   mobileNumber?: string | null;
+  wardNo?: string | null; // Added wardNo
   joinedDate?: Date;
   campaignsSupported: number;
   totalDonation: number;
@@ -40,8 +41,9 @@ interface AllDonorsTransactionEntry {
   userName: string;
   userAvatarUrl?: string | null;
   userMobileNumber?: string | null;
+  userWardNo?: string | null; // Added userWardNo
   userEmail: string;
-  transactionDate: Date; // Changed from userJoinedDate
+  transactionDate: Date;
   campaignNameForTransaction?: string;
   donationAmountForTransaction: number;
   totalCampaignsSupportedByUser: number;
@@ -128,6 +130,7 @@ export default function DonorsListPage() {
               email: email,
               avatarUrl: profile?.photoURL,
               mobileNumber: profile?.mobileNumber,
+              wardNo: profile?.wardNo || null, // Include wardNo
               joinedDate: joined,
               campaignsSupported: stats.campaignIds.size,
               totalDonation: stats.totalDonation,
@@ -150,8 +153,9 @@ export default function DonorsListPage() {
               userName: profile?.displayName || tx.userId,
               userAvatarUrl: profile?.photoURL,
               userMobileNumber: profile?.mobileNumber,
+              userWardNo: profile?.wardNo || null, // Include userWardNo
               userEmail: profile?.email || tx.userEmail || "N/A",
-              transactionDate: tx.date instanceof Date ? tx.date : (tx.date as Timestamp).toDate(), // Use transaction date here
+              transactionDate: tx.date instanceof Date ? tx.date : (tx.date as Timestamp).toDate(),
               campaignNameForTransaction: tx.campaignName || "N/A",
               donationAmountForTransaction: tx.amount,
               totalCampaignsSupportedByUser: userStats?.campaignIds.size || 0,
@@ -205,6 +209,7 @@ export default function DonorsListPage() {
                     <TableHead className="w-[60px]">Rank</TableHead>
                     <TableHead className="min-w-[200px]">User</TableHead>
                     <TableHead className="min-w-[180px]">Email Id</TableHead>
+                    <TableHead className="w-[100px]">Ward No.</TableHead> {/* Added Ward No. skeleton header */}
                     <TableHead className="w-[120px]">Joined</TableHead>
                     <TableHead className="w-[100px] text-center">Campaigns</TableHead>
                     <TableHead className="w-[150px] text-right">Total Donated</TableHead>
@@ -221,6 +226,7 @@ export default function DonorsListPage() {
                         </div>
                       </TableCell>
                       <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-full" /></TableCell> {/* Ward No. skeleton cell */}
                       <TableCell><Skeleton className="h-4 w-full" /></TableCell>
                       <TableCell className="text-center"><Skeleton className="h-4 w-6 mx-auto" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
@@ -254,6 +260,7 @@ export default function DonorsListPage() {
                     <TableHead className="w-[60px] text-xs">Rank</TableHead>
                     <TableHead className="min-w-[200px] text-xs">User</TableHead>
                     <TableHead className="min-w-[180px] text-xs">Email ID</TableHead>
+                    <TableHead className="w-[100px] text-xs">Ward No.</TableHead> {/* Added Ward No. header */}
                     <TableHead className="w-[120px] text-xs">Joined</TableHead>
                     <TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead>
                     <TableHead className="w-[150px] text-right text-xs">Total Donation</TableHead>
@@ -271,6 +278,7 @@ export default function DonorsListPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs truncate max-w-[180px]">{donor.email}</TableCell>
+                      <TableCell className="text-xs">{donor.wardNo || "N/A"}</TableCell> {/* Display Ward No. */}
                       <TableCell className="text-xs">{formatDisplayDate(donor.joinedDate)}</TableCell>
                       <TableCell className="text-center text-xs">{donor.campaignsSupported}</TableCell>
                       <TableCell className="text-right font-semibold text-sm">{formatCurrency(donor.totalDonation)}</TableCell>
@@ -304,7 +312,8 @@ export default function DonorsListPage() {
                     <TableHead className="w-[50px]">No</TableHead>
                     <TableHead className="min-w-[200px]">User</TableHead>
                     <TableHead className="min-w-[150px]">Email</TableHead>
-                    <TableHead className="w-[140px]">Transaction Date</TableHead> {/* Changed Header */}
+                    <TableHead className="w-[100px]">Ward No.</TableHead> {/* Added Ward No. skeleton header */}
+                    <TableHead className="w-[140px]">Transaction Date</TableHead>
                     <TableHead className="min-w-[150px]">Campaign</TableHead>
                     <TableHead className="w-[100px] text-right">Donation</TableHead>
                     <TableHead className="w-[100px] text-center">Total Supported</TableHead>
@@ -314,7 +323,9 @@ export default function DonorsListPage() {
                     {[...Array(5)].map((_,i) => (
                         <TableRow key={i}><TableCell><Skeleton className="h-4 w-6" /></TableCell>
                         <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></div></div></TableCell>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell><TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell> {/* Ward No. skeleton cell */}
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-full" /></TableCell><TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                         <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell><TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                         </TableRow>
@@ -348,7 +359,8 @@ export default function DonorsListPage() {
                       <TableHead className="w-[50px] text-xs">No</TableHead>
                       <TableHead className="min-w-[200px] text-xs">User</TableHead>
                       <TableHead className="min-w-[150px] text-xs">Email ID</TableHead>
-                      <TableHead className="w-[140px] text-xs">Transaction Date</TableHead> {/* Changed Header */}
+                      <TableHead className="w-[100px] text-xs">Ward No.</TableHead> {/* Added Ward No. header */}
+                      <TableHead className="w-[140px] text-xs">Transaction Date</TableHead>
                       <TableHead className="min-w-[150px] text-xs">Campaigns Name</TableHead>
                       <TableHead className="w-[100px] text-right text-xs">Donation</TableHead>
                       <TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead>
@@ -365,7 +377,8 @@ export default function DonorsListPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-xs truncate max-w-[150px]">{tx.userEmail}</TableCell>
-                        <TableCell className="text-xs">{formatDisplayDateTime(tx.transactionDate)}</TableCell> {/* Changed Data Source */}
+                        <TableCell className="text-xs">{tx.userWardNo || "N/A"}</TableCell> {/* Display Ward No. */}
+                        <TableCell className="text-xs">{formatDisplayDateTime(tx.transactionDate)}</TableCell>
                         <TableCell className="text-xs truncate max-w-[150px]">{tx.campaignNameForTransaction}</TableCell>
                         <TableCell className="text-right text-xs font-medium">{formatCurrency(tx.donationAmountForTransaction)}</TableCell>
                         <TableCell className="text-center text-xs">{tx.totalCampaignsSupportedByUser}</TableCell>
