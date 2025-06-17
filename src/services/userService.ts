@@ -1,3 +1,4 @@
+
 // src/services/userService.ts
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, type QueryDocumentSnapshot, type DocumentData, deleteDoc } from 'firebase/firestore';
@@ -23,8 +24,8 @@ export interface UserProfileData {
 export interface NewUserProfileFirestoreData {
   email: string | null;
   displayName: string | null;
-  mobileNumber?: string | null; // This will be populated by the signup form
-  whatsAppNumber?: string | null; // Remains optional, will be null from signup form
+  mobileNumber?: string | null;
+  whatsAppNumber?: string | null; 
   wardNo?: string | null;
   role: 'admin' | 'user';
   status: 'Active' | 'Suspended' | 'Pending Verification';
@@ -65,7 +66,7 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
       walletBalance: 0,
       role: 'user',
       status: 'Active',
-      mobileNumber: null, // Default for new/non-existent profile
+      mobileNumber: null, 
       whatsAppNumber: null, 
       wardNo: null,
     };
@@ -148,6 +149,9 @@ export async function updateUserProfileService(
     if (currentProfile) {
       await updateDoc(userDocRef, dataToStore);
     } else {
+      // This case should ideally not happen if user is authenticated,
+      // as a profile should have been created on signup.
+      // But, as a fallback, create it.
       dataToStore.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
       dataToStore.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
       dataToStore.photoURL = authUser.photoURL;
@@ -213,6 +217,7 @@ export async function uploadProfilePictureAndUpdate(
     if (currentProfile) {
         await updateDoc(userDocRef, dataToUpdate);
     } else {
+        // Fallback to create profile if somehow missing
         dataToUpdate.uid = authUser.uid;
         dataToUpdate.email = authUser.email;
         dataToUpdate.displayName = authUser.displayName;
@@ -221,7 +226,7 @@ export async function uploadProfilePictureAndUpdate(
         dataToUpdate.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
         dataToUpdate.status = 'Active';
         dataToUpdate.walletBalance = 0;
-        dataToUpdate.mobileNumber = currentProfile?.mobileNumber || null; // Keep existing mobile number
+        dataToUpdate.mobileNumber = currentProfile?.mobileNumber || null;
         dataToUpdate.whatsAppNumber = currentProfile?.whatsAppNumber || null;
         dataToUpdate.wardNo = currentProfile?.wardNo || null;
         await setDoc(userDocRef, dataToUpdate);
@@ -255,7 +260,7 @@ export async function createUserProfileDocument(
     const userDocRef = doc(db, 'userProfiles', uid);
     await setDoc(userDocRef, {
       uid,
-      ...profileData, // Spread all received profile data
+      ...profileData, 
       walletBalance: profileData.walletBalance || 0,
       lastUpdated: serverTimestamp() as Timestamp,
     });
@@ -264,3 +269,4 @@ export async function createUserProfileDocument(
     throw error;
   }
 }
+

@@ -18,7 +18,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
 import { getTotalDonationsByUser, getTotalRefundedByUser } from "@/services/paymentService";
-import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet } from "lucide-react";
+import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet, MapPin } from "lucide-react"; // Added MapPin
 import { format } from 'date-fns';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import DonationHistory from "@/components/profile/donation-history";
@@ -27,15 +27,16 @@ import ImageCropDialog from "@/components/ui/image-crop-dialog"; // Import Image
 const profileFormSchema = z.object({
   displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters.").optional().or(z.literal('')),
   mobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid mobile number format.").optional().or(z.literal('')),
+  wardNo: z.string().max(20, "Ward No. cannot exceed 20 characters.").optional().or(z.literal('')), // Added wardNo
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 function formatCurrency(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) {
-    return "BDT0.00"; // Changed to BDT
+    return "BDT0.00";
   }
-  return amount.toLocaleString("en-US", { style: "currency", currency: "BDT", minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Changed to BDT
+  return amount.toLocaleString("en-US", { style: "currency", currency: "BDT", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function ProfilePage() {
@@ -65,6 +66,7 @@ export default function ProfilePage() {
     defaultValues: {
       displayName: "",
       mobileNumber: "",
+      wardNo: "", // Added wardNo default
     },
   });
 
@@ -82,6 +84,7 @@ export default function ProfilePage() {
             form.reset({
               displayName: fetchedProfile.displayName || user.displayName || "",
               mobileNumber: fetchedProfile.mobileNumber || "",
+              wardNo: fetchedProfile.wardNo || "", // Reset with wardNo
             });
             setDisplayWalletBalance(formatCurrency(fetchedProfile.walletBalance));
           } else {
@@ -89,6 +92,7 @@ export default function ProfilePage() {
             form.reset({
               displayName: user.displayName || "",
               mobileNumber: "",
+              wardNo: "", // Reset with wardNo for new profile
             });
             setDisplayWalletBalance(formatCurrency(0));
           }
@@ -131,6 +135,7 @@ export default function ProfilePage() {
       form.reset({
         displayName: profileData?.displayName || user?.displayName || "",
         mobileNumber: profileData?.mobileNumber || "",
+        wardNo: profileData?.wardNo || "", // Reset wardNo
       });
     }
     setIsEditing(!isEditing);
@@ -140,7 +145,12 @@ export default function ProfilePage() {
     if (!user) return;
     setIsSubmitting(true);
     try {
-      await updateUserProfileService(user, data);
+      // Include wardNo in the data passed to updateUserProfileService
+      await updateUserProfileService(user, { 
+        displayName: data.displayName, 
+        mobileNumber: data.mobileNumber,
+        wardNo: data.wardNo 
+      });
       await refreshAuthUser();
       const updatedProfile = await getUserProfile(user.uid);
       if (updatedProfile) {
@@ -216,6 +226,7 @@ export default function ProfilePage() {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full md:col-span-2" /> {/* Skeleton for Ward No */}
               </div>
             </CardContent>
             <CardFooter className="flex justify-end">
@@ -324,7 +335,7 @@ export default function ProfilePage() {
 
           <CardContent className="mt-6 space-y-6">
             <Form {...form}>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
                   <Mail className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
                   <div>
@@ -349,6 +360,13 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
+                      <MapPin className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" /> {/* Icon for Ward No. */}
+                      <div>
+                        <p className="text-xs text-muted-foreground">Ward No.</p>
+                        <p className="font-semibold">{profileData?.wardNo?.trim() || "Not set"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md md:col-span-2"> {/* Total Donations span 2 cols on medium+ */}
                       <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-muted-foreground">Total Approved Donations</p>
@@ -379,6 +397,29 @@ export default function ProfilePage() {
                                   id="mobileNumber"
                                   {...field}
                                   placeholder="e.g., +1 123 456 7890"
+                                  disabled={isSubmitting}
+                                />
+                              </FormControl>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <FormField
+                        control={form.control}
+                        name="wardNo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel htmlFor="wardNo">Ward No.</FormLabel>
+                            <div className="flex items-center space-x-2">
+                              <MapPin className="h-5 w-5 text-muted-foreground" />
+                              <FormControl>
+                                <Input
+                                  id="wardNo"
+                                  {...field}
+                                  placeholder="e.g., Ward 7"
                                   disabled={isSubmitting}
                                 />
                               </FormControl>
