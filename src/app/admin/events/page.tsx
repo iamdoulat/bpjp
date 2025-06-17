@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CalendarDays, Search, PlusCircle, MoreHorizontal, Eye, Edit, Trash2, AlertCircle, Loader2, Users } from "lucide-react";
+import { CalendarDays, Search, PlusCircle, MoreHorizontal, Eye, Edit, Trash2, AlertCircle, Loader2, Users, Gift } from "lucide-react"; // Added Gift
 import { getEvents, deleteEvent, type EventData } from "@/services/eventService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
@@ -112,6 +112,13 @@ export default function ManageEventsPage() {
     }
   };
 
+  const calculateTotalTokens = (event: EventData): number => {
+    if (!event.tokenDistribution || event.tokenDistribution.length === 0) {
+      return 0;
+    }
+    return event.tokenDistribution.reduce((sum, dist) => sum + (dist.tokenQty || 0), 0);
+  };
+
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
@@ -148,10 +155,11 @@ export default function ManageEventsPage() {
         {loading && (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-                <div key={i} className="grid grid-cols-[minmax(250px,1fr)_150px_100px_100px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
+                <div key={i} className="grid grid-cols-[minmax(250px,1fr)_150px_100px_120px_100px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md"> {/* Adjusted grid */}
                     <Skeleton className="h-4 w-3/4" /> {/* Title */}
                     <Skeleton className="h-4 w-full" /> {/* Date */}
                     <Skeleton className="h-4 w-12 justify-self-center" /> {/* Participants */}
+                    <Skeleton className="h-4 w-16 justify-self-center" /> {/* Tokens */}
                     <Skeleton className="h-6 w-8 rounded-md justify-self-end" /> {/* Actions */}
                 </div>
             ))}
@@ -196,16 +204,17 @@ export default function ManageEventsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[300px] md:w-[400px]">Event Title</TableHead>
+                  <TableHead className="w-[250px] md:w-[350px]">Event Title</TableHead>
                   <TableHead>Event Date</TableHead>
                   <TableHead className="text-center w-[120px]">Participants</TableHead>
+                  <TableHead className="text-center w-[130px]">Token Distributed</TableHead> {/* New Header */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEvents.map((event) => (
                   <TableRow key={event.id}>
-                    <TableCell className="font-medium truncate max-w-[250px] md:max-w-none">{event.title}</TableCell>
+                    <TableCell className="font-medium truncate max-w-[200px] md:max-w-none">{event.title}</TableCell>
                     <TableCell>{formatDisplayDate(event.eventDate)}</TableCell>
                     <TableCell className="text-center">
                       {event.id ? (
@@ -218,6 +227,12 @@ export default function ManageEventsPage() {
                        ) : (
                          <span>{event.participantCount || 0}</span>
                        )}
+                    </TableCell>
+                    <TableCell className="text-center"> {/* New Cell */}
+                      <div className="flex items-center justify-center gap-1">
+                        <Gift className="h-3.5 w-3.5 text-muted-foreground"/> 
+                        {calculateTotalTokens(event)}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
