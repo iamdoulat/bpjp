@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
-import { getEventById, type EventData, registerForEvent, checkIfUserRegistered } from '@/services/eventService';
-import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Users, CheckCircle, XCircle, Gift } from "lucide-react"
+import { getEventById, type EventData, registerForEvent, checkIfUserRegistered, addEventComment, getEventComments, updateEventComment, deleteEventComment, type EventCommentData } from '@/services/eventService';
+import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Users, CheckCircle, XCircle, Gift, MessageSquare, Send, Edit, Trash2 } from "lucide-react"
 import { Timestamp } from "firebase/firestore"
 import {
   Dialog,
@@ -32,6 +32,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
@@ -39,17 +40,22 @@ import { useAuth } from "@/contexts/AuthContext"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useForm } from "react-hook-form";
-import { getUserProfile } from "@/services/userService"
+import { getUserProfile, type UserProfileData } from "@/services/userService"
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow, TableFooter as ShadCNTableFooter } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 const registrationFormSchema = z.object({
-  name: z.string().min(3, "Name must be at least 3 characters.").max(100),
   mobileNumber: z.string().regex(/^[+]?[0-9\s-()]{7,20}$/, "Invalid mobile number format."),
-  wardNo: z.string().min(1, "Ward No. is required.").max(20, "Ward No. cannot exceed 20 characters."),
 });
 
 type RegistrationFormValues = z.infer<typeof registrationFormSchema>;
+
+const commentFormSchema = z.object({
+  commentText: z.string().min(1, "Comment cannot be empty.").max(1000, "Comment is too long."),
+});
+type CommentFormValues = z.infer<typeof commentFormSchema>;
+
 
 interface EnrichedTokenAssignment {
   userId: string;
@@ -91,7 +97,7 @@ export default function PublicViewEventPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.id as string;
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const { toast } = useToast();
 
   const [event, setEvent] = React.useState<EventData | null>(null);
@@ -102,34 +108,55 @@ export default function PublicViewEventPage() {
   const [isSubmittingRegistration, setIsSubmittingRegistration] = React.useState(false);
   const [isRegistered, setIsRegistered] = React.useState(false);
   const [checkingRegistration, setCheckingRegistration] = React.useState(true);
+  const [profileData, setProfileData] = React.useState<UserProfileData | null>(null);
 
   const [enrichedTokenAssignments, setEnrichedTokenAssignments] = React.useState<EnrichedTokenAssignment[]>([]);
   const [loadingTokenUsers, setLoadingTokenUsers] = React.useState(false);
   const [totalTokensDistributed, setTotalTokensDistributed] = React.useState(0);
 
+  const [comments, setComments] = React.useState<EventCommentData[]>([]);
+  const [loadingComments, setLoadingComments] = React.useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = React.useState(false);
+  const [commentToEdit, setCommentToEdit] = React.useState<EventCommentData | null>(null);
+  const [editingCommentText, setEditingCommentText] = React.useState("");
+  const [isEditCommentDialogOpen, setIsEditCommentDialogOpen] = React.useState(false);
+  const [commentToDelete, setCommentToDelete] = React.useState<EventCommentData | null>(null);
+  const [isDeleteCommentDialogOpen, setIsDeleteCommentDialogOpen] = React.useState(false);
+  const [isProcessingDelete, setIsProcessingDelete] = React.useState(false);
+
 
   const registrationForm = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationFormSchema),
     defaultValues: {
-      name: "",
       mobileNumber: "",
-      wardNo: "",
+    },
+    mode: "onChange",
+  });
+
+  const commentForm = useForm<CommentFormValues>({
+    resolver: zodResolver(commentFormSchema),
+    defaultValues: {
+      commentText: "",
     },
   });
 
-  const fetchEventDetails = React.useCallback(async () => {
+  const fetchEventAndComments = React.useCallback(async () => {
     if (!eventId) return;
     setIsLoading(true);
+    setLoadingComments(true);
     setError(null);
     setLoadingTokenUsers(false); 
     setEnrichedTokenAssignments([]); 
     setTotalTokensDistributed(0);
 
     try {
-      const fetchedEvent = await getEventById(eventId);
+      const [fetchedEvent, fetchedComments] = await Promise.all([
+        getEventById(eventId),
+        getEventComments(eventId)
+      ]);
+      
       if (fetchedEvent) {
         setEvent(fetchedEvent);
-
         if (fetchedEvent.tokenDistribution && fetchedEvent.tokenDistribution.length > 0) {
           setLoadingTokenUsers(true);
           const assignments = fetchedEvent.tokenDistribution;
@@ -160,21 +187,22 @@ export default function PublicViewEventPage() {
           setTotalTokensDistributed(currentTotalTokens);
           setLoadingTokenUsers(false);
         }
-
       } else {
         setError("Event not found or is no longer available.");
       }
+      setComments(fetchedComments);
     } catch (e) {
-      console.error("Failed to fetch event details:", e);
+      console.error("Failed to fetch event details or comments:", e);
       setError(e instanceof Error ? e.message : "An unknown error occurred.");
     } finally {
       setIsLoading(false);
+      setLoadingComments(false);
     }
   }, [eventId]);
 
   React.useEffect(() => {
-    fetchEventDetails();
-  }, [fetchEventDetails]);
+    fetchEventAndComments();
+  }, [fetchEventAndComments]);
 
   React.useEffect(() => {
     if (user && eventId && !authLoading) {
@@ -194,18 +222,20 @@ export default function PublicViewEventPage() {
     if (user && isRegistrationDialogOpen) {
       getUserProfile(user.uid).then(profile => {
         if (profile) {
+          setProfileData(profile); // Store full profile data
           registrationForm.reset({
-            name: profile.displayName || user.displayName || "",
             mobileNumber: profile.mobileNumber || "",
-            wardNo: profile.wardNo || "", 
           });
         } else {
+           setProfileData(null); // Explicitly set to null if no profile
            registrationForm.reset({
-            name: user.displayName || "",
             mobileNumber: "",
-            wardNo: "",
           });
         }
+      }).catch(err => {
+        console.error("Failed to fetch profile for registration form prefill:", err);
+        setProfileData(null);
+        registrationForm.reset({ mobileNumber: "" });
       });
     }
   }, [user, isRegistrationDialogOpen, registrationForm]);
@@ -222,12 +252,15 @@ export default function PublicViewEventPage() {
       return;
     }
 
+    const nameToSubmit = profileData?.displayName || user.displayName || "Registered User";
+    const wardNoToSubmit = profileData?.wardNo || "Not Provided";
+
     setIsSubmittingRegistration(true);
     try {
       await registerForEvent(event.id, user.uid, {
-        name: data.name,
+        name: nameToSubmit,
         mobileNumber: data.mobileNumber,
-        wardNo: data.wardNo,
+        wardNo: wardNoToSubmit,
         userEmail: user.email || undefined,
       });
       toast({
@@ -239,7 +272,7 @@ export default function PublicViewEventPage() {
       setConfirmJoin(undefined);
       registrationForm.reset();
       setIsRegistered(true);
-      fetchEventDetails();
+      fetchEventAndComments(); // Refetch to update participant count
     } catch (e) {
       console.error("Registration failed:", e);
       toast({
@@ -251,6 +284,83 @@ export default function PublicViewEventPage() {
       setIsSubmittingRegistration(false);
     }
   };
+
+  const handleCommentSubmit = async (data: CommentFormValues) => {
+    if (!user) {
+      toast({ title: "Login Required", description: "Please log in to comment.", variant: "destructive" });
+      return;
+    }
+    if (!event || !event.id) {
+      toast({ title: "Error", description: "Event details are missing.", variant: "destructive" });
+      return;
+    }
+    setIsSubmittingComment(true);
+    try {
+      const userProfile = await getUserProfile(user.uid);
+      await addEventComment(event.id, {
+        userId: user.uid,
+        userName: userProfile?.displayName || user.displayName || "Anonymous",
+        userAvatarUrl: userProfile?.photoURL || user.photoURL || null,
+        text: data.commentText,
+      });
+      toast({ title: "Comment Posted!", variant: "default" });
+      commentForm.reset();
+      // Refetch comments
+      const fetchedComments = await getEventComments(eventId);
+      setComments(fetchedComments);
+    } catch (e) {
+      console.error("Failed to post comment:", e);
+      toast({ title: "Error Posting Comment", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+  
+  const handleOpenEditCommentDialog = (comment: EventCommentData) => {
+    setCommentToEdit(comment);
+    setEditingCommentText(comment.text);
+    setIsEditCommentDialogOpen(true);
+  };
+
+  const handleUpdateComment = async () => {
+    if (!commentToEdit || !commentToEdit.id || !event || !event.id) return;
+    setIsSubmittingComment(true); // Reuse submitting state
+    try {
+      await updateEventComment(event.id, commentToEdit.id, editingCommentText);
+      toast({ title: "Comment Updated", variant: "default" });
+      setIsEditCommentDialogOpen(false);
+      setCommentToEdit(null);
+      const fetchedComments = await getEventComments(eventId); // Refetch
+      setComments(fetchedComments);
+    } catch (e) {
+      toast({ title: "Error Updating Comment", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleOpenDeleteCommentDialog = (comment: EventCommentData) => {
+    setCommentToDelete(comment);
+    setIsDeleteCommentDialogOpen(true);
+  };
+
+  const handleDeleteComment = async () => {
+    if (!commentToDelete || !commentToDelete.id || !event || !event.id) return;
+    setIsProcessingDelete(true);
+    try {
+      await deleteEventComment(event.id, commentToDelete.id);
+      toast({ title: "Comment Deleted", variant: "default" });
+      setIsDeleteCommentDialogOpen(false);
+      setCommentToDelete(null);
+      const fetchedComments = await getEventComments(eventId); // Refetch
+      setComments(fetchedComments);
+    } catch (e) {
+      toast({ title: "Error Deleting Comment", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsProcessingDelete(false);
+    }
+  };
+
   
   const isEventPast = event && (event.eventDate instanceof Timestamp ? event.eventDate.toDate() : event.eventDate) < new Date();
 
@@ -462,6 +572,7 @@ export default function PublicViewEventPage() {
                     if (!open) {
                       setConfirmJoin(undefined); 
                       registrationForm.reset();
+                      setProfileData(null); // Clear profile data when dialog closes
                     }
                   }}>
                     <DialogTrigger asChild>
@@ -492,17 +603,26 @@ export default function PublicViewEventPage() {
                         {confirmJoin === "yes" && (
                           <Form {...registrationForm}>
                             <form onSubmit={registrationForm.handleSubmit(handleRegistrationSubmit)} id="event-registration-form" className="space-y-4 pt-4">
-                              <FormField
-                                control={registrationForm.control}
-                                name="name"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Your Name</FormLabel>
-                                    <FormControl><Input placeholder="Full Name" {...field} disabled={isSubmittingRegistration} /></FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
+                              <FormItem>
+                                <FormLabel>Your Name</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Full Name" 
+                                    value={profileData?.displayName || user?.displayName || ""} 
+                                    disabled 
+                                  />
+                                </FormControl>
+                              </FormItem>
+                              <FormItem>
+                                <FormLabel>Ward No.</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Your Ward Number" 
+                                    value={profileData?.wardNo || ""} 
+                                    disabled 
+                                  />
+                                </FormControl>
+                              </FormItem>
                               <FormField
                                 control={registrationForm.control}
                                 name="mobileNumber"
@@ -510,17 +630,6 @@ export default function PublicViewEventPage() {
                                   <FormItem>
                                     <FormLabel>Mobile Number</FormLabel>
                                     <FormControl><Input type="tel" placeholder="e.g., +1234567890" {...field} disabled={isSubmittingRegistration} /></FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={registrationForm.control}
-                                name="wardNo"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Ward No.</FormLabel>
-                                    <FormControl><Input placeholder="Your Ward Number" {...field} disabled={isSubmittingRegistration} /></FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
@@ -549,6 +658,130 @@ export default function PublicViewEventPage() {
                 )}
            </CardFooter>
         </Card>
+
+        {/* Comments Section */}
+        <Card className="shadow-xl max-w-3xl mx-auto mt-8">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-6 w-6 text-green-600" />
+              <CardTitle className="text-xl font-headline">Event Discussion</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Add New Comment Form */}
+            {user && (
+              <Form {...commentForm}>
+                <form onSubmit={commentForm.handleSubmit(handleCommentSubmit)} className="flex gap-2 mb-6 items-start">
+                  <Avatar className="h-10 w-10 border">
+                    <AvatarImage src={profileData?.photoURL || user.photoURL || `https://placehold.co/40x40.png?text=${getInitials(profileData?.displayName || user.displayName, user.email)}`} alt="Your avatar" />
+                    <AvatarFallback>{getInitials(profileData?.displayName || user.displayName, user.email)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-grow">
+                    <FormField
+                      control={commentForm.control}
+                      name="commentText"
+                      render={({ field }) => (
+                        <FormItem className="flex-grow">
+                          <FormControl>
+                            <Textarea placeholder="Write a comment..." {...field} rows={2} disabled={isSubmittingComment} className="min-h-[40px]"/>
+                          </FormControl>
+                          <FormMessage className="text-xs pt-1"/>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <Button type="submit" size="icon" disabled={isSubmittingComment || !commentForm.formState.isValid} className="h-10 w-10">
+                    {isSubmittingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
+                </form>
+              </Form>
+            )}
+
+            {/* Display Comments */}
+            {loadingComments ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-start space-x-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-1/4" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : comments.length > 0 ? (
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                {comments.map(comment => (
+                  <div key={comment.id} className={cn("flex gap-3 p-3 rounded-lg", user?.uid === comment.userId ? "bg-primary/10 ml-auto max-w-[85%]" : "bg-muted/50 mr-auto max-w-[85%]")}>
+                    <Avatar className="h-8 w-8 border">
+                      <AvatarImage src={comment.userAvatarUrl || `https://placehold.co/40x40.png?text=${getInitials(comment.userName)}`} alt={comment.userName || "User"}/>
+                      <AvatarFallback>{getInitials(comment.userName)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold">{comment.userName}</p>
+                        {(isAdmin || user?.uid === comment.userId) && ( // Only show for admin or comment owner
+                          <div className="flex items-center gap-1">
+                            {isAdmin && ( // Admin can edit/delete any
+                              <>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => handleOpenEditCommentDialog(comment)}><Edit className="h-3.5 w-3.5"/></Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleOpenDeleteCommentDialog(comment)}><Trash2 className="h-3.5 w-3.5"/></Button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {comment.createdAt ? formatDisplayDateTime(comment.createdAt.toDate()) : 'Just now'}
+                      </p>
+                      <p className="text-sm whitespace-pre-line">{comment.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No comments yet. Be the first to discuss!</p>
+            )}
+          </CardContent>
+        </Card>
+
+         {/* Edit Comment Dialog */}
+        <Dialog open={isEditCommentDialogOpen} onOpenChange={setIsEditCommentDialogOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Edit Comment</DialogTitle></DialogHeader>
+            <Textarea
+              value={editingCommentText}
+              onChange={(e) => setEditingCommentText(e.target.value)}
+              rows={4}
+              className="my-4"
+              disabled={isSubmittingComment}
+            />
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline" disabled={isSubmittingComment}>Cancel</Button></DialogClose>
+              <Button onClick={handleUpdateComment} disabled={isSubmittingComment || !editingCommentText.trim() || editingCommentText === commentToEdit?.text}>
+                {isSubmittingComment && <Loader2 className="h-4 w-4 animate-spin mr-2"/>}Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Comment Confirmation Dialog */}
+        <Dialog open={isDeleteCommentDialogOpen} onOpenChange={setIsDeleteCommentDialogOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Delete Comment</DialogTitle></DialogHeader>
+            <DialogDescription>
+              Are you sure you want to delete this comment? This action cannot be undone.
+            </DialogDescription>
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline" disabled={isProcessingDelete}>Cancel</Button></DialogClose>
+              <Button variant="destructive" onClick={handleDeleteComment} disabled={isProcessingDelete}>
+                 {isProcessingDelete && <Loader2 className="h-4 w-4 animate-spin mr-2"/>}Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </main>
     </AppShell>
   )

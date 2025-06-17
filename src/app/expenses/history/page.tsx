@@ -145,7 +145,6 @@ export default function ExpensesHistoryPage() {
                 <TableRow>
                   <TableHead className="w-[60px]">No.</TableHead>
                   <TableHead className="min-w-[150px]">Expense Name</TableHead>
-                  <TableHead className="min-w-[250px]">Details (Excerpt)</TableHead>
                   <TableHead className="w-[120px] text-right">Amount</TableHead>
                   <TableHead className="w-[180px]">Date Recorded</TableHead>
                   <TableHead className="w-[100px] text-center">Attachment</TableHead>
@@ -157,9 +156,6 @@ export default function ExpensesHistoryPage() {
                   <TableRow key={expense.id}>
                     <TableCell className="text-xs">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
                     <TableCell className="font-medium text-sm truncate max-w-[150px]">{expense.name}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground truncate max-w-[250px]">
-                      {expense.details.substring(0, 60)}{expense.details.length > 60 ? "..." : ""}
-                    </TableCell>
                     <TableCell className="text-right font-medium text-sm">{formatCurrency(expense.amount)}</TableCell>
                     <TableCell className="text-xs">{formatDisplayDateTime(expense.createdAt)}</TableCell>
                     <TableCell className="text-center">
