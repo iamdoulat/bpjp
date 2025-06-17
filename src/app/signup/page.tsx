@@ -31,7 +31,7 @@ const signupFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string(),
-  whatsAppNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid WhatsApp number format.").optional().or(z.literal('')),
+  mobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid mobile number format.").optional().or(z.literal('')),
   wardNo: z.string().min(1, { message: "Ward No. is required."}).max(20, {message: "Ward No. must be at most 20 characters."}),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match.",
@@ -55,7 +55,7 @@ export default function SignupPage() {
       email: "",
       password: "",
       confirmPassword: "",
-      whatsAppNumber: "",
+      mobileNumber: "",
       wardNo: "",
     },
     mode: "onChange",
@@ -68,7 +68,7 @@ export default function SignupPage() {
       data.email,
       data.password,
       data.displayName,
-      data.whatsAppNumber,
+      data.mobileNumber, // Changed from data.whatsAppNumber
       data.wardNo
     );
     setIsSubmitting(false);
@@ -180,12 +180,12 @@ export default function SignupPage() {
               />
               <FormField
                 control={form.control}
-                name="whatsAppNumber"
+                name="mobileNumber" 
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>WhatsApp Number (Optional)</FormLabel>
+                    <FormLabel>Mobile Number</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="Your WhatsApp number" {...field} value={field.value ?? ""} disabled={isSubmitting || authLoading} />
+                      <Input type="tel" placeholder="Your mobile number" {...field} value={field.value ?? ""} disabled={isSubmitting || authLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

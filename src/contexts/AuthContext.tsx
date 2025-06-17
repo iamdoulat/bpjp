@@ -25,8 +25,8 @@ interface AuthContextType {
     email: string,
     password: string,
     displayName?: string,
-    whatsAppNumber?: string, // Added whatsAppNumber
-    wardNo?: string         // Added wardNo
+    mobileNumber?: string, // Changed from whatsAppNumber
+    wardNo?: string
   ) => Promise<User | AuthError | undefined>;
   login: (email: string, password: string) => Promise<User | AuthError | undefined>;
   logout: () => Promise<void>;
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string,
     password: string,
     displayName?: string,
-    whatsAppNumber?: string,
+    mobileNumberParam?: string, // Renamed parameter for clarity
     wardNo?: string
   ): Promise<User | AuthError | undefined> => {
     setLoading(true);
@@ -86,8 +86,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profileData: NewUserProfileFirestoreData = {
           displayName: nameToSet,
           email: refreshedUser.email,
-          mobileNumber: null, // Default mobileNumber, can be updated in profile
-          whatsAppNumber: whatsAppNumber || null,
+          mobileNumber: mobileNumberParam || null, // Use the new mobileNumber parameter
+          whatsAppNumber: null, // Set whatsAppNumber to null as it's not collected separately in signup anymore
           wardNo: wardNo || null,
           role: 'user', // Default role
           status: 'Active', // Default status

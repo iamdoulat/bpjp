@@ -9,8 +9,8 @@ export interface UserProfileData {
   displayName?: string | null;
   email?: string | null;
   mobileNumber?: string | null;
-  whatsAppNumber?: string | null; // Added whatsAppNumber
-  wardNo?: string | null;         // Added wardNo
+  whatsAppNumber?: string | null; 
+  wardNo?: string | null;
   photoURL?: string | null;
   role?: 'admin' | 'user';
   status?: 'Active' | 'Suspended' | 'Pending Verification';
@@ -23,9 +23,9 @@ export interface UserProfileData {
 export interface NewUserProfileFirestoreData {
   email: string | null;
   displayName: string | null;
-  mobileNumber?: string | null;
-  whatsAppNumber?: string | null; // Added whatsAppNumber
-  wardNo?: string | null;         // Added wardNo
+  mobileNumber?: string | null; // This will be populated by the signup form
+  whatsAppNumber?: string | null; // Remains optional, will be null from signup form
+  wardNo?: string | null;
   role: 'admin' | 'user';
   status: 'Active' | 'Suspended' | 'Pending Verification';
   joinedDate: Timestamp;
@@ -47,8 +47,8 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
         displayName: data.displayName || null,
         email: data.email || null,
         mobileNumber: data.mobileNumber || null,
-        whatsAppNumber: data.whatsAppNumber || null, // Retrieve whatsAppNumber
-        wardNo: data.wardNo || null,                 // Retrieve wardNo
+        whatsAppNumber: data.whatsAppNumber || null, 
+        wardNo: data.wardNo || null,
         photoURL: data.photoURL || null,
         role: data.role || 'user',
         status: data.status || 'Active',
@@ -65,8 +65,9 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
       walletBalance: 0,
       role: 'user',
       status: 'Active',
-      whatsAppNumber: null, // Default for new/non-existent profile
-      wardNo: null,         // Default for new/non-existent profile
+      mobileNumber: null, // Default for new/non-existent profile
+      whatsAppNumber: null, 
+      wardNo: null,
     };
   } catch (error) {
     console.error("Error fetching user profile:", error);
@@ -87,8 +88,8 @@ export async function getAllUserProfiles(): Promise<UserProfileData[]> {
         displayName: data.displayName || null,
         email: data.email || null,
         mobileNumber: data.mobileNumber || null,
-        whatsAppNumber: data.whatsAppNumber || null, // Retrieve whatsAppNumber
-        wardNo: data.wardNo || null,                 // Retrieve wardNo
+        whatsAppNumber: data.whatsAppNumber || null, 
+        wardNo: data.wardNo || null,
         photoURL: data.photoURL || null,
         role: data.role || 'user',
         status: data.status || 'Active',
@@ -112,7 +113,7 @@ export async function getAllUserProfiles(): Promise<UserProfileData[]> {
 // Function for a user to update their own profile
 export async function updateUserProfileService(
   authUser: AuthUser,
-  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'whatsAppNumber' | 'wardNo'>> // Added new fields
+  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'whatsAppNumber' | 'wardNo'>>
 ): Promise<void> {
   if (!authUser) throw new Error("User not authenticated.");
 
@@ -131,10 +132,10 @@ export async function updateUserProfileService(
   if (profileUpdates.mobileNumber !== undefined) {
     dataToStore.mobileNumber = profileUpdates.mobileNumber;
   }
-  if (profileUpdates.whatsAppNumber !== undefined) { // Save whatsAppNumber
+  if (profileUpdates.whatsAppNumber !== undefined) {
     dataToStore.whatsAppNumber = profileUpdates.whatsAppNumber;
   }
-  if (profileUpdates.wardNo !== undefined) { // Save wardNo
+  if (profileUpdates.wardNo !== undefined) { 
     dataToStore.wardNo = profileUpdates.wardNo;
   }
 
@@ -147,7 +148,6 @@ export async function updateUserProfileService(
     if (currentProfile) {
       await updateDoc(userDocRef, dataToStore);
     } else {
-      // This case should ideally be handled by createUserProfileDocument on signup
       dataToStore.joinedDate = authUser.metadata.creationTime ? Timestamp.fromDate(new Date(authUser.metadata.creationTime)) : serverTimestamp() as Timestamp;
       dataToStore.lastLoginDate = authUser.metadata.lastSignInTime ? Timestamp.fromDate(new Date(authUser.metadata.lastSignInTime)) : serverTimestamp() as Timestamp;
       dataToStore.photoURL = authUser.photoURL;
@@ -168,7 +168,7 @@ export async function updateUserProfileService(
 // Function for an admin to update any user's profile in Firestore
 export async function updateUserProfileAdmin(
   userId: string,
-  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'role' | 'status' | 'walletBalance' | 'whatsAppNumber' | 'wardNo'>> // Added new fields
+  profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'role' | 'status' | 'walletBalance' | 'whatsAppNumber' | 'wardNo'>>
 ): Promise<void> {
   if (!userId) throw new Error("User ID is required.");
   const userDocRef = doc(db, 'userProfiles', userId);
@@ -213,7 +213,6 @@ export async function uploadProfilePictureAndUpdate(
     if (currentProfile) {
         await updateDoc(userDocRef, dataToUpdate);
     } else {
-        // This case should ideally be handled by createUserProfileDocument on signup
         dataToUpdate.uid = authUser.uid;
         dataToUpdate.email = authUser.email;
         dataToUpdate.displayName = authUser.displayName;
@@ -222,7 +221,7 @@ export async function uploadProfilePictureAndUpdate(
         dataToUpdate.role = authUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
         dataToUpdate.status = 'Active';
         dataToUpdate.walletBalance = 0;
-        // Ensure new fields are also initialized if profile is created here
+        dataToUpdate.mobileNumber = currentProfile?.mobileNumber || null; // Keep existing mobile number
         dataToUpdate.whatsAppNumber = currentProfile?.whatsAppNumber || null;
         dataToUpdate.wardNo = currentProfile?.wardNo || null;
         await setDoc(userDocRef, dataToUpdate);
@@ -250,7 +249,7 @@ export async function deleteUserProfileDocument(userId: string): Promise<void> {
 // Function to create the Firestore user profile document for a new user
 export async function createUserProfileDocument(
   uid: string,
-  profileData: NewUserProfileFirestoreData // This type now includes whatsAppNumber and wardNo
+  profileData: NewUserProfileFirestoreData
 ): Promise<void> {
   try {
     const userDocRef = doc(db, 'userProfiles', uid);
