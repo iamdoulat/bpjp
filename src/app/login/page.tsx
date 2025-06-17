@@ -191,17 +191,6 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <div className="text-right">
-                <Button
-                  type="button"
-                  variant="link"
-                  className="p-0 h-auto text-sm"
-                  onClick={() => setIsForgotPasswordDialogOpen(true)}
-                  disabled={isSubmitting || authLoading}
-                >
-                  Forgot Password?
-                </Button>
-              </div>
               <Button
                 type="submit"
                 className={cn(
@@ -216,13 +205,22 @@ export default function LoginPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col items-center gap-2 text-sm">
-          <p>
+        <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 text-sm pt-4">
+          <p className="text-center sm:text-left">
             Don&apos;t have an account?{" "}
             <Button variant="link" asChild className="p-0 h-auto">
               <Link href="/signup">Sign Up</Link>
             </Button>
           </p>
+          <Button
+            type="button"
+            variant="link"
+            className="p-0 h-auto text-sm"
+            onClick={() => setIsForgotPasswordDialogOpen(true)}
+            disabled={isSubmitting || authLoading}
+          >
+            Forgot Password?
+          </Button>
         </CardFooter>
       </Card>
 
