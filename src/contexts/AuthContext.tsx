@@ -11,11 +11,12 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile as updateAuthProfile,
-  reload
+  reload,
+  sendPasswordResetEmail, // Import sendPasswordResetEmail
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { getUserProfile, createUserProfileDocument, type UserProfileData, type NewUserProfileFirestoreData } from '@/services/userService'; // Import createUserProfileDocument & NewUserProfileFirestoreData
-import { Timestamp } from 'firebase/firestore'; // Import Timestamp
+import { getUserProfile, createUserProfileDocument, type UserProfileData, type NewUserProfileFirestoreData } from '@/services/userService';
+import { Timestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -25,12 +26,13 @@ interface AuthContextType {
     email: string,
     password: string,
     displayName?: string,
-    mobileNumber?: string, // Changed from whatsAppNumber
+    mobileNumber?: string,
     wardNo?: string
   ) => Promise<User | AuthError | undefined>;
   login: (email: string, password: string) => Promise<User | AuthError | undefined>;
   logout: () => Promise<void>;
   refreshAuthUser: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: AuthError | Error }>; // New function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string,
     password: string,
     displayName?: string,
-    mobileNumberParam?: string, // Renamed parameter for clarity
+    mobileNumberParam?: string,
     wardNo?: string
   ): Promise<User | AuthError | undefined> => {
     setLoading(true);
@@ -86,11 +88,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profileData: NewUserProfileFirestoreData = {
           displayName: nameToSet,
           email: refreshedUser.email,
-          mobileNumber: mobileNumberParam || null, // Use the new mobileNumber parameter
-          whatsAppNumber: null, // Set whatsAppNumber to null as it's not collected separately in signup anymore
+          mobileNumber: mobileNumberParam || null,
+          whatsAppNumber: null, 
           wardNo: wardNo || null,
-          role: 'user', // Default role
-          status: 'Active', // Default status
+          role: 'user',
+          status: 'Active',
           joinedDate: Timestamp.now(),
           photoURL: refreshedUser.photoURL || null,
         };
@@ -159,6 +161,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const sendPasswordReset = async (email: string): Promise<{ success: boolean; error?: AuthError | Error }> => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error) {
+      console.error("Password reset error:", error);
+      return { success: false, error: error as AuthError | Error };
+    }
+  };
+
   const value = {
     user,
     isAdmin,
@@ -167,6 +179,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     logout,
     refreshAuthUser,
+    sendPasswordReset, // Add new function to context value
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
