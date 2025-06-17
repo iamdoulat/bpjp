@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
 import { getEventById, type EventData, registerForEvent, checkIfUserRegistered } from '@/services/eventService';
-import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Users, CheckCircle, XCircle } from "lucide-react"
+import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Users, CheckCircle, XCircle, Gift } from "lucide-react"
 import { Timestamp } from "firebase/firestore"
 import {
   Dialog,
@@ -40,6 +40,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useForm } from "react-hook-form";
 import { getUserProfile } from "@/services/userService"
+import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const registrationFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters.").max(100),
@@ -48,6 +50,15 @@ const registrationFormSchema = z.object({
 });
 
 type RegistrationFormValues = z.infer<typeof registrationFormSchema>;
+
+interface EnrichedTokenAssignment {
+  userId: string;
+  userName: string;
+  tokenQty: number;
+  userAvatarUrl?: string | null;
+  userMobileNumber?: string | null;
+  userWardNo?: string | null;
+}
 
 function formatDisplayDateTime(date: Timestamp | Date | undefined): string {
   if (!date) return "N/A";
@@ -60,6 +71,20 @@ function formatDisplayDateTime(date: Timestamp | Date | undefined): string {
     minute: "2-digit",
     hour12: true,
   }).format(jsDate);
+}
+
+function getInitials(name?: string | null, email?: string | null): string {
+  if (name) {
+    const parts = name.split(" ");
+    if (parts.length > 1 && parts[0] && parts[parts.length - 1]) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+  if (email) {
+    return email.substring(0, 2).toUpperCase();
+  }
+  return "U";
 }
 
 export default function PublicViewEventPage() {
@@ -78,6 +103,10 @@ export default function PublicViewEventPage() {
   const [isRegistered, setIsRegistered] = React.useState(false);
   const [checkingRegistration, setCheckingRegistration] = React.useState(true);
 
+  const [enrichedTokenAssignments, setEnrichedTokenAssignments] = React.useState<EnrichedTokenAssignment[]>([]);
+  const [loadingTokenUsers, setLoadingTokenUsers] = React.useState(false);
+
+
   const registrationForm = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationFormSchema),
     defaultValues: {
@@ -91,10 +120,42 @@ export default function PublicViewEventPage() {
     if (!eventId) return;
     setIsLoading(true);
     setError(null);
+    setLoadingTokenUsers(false); // Reset token loading state
+    setEnrichedTokenAssignments([]); // Reset assignments
+
     try {
       const fetchedEvent = await getEventById(eventId);
       if (fetchedEvent) {
         setEvent(fetchedEvent);
+
+        if (fetchedEvent.tokenDistribution && fetchedEvent.tokenDistribution.length > 0) {
+          setLoadingTokenUsers(true);
+          const assignments = fetchedEvent.tokenDistribution;
+          const resolvedAssignments = await Promise.all(
+            assignments.map(async (dist) => {
+              try {
+                const userProfile = await getUserProfile(dist.userId);
+                return {
+                  ...dist,
+                  userAvatarUrl: userProfile?.photoURL || null,
+                  userMobileNumber: userProfile?.mobileNumber || 'N/A',
+                  userWardNo: userProfile?.wardNo || 'N/A',
+                };
+              } catch (profileError) {
+                console.error(`Failed to fetch profile for user ${dist.userId}`, profileError);
+                return {
+                  ...dist,
+                  userAvatarUrl: null,
+                  userMobileNumber: 'Error loading',
+                  userWardNo: 'Error loading',
+                };
+              }
+            })
+          );
+          setEnrichedTokenAssignments(resolvedAssignments);
+          setLoadingTokenUsers(false);
+        }
+
       } else {
         setError("Event not found or is no longer available.");
       }
@@ -131,7 +192,7 @@ export default function PublicViewEventPage() {
           registrationForm.reset({
             name: profile.displayName || user.displayName || "",
             mobileNumber: profile.mobileNumber || "",
-            wardNo: "",
+            wardNo: profile.wardNo || "", // Use wardNo from profile if available
           });
         } else {
            registrationForm.reset({
@@ -172,8 +233,7 @@ export default function PublicViewEventPage() {
       setIsRegistrationDialogOpen(false);
       setConfirmJoin(undefined);
       registrationForm.reset();
-      setIsRegistered(true); // Assume registration successful, update UI
-      // Refetch event data to update participant count
+      setIsRegistered(true);
       fetchEventDetails();
     } catch (e) {
       console.error("Registration failed:", e);
@@ -209,6 +269,12 @@ export default function PublicViewEventPage() {
                  <Skeleton className="h-6 w-2/3" />
               </div>
               <Skeleton className="h-6 w-1/4" />
+               {/* Skeleton for token distribution table */}
+              <div className="space-y-2 mt-6 pt-6 border-t">
+                <Skeleton className="h-6 w-1/3 mb-3" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
             </CardContent>
              <CardFooter className="bg-muted/30 p-4 md:p-6 border-t flex justify-center">
                 <Skeleton className="h-12 w-48" />
@@ -292,6 +358,78 @@ export default function PublicViewEventPage() {
                 {event.details}
               </p>
             </div>
+
+            {/* Token Distribution Section */}
+            {(event.tokenDistribution && event.tokenDistribution.length > 0) || loadingTokenUsers ? (
+              <div className="space-y-2 pt-6 border-t mt-6">
+                <div className="flex items-center text-xl font-semibold text-foreground mb-3">
+                  <Gift className="h-6 w-6 mr-2 text-primary" />
+                  Token Distribution
+                </div>
+                {loadingTokenUsers ? (
+                  <div className="border rounded-md overflow-hidden">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="w-[250px]">User</TableHead>
+                        <TableHead className="w-[100px]">Ward No.</TableHead>
+                        <TableHead className="text-right w-[100px]">Token Qty</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {[...Array(Math.min(event.tokenDistribution?.length || 2, 2))].map((_, i) => ( // Show skeleton for up to 2 items or actual length
+                          <TableRow key={i}>
+                            <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-1.5"><Skeleton className="h-4 w-24" /><Skeleton className="h-3 w-16" /></div></div></TableCell>
+                            <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : enrichedTokenAssignments.length > 0 ? (
+                  <div className="border rounded-md overflow-hidden">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="w-[250px] text-xs">User</TableHead>
+                        <TableHead className="w-[100px] text-xs">Ward No.</TableHead>
+                        <TableHead className="text-right w-[100px] text-xs">Token Qty</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {enrichedTokenAssignments.map((assignment) => (
+                          <TableRow key={assignment.userId}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-9 w-9">
+                                  <AvatarImage src={assignment.userAvatarUrl || `https://placehold.co/40x40.png?text=${getInitials(assignment.userName)}`} alt={assignment.userName} data-ai-hint="profile person"/>
+                                  <AvatarFallback>{getInitials(assignment.userName)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-sm">{assignment.userName}</p>
+                                  {assignment.userMobileNumber && assignment.userMobileNumber !== 'N/A' && assignment.userMobileNumber !== 'Error loading' && (
+                                    <p className="text-xs text-muted-foreground">{assignment.userMobileNumber}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm">{assignment.userWardNo}</TableCell>
+                            <TableCell className="text-right text-sm font-medium">{assignment.tokenQty}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                   <p className="text-sm text-muted-foreground">No token assignments available for this event.</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1 pt-4 border-t mt-4">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                      <Gift className="h-4 w-4 mr-2 text-primary" />
+                      Token Distribution:
+                  </div>
+                  <p className="text-foreground text-sm">No tokens assigned for this event.</p>
+              </div>
+            )}
           </CardContent>
            <CardFooter className="bg-muted/30 p-4 md:p-6 border-t flex justify-center">
                 {isRegistered ? (
@@ -306,7 +444,7 @@ export default function PublicViewEventPage() {
                   <Dialog open={isRegistrationDialogOpen} onOpenChange={(open) => {
                     setIsRegistrationDialogOpen(open);
                     if (!open) {
-                      setConfirmJoin(undefined); // Reset confirmation on dialog close
+                      setConfirmJoin(undefined); 
                       registrationForm.reset();
                     }
                   }}>
