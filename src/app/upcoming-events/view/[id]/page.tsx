@@ -40,7 +40,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useForm } from "react-hook-form";
 import { getUserProfile } from "@/services/userService"
-import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow, TableFooter as ShadCNTableFooter } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const registrationFormSchema = z.object({
@@ -105,6 +105,7 @@ export default function PublicViewEventPage() {
 
   const [enrichedTokenAssignments, setEnrichedTokenAssignments] = React.useState<EnrichedTokenAssignment[]>([]);
   const [loadingTokenUsers, setLoadingTokenUsers] = React.useState(false);
+  const [totalTokensDistributed, setTotalTokensDistributed] = React.useState(0);
 
 
   const registrationForm = useForm<RegistrationFormValues>({
@@ -120,8 +121,9 @@ export default function PublicViewEventPage() {
     if (!eventId) return;
     setIsLoading(true);
     setError(null);
-    setLoadingTokenUsers(false); // Reset token loading state
-    setEnrichedTokenAssignments([]); // Reset assignments
+    setLoadingTokenUsers(false); 
+    setEnrichedTokenAssignments([]); 
+    setTotalTokensDistributed(0);
 
     try {
       const fetchedEvent = await getEventById(eventId);
@@ -131,8 +133,10 @@ export default function PublicViewEventPage() {
         if (fetchedEvent.tokenDistribution && fetchedEvent.tokenDistribution.length > 0) {
           setLoadingTokenUsers(true);
           const assignments = fetchedEvent.tokenDistribution;
+          let currentTotalTokens = 0;
           const resolvedAssignments = await Promise.all(
             assignments.map(async (dist) => {
+              currentTotalTokens += dist.tokenQty;
               try {
                 const userProfile = await getUserProfile(dist.userId);
                 return {
@@ -153,6 +157,7 @@ export default function PublicViewEventPage() {
             })
           );
           setEnrichedTokenAssignments(resolvedAssignments);
+          setTotalTokensDistributed(currentTotalTokens);
           setLoadingTokenUsers(false);
         }
 
@@ -192,7 +197,7 @@ export default function PublicViewEventPage() {
           registrationForm.reset({
             name: profile.displayName || user.displayName || "",
             mobileNumber: profile.mobileNumber || "",
-            wardNo: profile.wardNo || "", // Use wardNo from profile if available
+            wardNo: profile.wardNo || "", 
           });
         } else {
            registrationForm.reset({
@@ -269,9 +274,10 @@ export default function PublicViewEventPage() {
                  <Skeleton className="h-6 w-2/3" />
               </div>
               <Skeleton className="h-6 w-1/4" />
-               {/* Skeleton for token distribution table */}
+               
               <div className="space-y-2 mt-6 pt-6 border-t">
                 <Skeleton className="h-6 w-1/3 mb-3" />
+                <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
               </div>
@@ -359,7 +365,7 @@ export default function PublicViewEventPage() {
               </p>
             </div>
 
-            {/* Token Distribution Section */}
+            
             {(event.tokenDistribution && event.tokenDistribution.length > 0) || loadingTokenUsers ? (
               <div className="space-y-2 pt-6 border-t mt-6">
                 <div className="flex items-center text-xl font-semibold text-foreground mb-3">
@@ -375,7 +381,7 @@ export default function PublicViewEventPage() {
                         <TableHead className="text-right w-[100px]">Token Qty</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
-                        {[...Array(Math.min(event.tokenDistribution?.length || 2, 2))].map((_, i) => ( // Show skeleton for up to 2 items or actual length
+                        {[...Array(Math.min(event.tokenDistribution?.length || 2, 2))].map((_, i) => ( 
                           <TableRow key={i}>
                             <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-1.5"><Skeleton className="h-4 w-24" /><Skeleton className="h-3 w-16" /></div></div></TableCell>
                             <TableCell><Skeleton className="h-4 w-12" /></TableCell>
@@ -415,6 +421,12 @@ export default function PublicViewEventPage() {
                           </TableRow>
                         ))}
                       </TableBody>
+                      <ShadCNTableFooter>
+                        <TableRow>
+                          <TableCell colSpan={2} className="text-right font-semibold text-sm">Total Token Distributed:</TableCell>
+                          <TableCell className="text-right font-bold text-lg text-primary">{totalTokensDistributed}</TableCell>
+                        </TableRow>
+                      </ShadCNTableFooter>
                     </Table>
                   </div>
                 ) : (
