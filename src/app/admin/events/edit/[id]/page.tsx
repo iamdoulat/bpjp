@@ -27,12 +27,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCard
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Edit3, AlertCircle, X, ArrowLeft, Trash2, Users, Gift } from "lucide-react";
-import { getEventById, updateEvent, type EventData, type UpdateEventInput, type TokenDistributionEntry } from "@/services/eventService";
+import { Loader2, Save, Edit3, AlertCircle, X, ArrowLeft, Trash2, Users, Gift, Activity } from "lucide-react";
+import { getEventById, updateEvent, type EventData, type UpdateEventInput, type TokenDistributionEntry, type EventStatusType } from "@/services/eventService";
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
 import { Timestamp } from "firebase/firestore";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
+
+const eventStatusOptions: EventStatusType[] = ["Planned", "Confirmed", "Postponed", "Cancelled"];
 
 const editEventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
@@ -41,6 +43,9 @@ const editEventFormSchema = z.object({
   eventHour: z.string().regex(/^([01]\d|2[0-3])$/, { message: "Please select a valid hour (00-23)."}),
   eventMinute: z.string().regex(/^[0-5]\d$/, { message: "Please select a valid minute (00-59)."}),
   attachmentFile: z.instanceof(File).optional().nullable(),
+  eventStatus: z.enum(eventStatusOptions as [EventStatusType, ...EventStatusType[]], {
+    required_error: "Event status is required.",
+  }),
 });
 
 type EditEventFormValues = z.infer<typeof editEventFormSchema>;
@@ -103,6 +108,7 @@ export default function EditEventPage() {
             eventHour: String(eventDateObj.getHours()).padStart(2, '0'),
             eventMinute: String(eventDateObj.getMinutes()).padStart(2, '0'),
             attachmentFile: undefined,
+            eventStatus: fetchedEvent.eventStatus || "Planned",
           });
           setCurrentAttachmentPreview(fetchedEvent.imageUrl || null);
           setNewCroppedImagePreview(null);
@@ -202,6 +208,7 @@ export default function EditEventPage() {
         details: data.details,
         eventDate: combinedDateTime,
         tokenDistribution: tokenAssignments,
+        eventStatus: data.eventStatus,
       };
 
       if (removeExistingAttachment) {
@@ -243,7 +250,7 @@ export default function EditEventPage() {
           <Card className="shadow-lg max-w-2xl mx-auto">
             <CardHeader><Skeleton className="h-8 w-3/5" /><Skeleton className="h-4 w-4/5 mt-1" /></CardHeader>
             <CardContent className="space-y-8 pt-6">
-              {[...Array(6)].map((_, i) => (
+              {[...Array(7)].map((_, i) => ( // Increased for event status
                 <div key={i} className="space-y-2"><Skeleton className="h-4 w-1/4" /><Skeleton className="h-10 w-full" /></div>
               ))}
               <Skeleton className="h-24 w-full" />
@@ -334,6 +341,33 @@ export default function EditEventPage() {
                   </div>
                   <FormDescription>Select the hour and minute for the event.</FormDescription>
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="eventStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Status</FormLabel>
+                       <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-muted-foreground" />
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select event status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {eventStatusOptions.map(status => (
+                              <SelectItem key={status} value={status}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <FormDescription>Set the current status of the event.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormItem>
                   <FormLabel>Event Image/Attachment</FormLabel>

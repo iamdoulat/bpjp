@@ -24,11 +24,13 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CalendarPlus, UploadCloud, Trash2, Users, Gift } from "lucide-react";
-import { addEvent, type NewEventInput, type TokenDistributionEntry } from "@/services/eventService";
+import { Loader2, CalendarPlus, UploadCloud, Trash2, Users, Gift, Activity } from "lucide-react";
+import { addEvent, type NewEventInput, type TokenDistributionEntry, type EventStatusType } from "@/services/eventService";
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
+
+const eventStatusOptions: EventStatusType[] = ["Planned", "Confirmed", "Postponed", "Cancelled"];
 
 const eventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
@@ -37,9 +39,9 @@ const eventFormSchema = z.object({
   eventHour: z.string().regex(/^([01]\d|2[0-3])$/, { message: "Please select a valid hour (00-23)."}),
   eventMinute: z.string().regex(/^[0-5]\d$/, { message: "Please select a valid minute (00-59)."}),
   attachmentFile: z.instanceof(File).optional().nullable(),
-  // Token distribution is not directly part of form values managed by RHF in this setup,
-  // but is handled by local state `tokenAssignments` and then added to `eventInput` on submit.
-  // If complex validation per item were needed, useFieldArray would be better.
+  eventStatus: z.enum(eventStatusOptions as [EventStatusType, ...EventStatusType[]], { // Ensure Zod gets a non-empty array
+    required_error: "Event status is required.",
+  }),
 });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
@@ -51,6 +53,7 @@ const defaultValues: EventFormValues = {
   eventHour: "09",
   eventMinute: "00",
   attachmentFile: null,
+  eventStatus: "Planned",
 };
 
 const hourOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
@@ -156,6 +159,7 @@ export default function CreateEventPage() {
         eventDate: combinedDateTime,
         attachmentFile: data.attachmentFile,
         tokenDistribution: tokenAssignments,
+        eventStatus: data.eventStatus,
       };
       const eventId = await addEvent(eventInput);
       toast({
@@ -237,6 +241,33 @@ export default function CreateEventPage() {
                   </div>
                   <FormDescription>Select the hour and minute for the event.</FormDescription>
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="eventStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Status</FormLabel>
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-muted-foreground" />
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select event status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {eventStatusOptions.map(status => (
+                              <SelectItem key={status} value={status}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <FormDescription>Set the current status of the event.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormItem>
                   <FormLabel>Event Image/Attachment (Optional)</FormLabel>

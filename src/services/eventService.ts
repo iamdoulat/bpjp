@@ -12,6 +12,8 @@ export interface TokenDistributionEntry {
   tokenQty: number;
 }
 
+export type EventStatusType = "Planned" | "Confirmed" | "Postponed" | "Cancelled";
+
 export interface EventData {
   id?: string;
   title: string;
@@ -23,6 +25,7 @@ export interface EventData {
   lastUpdated?: Timestamp;
   participantCount: number;
   tokenDistribution?: TokenDistributionEntry[];
+  eventStatus: EventStatusType;
 }
 
 export interface NewEventInput {
@@ -31,6 +34,7 @@ export interface NewEventInput {
   eventDate: Date;
   attachmentFile?: File | null;
   tokenDistribution?: TokenDistributionEntry[];
+  eventStatus: EventStatusType;
 }
 
 export interface UpdateEventInput {
@@ -39,6 +43,7 @@ export interface UpdateEventInput {
   eventDate?: Date;
   attachmentFile?: File | null;
   tokenDistribution?: TokenDistributionEntry[];
+  eventStatus?: EventStatusType;
 }
 
 export interface EventRegistrationData {
@@ -88,6 +93,7 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
       eventDate: Timestamp;
       participantCount: number;
       tokenDistribution: TokenDistributionEntry[];
+      eventStatus: EventStatusType;
     } = {
       title: eventInput.title,
       details: eventInput.details,
@@ -96,6 +102,7 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
       imagePath: imagePath || null,
       participantCount: 0,
       tokenDistribution: eventInput.tokenDistribution || [],
+      eventStatus: eventInput.eventStatus || "Planned",
       createdAt: serverTimestamp() as Timestamp,
     };
 
@@ -129,6 +136,7 @@ export async function getEvents(order: 'asc' | 'desc' = 'asc'): Promise<EventDat
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
         tokenDistribution: data.tokenDistribution || [],
+        eventStatus: data.eventStatus || "Planned",
       });
     });
     return events;
@@ -167,6 +175,7 @@ export async function getEventById(id: string): Promise<EventData | null> {
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
         tokenDistribution: data.tokenDistribution || [],
+        eventStatus: data.eventStatus || "Planned",
       } as EventData;
     } else {
       console.log(`No event document found with ID: ${id}`);
@@ -218,6 +227,7 @@ export async function updateEvent(
   if (updates.tokenDistribution !== undefined) {
     dataToUpdate.tokenDistribution = updates.tokenDistribution;
   }
+  if (updates.eventStatus !== undefined) dataToUpdate.eventStatus = updates.eventStatus;
 
 
   try {
