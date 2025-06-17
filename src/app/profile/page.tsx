@@ -18,16 +18,16 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getUserProfile, updateUserProfileService, uploadProfilePictureAndUpdate, type UserProfileData } from "@/services/userService";
 import { getTotalDonationsByUser, getTotalRefundedByUser } from "@/services/paymentService";
-import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet, MapPin } from "lucide-react"; // Added MapPin
+import { Loader2, Edit3, Save, XCircle, Mail, CalendarDays, Smartphone, Shield, UploadCloud, User as UserIcon, DollarSign, Wallet, MapPin } from "lucide-react";
 import { format } from 'date-fns';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import DonationHistory from "@/components/profile/donation-history";
-import ImageCropDialog from "@/components/ui/image-crop-dialog"; // Import ImageCropDialog
+import ImageCropDialog from "@/components/ui/image-crop-dialog";
 
 const profileFormSchema = z.object({
   displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters.").optional().or(z.literal('')),
   mobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid mobile number format.").optional().or(z.literal('')),
-  wardNo: z.string().max(20, "Ward No. cannot exceed 20 characters.").optional().or(z.literal('')), // Added wardNo
+  wardNo: z.string().max(20, "Ward No. cannot exceed 20 characters.").optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -51,7 +51,7 @@ export default function ProfilePage() {
   const [isLoadingTotalRefunds, setIsLoadingTotalRefunds] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isEditing, setIsEditing] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false); // For text form submission
   const [error, setError] = React.useState<string | null>(null);
   
   const [imageToCropSrc, setImageToCropSrc] = React.useState<string | null>(null);
@@ -66,7 +66,7 @@ export default function ProfilePage() {
     defaultValues: {
       displayName: "",
       mobileNumber: "",
-      wardNo: "", // Added wardNo default
+      wardNo: "",
     },
   });
 
@@ -84,7 +84,7 @@ export default function ProfilePage() {
             form.reset({
               displayName: fetchedProfile.displayName || user.displayName || "",
               mobileNumber: fetchedProfile.mobileNumber || "",
-              wardNo: fetchedProfile.wardNo || "", // Reset with wardNo
+              wardNo: fetchedProfile.wardNo || "",
             });
             setDisplayWalletBalance(formatCurrency(fetchedProfile.walletBalance));
           } else {
@@ -92,7 +92,7 @@ export default function ProfilePage() {
             form.reset({
               displayName: user.displayName || "",
               mobileNumber: "",
-              wardNo: "", // Reset with wardNo for new profile
+              wardNo: "",
             });
             setDisplayWalletBalance(formatCurrency(0));
           }
@@ -135,7 +135,7 @@ export default function ProfilePage() {
       form.reset({
         displayName: profileData?.displayName || user?.displayName || "",
         mobileNumber: profileData?.mobileNumber || "",
-        wardNo: profileData?.wardNo || "", // Reset wardNo
+        wardNo: profileData?.wardNo || "",
       });
     }
     setIsEditing(!isEditing);
@@ -145,7 +145,6 @@ export default function ProfilePage() {
     if (!user) return;
     setIsSubmitting(true);
     try {
-      // Include wardNo in the data passed to updateUserProfileService
       await updateUserProfileService(user, { 
         displayName: data.displayName, 
         mobileNumber: data.mobileNumber,
@@ -185,10 +184,10 @@ export default function ProfilePage() {
     try {
       const croppedFile = new File([croppedBlob], "profile_picture.png", { type: "image/png" });
       const newPhotoURL = await uploadProfilePictureAndUpdate(user, croppedFile);
-      await refreshAuthUser();
-      const updatedProfile = await getUserProfile(user.uid);
+      await refreshAuthUser(); // Refresh auth user to get new photoURL in auth state
+      const updatedProfile = await getUserProfile(user.uid); // Refetch Firestore profile
       if (updatedProfile) {
-        setProfileData(updatedProfile);
+        setProfileData(updatedProfile); // Update local profile state
         setDisplayWalletBalance(formatCurrency(updatedProfile.walletBalance));
       }
       toast({ title: "Profile Picture Updated", description: "Your new profile picture has been uploaded." });
@@ -198,11 +197,13 @@ export default function ProfilePage() {
     } finally {
       setIsUploadingCroppedImage(false);
       setIsCropDialogOpen(false); 
+      setImageToCropSrc(null); // Clear image source
       if (fileInputRef.current) {
         fileInputRef.current.value = ""; 
       }
     }
   };
+
 
   if (authLoading || isLoading) {
     return (
@@ -226,7 +227,8 @@ export default function ProfilePage() {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full md:col-span-2" /> {/* Skeleton for Ward No */}
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full md:col-span-2" />
               </div>
             </CardContent>
             <CardFooter className="flex justify-end">
@@ -294,7 +296,7 @@ export default function ProfilePage() {
                     size="sm"
                     className="absolute top-16 right-4 sm:right-6 md:right-8 lg:right-10 xl:right-12 bg-background/70 backdrop-blur-sm p-2"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingCroppedImage || isCropDialogOpen}
+                    disabled={isUploadingCroppedImage || isCropDialogOpen || isSubmitting}
                     aria-label="Upload profile picture"
                   >
                   {isUploadingCroppedImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
@@ -306,7 +308,7 @@ export default function ProfilePage() {
                   onChange={handleFileSelectForCrop}
                   accept="image/png, image/jpeg, image/gif"
                   className="hidden"
-                  disabled={isUploadingCroppedImage || isCropDialogOpen}
+                  disabled={isUploadingCroppedImage || isCropDialogOpen || isSubmitting}
                 />
               <div className="text-center mt-4">
                 {isEditing ? (
@@ -360,13 +362,13 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
-                      <MapPin className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" /> {/* Icon for Ward No. */}
+                      <MapPin className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-muted-foreground">Ward No.</p>
                         <p className="font-semibold">{profileData?.wardNo?.trim() || "Not set"}</p>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md md:col-span-2"> {/* Total Donations span 2 cols on medium+ */}
+                    <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md md:col-span-2">
                       <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-muted-foreground">Total Approved Donations</p>
@@ -450,7 +452,7 @@ export default function ProfilePage() {
                   >
                     <Wallet className="mr-2 h-4 w-4" /> My Wallet: {isLoading ? <Skeleton className="h-5 w-16 inline-block" /> : displayWalletBalance}
                   </Button>
-                  <Button onClick={handleEditToggle}>
+                  <Button onClick={handleEditToggle} disabled={isUploadingCroppedImage || isCropDialogOpen}>
                     <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
                   </Button>
                 </div>
@@ -473,9 +475,9 @@ export default function ProfilePage() {
             }}
             imageSrc={imageToCropSrc}
             onCropComplete={handleCroppedImageUpload}
-            aspectRatio={1}
-            targetWidth={100}
-            targetHeight={100}
+            aspectRatio={1} // 1:1 aspect ratio for profile picture
+            targetWidth={150} // Example target size
+            targetHeight={150}
           />
         )}
       </main>
