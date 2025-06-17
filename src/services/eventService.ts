@@ -5,16 +5,24 @@ import { collection, addDoc, getDocs, doc, getDoc, Timestamp, serverTimestamp, q
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { UserProfileData } from './userService'; // For enriching registration data
 
+// New interface for token distribution entry
+export interface TokenDistributionEntry {
+  userId: string;
+  userName: string; // Store userName for easier display, denormalized
+  tokenQty: number;
+}
+
 export interface EventData {
   id?: string;
   title: string;
   details: string;
   eventDate: Timestamp;
   imageUrl?: string | null;
-  imagePath?: string | null; 
+  imagePath?: string | null;
   createdAt: Timestamp;
   lastUpdated?: Timestamp;
-  participantCount: number; 
+  participantCount: number;
+  tokenDistribution?: TokenDistributionEntry[];
 }
 
 export interface NewEventInput {
@@ -22,13 +30,15 @@ export interface NewEventInput {
   details: string;
   eventDate: Date;
   attachmentFile?: File | null;
+  tokenDistribution?: TokenDistributionEntry[];
 }
 
 export interface UpdateEventInput {
   title?: string;
   details?: string;
   eventDate?: Date;
-  attachmentFile?: File | null; 
+  attachmentFile?: File | null;
+  tokenDistribution?: TokenDistributionEntry[];
 }
 
 export interface EventRegistrationData {
@@ -58,32 +68,34 @@ export async function addEvent(eventInput: NewEventInput): Promise<string> {
       const uniqueFileName = `event_${timestamp}_${eventInput.attachmentFile.name.replace(/\s+/g, '_')}`;
       const storagePath = `event_attachments/${uniqueFileName}`;
       const storageRef = ref(storage, storagePath);
-      
+
       const snapshot = await uploadBytes(storageRef, eventInput.attachmentFile);
       imageUrl = await getDownloadURL(snapshot.ref);
       imagePath = storagePath;
     } catch (uploadError: any) {
       console.error("[eventService.addEvent] Error uploading event attachment: ", uploadError);
       if (uploadError.code === 'storage/unauthorized' || (uploadError.message && uploadError.message.includes('storage/unauthorized'))) {
-        // Throw a specific, user-friendly error that the client can catch and display
         throw new Error(`Failed to add event: Firebase Storage permission denied for attachment. Please check Storage security rules for 'event_attachments/'.`);
       } else {
-        // For other storage errors
         throw new Error(`Failed to upload event attachment: ${uploadError.message || 'Unknown storage error'}`);
       }
     }
   }
 
-  // If we reach here and imageUrl is undefined (meaning an upload was attempted but failed and an error was thrown),
-  // the function would have already exited. If no attachmentFile was provided, imageUrl will be undefined, which is fine.
   try {
-    const dataToSave: Omit<EventData, 'id' | 'createdAt' | 'eventDate' | 'lastUpdated'> & { createdAt: Timestamp, eventDate: Timestamp } = {
+    const dataToSave: Omit<EventData, 'id' | 'createdAt' | 'eventDate' | 'lastUpdated' | 'participantCount'> & {
+      createdAt: Timestamp;
+      eventDate: Timestamp;
+      participantCount: number;
+      tokenDistribution: TokenDistributionEntry[];
+    } = {
       title: eventInput.title,
       details: eventInput.details,
       eventDate: Timestamp.fromDate(eventInput.eventDate),
-      imageUrl: imageUrl || null, // Will be null if no file or if upload succeeded but somehow imageUrl is still undefined (should not happen with await)
+      imageUrl: imageUrl || null,
       imagePath: imagePath || null,
-      participantCount: 0, 
+      participantCount: 0,
+      tokenDistribution: eventInput.tokenDistribution || [],
       createdAt: serverTimestamp() as Timestamp,
     };
 
@@ -113,9 +125,10 @@ export async function getEvents(order: 'asc' | 'desc' = 'asc'): Promise<EventDat
         eventDate: data.eventDate as Timestamp,
         imageUrl: data.imageUrl || null,
         imagePath: data.imagePath || null,
-        participantCount: data.participantCount || 0, 
+        participantCount: data.participantCount || 0,
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
+        tokenDistribution: data.tokenDistribution || [],
       });
     });
     return events;
@@ -150,9 +163,10 @@ export async function getEventById(id: string): Promise<EventData | null> {
         eventDate: data.eventDate as Timestamp,
         imageUrl: data.imageUrl || null,
         imagePath: data.imagePath || null,
-        participantCount: data.participantCount || 0, 
+        participantCount: data.participantCount || 0,
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
+        tokenDistribution: data.tokenDistribution || [],
       } as EventData;
     } else {
       console.log(`No event document found with ID: ${id}`);
@@ -191,33 +205,37 @@ async function deleteEventAttachment(filePath?: string | null): Promise<void> {
 export async function updateEvent(
   eventId: string,
   updates: UpdateEventInput,
-  currentEventData: EventData | null 
+  currentEventData: EventData | null
 ): Promise<void> {
   const eventDocRef = doc(db, "events", eventId);
-  const dataToUpdate: Partial<Omit<EventData, 'id' | 'createdAt' | 'participantCount'>> & { lastUpdated: Timestamp } = { 
+  const dataToUpdate: Partial<Omit<EventData, 'id' | 'createdAt' | 'participantCount'>> & { lastUpdated: Timestamp } = {
     lastUpdated: serverTimestamp() as Timestamp,
   };
 
   if (updates.title !== undefined) dataToUpdate.title = updates.title;
   if (updates.details !== undefined) dataToUpdate.details = updates.details;
   if (updates.eventDate !== undefined) dataToUpdate.eventDate = Timestamp.fromDate(updates.eventDate);
+  if (updates.tokenDistribution !== undefined) {
+    dataToUpdate.tokenDistribution = updates.tokenDistribution;
+  }
+
 
   try {
-    if (updates.attachmentFile === null) { 
+    if (updates.attachmentFile === null) {
       if (currentEventData?.imagePath) {
         await deleteEventAttachment(currentEventData.imagePath);
       }
       dataToUpdate.imageUrl = null;
       dataToUpdate.imagePath = null;
-    } else if (updates.attachmentFile) { 
-      if (currentEventData?.imagePath) { 
+    } else if (updates.attachmentFile) {
+      if (currentEventData?.imagePath) {
         await deleteEventAttachment(currentEventData.imagePath);
       }
       const timestamp = new Date().getTime();
       const uniqueFileName = `event_${timestamp}_${updates.attachmentFile.name.replace(/\s+/g, '_')}`;
       const storagePath = `event_attachments/${uniqueFileName}`;
       const newStorageRef = ref(storage, storagePath);
-      
+
       const snapshot = await uploadBytes(newStorageRef, updates.attachmentFile);
       dataToUpdate.imageUrl = await getDownloadURL(snapshot.ref);
       dataToUpdate.imagePath = storagePath;
@@ -228,7 +246,7 @@ export async function updateEvent(
   } catch (error) {
     console.error(`[eventService.updateEvent] Error updating event ${eventId}:`, error);
     if (error instanceof Error) {
-      const isStoragePermissionError = error.message.includes('storage/unauthorized') || 
+      const isStoragePermissionError = error.message.includes('storage/unauthorized') ||
                                      (error as any).code?.includes('storage/unauthorized') ||
                                      error.message.includes('Firebase Storage permission denied');
       if (isStoragePermissionError && (updates.attachmentFile || updates.attachmentFile === null || currentEventData?.imagePath)) {
@@ -247,15 +265,13 @@ export async function deleteEvent(eventId: string): Promise<void> {
     const eventSnap = await getDoc(eventDocRef);
     if (!eventSnap.exists()) {
       console.warn(`[eventService.deleteEvent] Event ${eventId} not found for deletion.`);
-      return; 
+      return;
     }
     const eventData = eventSnap.data() as EventData;
 
     if (eventData.imagePath) {
       await deleteEventAttachment(eventData.imagePath);
     }
-    // Also delete registrations subcollection - this requires listing and deleting each doc or using Firebase CLI/Cloud Functions for bulk delete
-    // For client-side, we'll skip deleting subcollections for now due to complexity. Best handled by a Cloud Function on event delete.
     await deleteDoc(eventDocRef);
     console.log(`[eventService.deleteEvent] Event ${eventId} deleted successfully.`);
   } catch (error) {
@@ -318,7 +334,7 @@ export async function checkIfUserRegistered(eventId: string, userId: string): Pr
     return docSnap.exists();
   } catch (error) {
     console.error(`[eventService.checkIfUserRegistered] Error checking registration for user ${userId}, event ${eventId}:`, error);
-    return false; 
+    return false;
   }
 }
 
@@ -331,29 +347,28 @@ export async function getEventRegistrationsWithDetails(eventId: string): Promise
     const enrichedRegistrations: EnrichedEventRegistrationData[] = [];
 
     for (const regDoc of registrationsSnapshot.docs) {
-      const registrationData = regDoc.data() as Omit<EventRegistrationData, 'id'>; // Raw data from Firestore
-      
-      let userProfileDisplayName: string | null = registrationData.name; // Default to registration name
+      const registrationData = regDoc.data() as Omit<EventRegistrationData, 'id'>;
+
+      let userProfileDisplayName: string | null = registrationData.name;
       let userProfileAvatarUrl: string | null = null;
 
-      // Attempt to fetch user profile for avatar and potentially more accurate display name
       const userProfileDocRef = doc(db, "userProfiles", registrationData.userId);
       const userProfileSnap = await getDoc(userProfileDocRef);
       if (userProfileSnap.exists()) {
         const profile = userProfileSnap.data() as UserProfileData;
-        userProfileDisplayName = profile.displayName || registrationData.name; // Prefer profile display name if available
+        userProfileDisplayName = profile.displayName || registrationData.name;
         userProfileAvatarUrl = profile.photoURL || null;
       }
 
       enrichedRegistrations.push({
-        id: regDoc.id, // Add the registration document ID
+        id: regDoc.id,
         userId: registrationData.userId,
         userEmail: registrationData.userEmail,
-        name: registrationData.name, // This is the name provided during registration
+        name: registrationData.name,
         mobileNumber: registrationData.mobileNumber,
         wardNo: registrationData.wardNo,
         registeredAt: registrationData.registeredAt,
-        userProfileDisplayName, // This could be the same as `name` or from the user's profile
+        userProfileDisplayName,
         userProfileAvatarUrl,
       });
     }

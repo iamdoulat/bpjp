@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert"
-import { getEventById, type EventData } from '@/services/eventService';
-import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Edit, Users } from "lucide-react" // Added Users icon
+import { getEventById, type EventData, type TokenDistributionEntry } from '@/services/eventService';
+import { Loader2, AlertCircle, ArrowLeft, CalendarDays, FileText, Edit, Users, Gift } from "lucide-react"
 import { Timestamp } from "firebase/firestore"
+import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 
 function formatDisplayDateTime(date: Timestamp | Date | undefined): string {
   if (!date) return "N/A";
@@ -73,12 +74,18 @@ export default function ViewEventPage() {
             <CardContent className="space-y-6">
               <Skeleton className="h-6 w-1/2 mb-1" />
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-48 w-full rounded-md" /> 
+              <Skeleton className="h-48 w-full rounded-md" />
               <div className="space-y-1">
                  <Skeleton className="h-4 w-1/3" />
                  <Skeleton className="h-6 w-2/3" />
               </div>
-              <Skeleton className="h-6 w-1/4" /> {/* For participant count skeleton */}
+              <Skeleton className="h-6 w-1/4" />
+              {/* Skeleton for token distribution table */}
+              <div className="space-y-2 mt-4">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
             </CardContent>
             <CardFooter>
               <Skeleton className="h-10 w-32" />
@@ -106,7 +113,7 @@ export default function ViewEventPage() {
       </AppShell>
     );
   }
-  
+
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
@@ -122,12 +129,12 @@ export default function ViewEventPage() {
           <CardContent className="p-4 md:p-6 space-y-6">
             {event.imageUrl ? (
               <div className="relative aspect-[16/9] w-full rounded-md overflow-hidden border">
-                <Image 
-                    src={event.imageUrl} 
-                    alt={event.title} 
-                    layout="fill" 
-                    objectFit="cover" 
-                    data-ai-hint="event poster conference" 
+                <Image
+                    src={event.imageUrl}
+                    alt={event.title}
+                    layout="fill"
+                    objectFit="cover"
+                    data-ai-hint="event poster conference"
                     priority
                 />
               </div>
@@ -152,7 +159,7 @@ export default function ViewEventPage() {
                   <p className="text-lg font-semibold text-foreground">{event.participantCount || 0}</p>
                 </div>
             </div>
-            
+
             <div className="space-y-1">
               <div className="flex items-center text-sm text-muted-foreground">
                 <FileText className="h-4 w-4 mr-2 text-primary" />
@@ -162,6 +169,44 @@ export default function ViewEventPage() {
                 {event.details}
               </p>
             </div>
+
+            {/* Token Distribution Section */}
+            {event.tokenDistribution && event.tokenDistribution.length > 0 && (
+              <div className="space-y-2 pt-4 border-t">
+                 <div className="flex items-center text-md font-semibold text-foreground mb-2">
+                    <Gift className="h-5 w-5 mr-2 text-primary" />
+                    Token Distribution:
+                  </div>
+                <div className="border rounded-md overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">User Name</TableHead>
+                        <TableHead className="text-right text-xs">Token Quantity</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {event.tokenDistribution.map((dist, index) => (
+                        <TableRow key={dist.userId || index}>
+                          <TableCell className="text-sm py-2">{dist.userName}</TableCell>
+                          <TableCell className="text-right text-sm py-2">{dist.tokenQty}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+            {(!event.tokenDistribution || event.tokenDistribution.length === 0) && (
+                 <div className="space-y-1 pt-4 border-t">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                        <Gift className="h-4 w-4 mr-2 text-primary" />
+                        Token Distribution:
+                    </div>
+                    <p className="text-foreground text-sm">No tokens assigned for this event.</p>
+                 </div>
+            )}
+
           </CardContent>
           <CardFooter className="bg-muted/30 p-4 md:p-6 border-t">
             <Button onClick={() => router.push(`/admin/events/edit/${eventId}`)}>
