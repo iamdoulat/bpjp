@@ -394,4 +394,3 @@ export async function getEventRegistrationsWithDetails(eventId: string): Promise
     throw new Error('An unknown error occurred while fetching event registrations.');
   }
 }
-
