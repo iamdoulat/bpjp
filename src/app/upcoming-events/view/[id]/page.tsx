@@ -424,7 +424,11 @@ export default function PublicViewEventPage() {
                       <ShadCNTableFooter>
                         <TableRow>
                           <TableCell colSpan={2} className="text-right font-semibold text-sm">Total Token Distributed:</TableCell>
-                          <TableCell className="text-right font-bold text-lg text-primary">{totalTokensDistributed}</TableCell>
+                          <TableCell className="text-right">
+                            <span className="inline-block bg-green-600 text-white font-bold text-lg py-1 px-3 rounded-md">
+                              {totalTokensDistributed}
+                            </span>
+                          </TableCell>
                         </TableRow>
                       </ShadCNTableFooter>
                     </Table>
