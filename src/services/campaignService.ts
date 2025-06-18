@@ -47,14 +47,47 @@ export interface CampaignUpdateData {
 
 
 export async function addCampaign(campaignData: NewCampaignInputData): Promise<string> {
+  let uploadedImageUrl: string | undefined = undefined;
+  if (campaignData.campaignImageUrl && typeof campaignData.campaignImageUrl === 'object') { // This means it's a File object to upload
+    const file = campaignData.campaignImageUrl as File;
+    try {
+      const timestamp = new Date().getTime();
+      const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const uniqueFileName = `campaign_image_${timestamp}_${safeFileName}`;
+      const storagePath = `campaign_images/${uniqueFileName}`;
+      const storageRef = ref(storage, storagePath);
+      const snapshot = await uploadBytes(storageRef, file);
+      uploadedImageUrl = await getDownloadURL(snapshot.ref);
+    } catch (uploadError: any) {
+      console.error("[campaignService.addCampaign] Error uploading campaign image: ", uploadError);
+      if (uploadError.code === 'storage/unauthorized' || (uploadError.message && uploadError.message.includes('storage/unauthorized'))) {
+        throw new Error(`Failed to upload campaign image: Firebase Storage permission denied. 
+          Please verify:
+          1. You are logged in as an admin.
+          2. Your Firestore userProfile document has a field 'role' with the exact value 'admin'.
+          3. Your Firestore security rules allow reading your own userProfile document.
+          4. Your Firebase Storage security rules allow 'write' to 'campaign_images/' for admins (this check involves reading the userProfile). Path: ${uploadError.metadata?.fullPath || 'unknown'}`);
+      } else {
+        throw new Error(`Failed to upload campaign image: ${uploadError.message || 'Unknown storage error'}`);
+      }
+    }
+  } else if (typeof campaignData.campaignImageUrl === 'string') {
+    uploadedImageUrl = campaignData.campaignImageUrl; // It's already a URL, no upload needed
+  }
+
+
   try {
-    const dataWithTimestampAndCounters: Omit<CampaignData, 'id' | 'startDate' | 'endDate'> & { startDate: Timestamp, endDate: Timestamp, initialStatus: NewCampaignInputData["initialStatus"] } = {
-      ...campaignData,
+    const dataWithTimestampAndCounters: Omit<CampaignData, 'id' | 'startDate' | 'endDate'> & { startDate: Timestamp, endDate: Timestamp, initialStatus: NewCampaignInputData["initialStatus"], campaignImageUrl?: string } = {
+      campaignTitle: campaignData.campaignTitle,
+      description: campaignData.description,
+      goalAmount: campaignData.goalAmount,
       startDate: Timestamp.fromDate(campaignData.startDate),
       endDate: Timestamp.fromDate(campaignData.endDate),
+      organizerName: campaignData.organizerName,
+      campaignImageUrl: uploadedImageUrl, // Use the potentially uploaded URL
       raisedAmount: 0,
-      likeCount: 0, // Initialize likeCount
-      supportCount: 0, // Initialize supportCount
+      likeCount: 0,
+      supportCount: 0,
       createdAt: Timestamp.now(),
       initialStatus: campaignData.initialStatus,
     };
