@@ -31,7 +31,8 @@ import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card"
 import { addCampaign, type NewCampaignInputData } from '@/services/campaignService';
 import { Loader2, UploadCloud } from "lucide-react"
-import { uploadImageToStorage } from "@/lib/firebase";
+// uploadImageToStorage is not directly used here anymore, campaignService handles it.
+// import { uploadImageToStorage } from "@/lib/firebase"; 
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
 
 const newCampaignFormSchema = z.object({
@@ -114,17 +115,9 @@ export default function NewCampaignPage() {
 
   async function onSubmit(data: NewCampaignFormValues) {
     setIsSubmitting(true);
-    let uploadedImageUrl: string | undefined = undefined;
-
+    
     try {
-      if (data.campaignImageFile) {
-        const timestamp = new Date().getTime();
-        // Ensure the filename is somewhat unique and clean, though Storage path uniqueness matters more
-        const safeFileName = data.campaignImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const uniqueFileName = `campaign_image_${timestamp}_${safeFileName}`;
-        uploadedImageUrl = await uploadImageToStorage(data.campaignImageFile, `campaign_images/${uniqueFileName}`);
-      }
-
+      // campaignImageFile is already part of 'data' from the form due to form.setValue
       const campaignInput: NewCampaignInputData = {
         campaignTitle: data.campaignTitle,
         description: data.description,
@@ -133,7 +126,7 @@ export default function NewCampaignPage() {
         endDate: new Date(data.endDate as Date),
         organizerName: data.organizerName,
         initialStatus: data.initialStatus,
-        campaignImageUrl: uploadedImageUrl, // Use the uploaded image URL
+        campaignImageFile: data.campaignImageFile, // Pass the file to the service
       };
       const campaignId = await addCampaign(campaignInput);
       toast({
@@ -147,12 +140,14 @@ export default function NewCampaignPage() {
       console.error("Failed to save campaign:", error);
       let errorMessage = "An unexpected error occurred while creating the campaign.";
       if (error instanceof Error) {
-        if (error.message.includes("storage/unauthorized") || error.message.includes("Firebase Storage permission denied")) {
+        // Check if the error message already contains the detailed "Please verify:" guidance
+        if (error.message.includes("Please verify:")) {
+          errorMessage = error.message; // Use the detailed message from the service
+        } else if (error.message.includes("storage/unauthorized") || error.message.includes("Firebase Storage permission denied")) {
           errorMessage = "Failed to upload campaign image due to Firebase Storage permission issues. Please ensure your Firebase Storage security rules allow writes to the 'campaign_images/' path for authorized admin users.";
         } else if (error.message.includes("Missing or insufficient permissions")) {
            errorMessage = "Failed to save campaign data due to Firestore permission issues. Please check your Firestore security rules for the 'campaigns' collection.";
-        }
-        else {
+        } else {
           errorMessage = error.message;
         }
       }
@@ -160,7 +155,7 @@ export default function NewCampaignPage() {
         title: "Error Creating Campaign",
         description: errorMessage,
         variant: "destructive",
-        duration: 9000, // Longer duration for important error messages
+        duration: 12000, // Longer duration for important error messages with verification steps
       });
     } finally {
       setIsSubmitting(false);

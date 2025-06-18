@@ -1,7 +1,8 @@
 
 // src/services/campaignService.ts
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, getDoc, updateDoc, Timestamp, type DocumentData, type QueryDocumentSnapshot, runTransaction, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, Timestamp, type DocumentData, type QueryDocumentSnapshot, runTransaction, deleteDoc, writeBatch, ref as firestoreRef } from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // Correctly import from firebase/storage
 import { deleteImageFromStorage } from '@/lib/firebase'; // Import deleteImageFromStorage
 
 // Extended CampaignData to include raisedAmount, id, likeCount, and supportCount for display purposes
@@ -28,7 +29,8 @@ export interface NewCampaignInputData {
   goalAmount: number;
   startDate: Date;
   endDate: Date;
-  campaignImageUrl?: string;
+  campaignImageUrl?: string; // Can be File or existing URL string, service handles upload if File
+  campaignImageFile?: File; // Explicitly for file upload, used by forms
   organizerName?: string;
   initialStatus: "draft" | "upcoming" | "active"; // "completed" is not an initial status
 }
@@ -48,15 +50,17 @@ export interface CampaignUpdateData {
 
 export async function addCampaign(campaignData: NewCampaignInputData): Promise<string> {
   let uploadedImageUrl: string | undefined = undefined;
-  if (campaignData.campaignImageUrl && typeof campaignData.campaignImageUrl === 'object') { // This means it's a File object to upload
-    const file = campaignData.campaignImageUrl as File;
+
+  // Check if campaignImageFile is provided for upload
+  if (campaignData.campaignImageFile instanceof File) {
+    const file = campaignData.campaignImageFile;
     try {
       const timestamp = new Date().getTime();
       const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const uniqueFileName = `campaign_image_${timestamp}_${safeFileName}`;
       const storagePath = `campaign_images/${uniqueFileName}`;
-      const storageRef = ref(storage, storagePath);
-      const snapshot = await uploadBytes(storageRef, file);
+      const FsStorageRef = storageRef(storage, storagePath); // Use storageRef from firebase/storage
+      const snapshot = await uploadBytes(FsStorageRef, file);
       uploadedImageUrl = await getDownloadURL(snapshot.ref);
     } catch (uploadError: any) {
       console.error("[campaignService.addCampaign] Error uploading campaign image: ", uploadError);
@@ -72,7 +76,8 @@ export async function addCampaign(campaignData: NewCampaignInputData): Promise<s
       }
     }
   } else if (typeof campaignData.campaignImageUrl === 'string') {
-    uploadedImageUrl = campaignData.campaignImageUrl; // It's already a URL, no upload needed
+    // If campaignImageUrl is already a string, assume it's an existing URL and no upload is needed
+    uploadedImageUrl = campaignData.campaignImageUrl;
   }
 
 
