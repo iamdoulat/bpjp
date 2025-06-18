@@ -1,7 +1,8 @@
 
 // src/services/campaignService.ts
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, Timestamp, type DocumentData, type QueryDocumentSnapshot, runTransaction, deleteDoc, writeBatch } from 'firebase/firestore';
+import { deleteImageFromStorage } from '@/lib/firebase'; // Import deleteImageFromStorage
 
 // Extended CampaignData to include raisedAmount, id, likeCount, and supportCount for display purposes
 export interface CampaignData {
@@ -161,6 +162,57 @@ export async function updateCampaign(id: string, campaignData: CampaignUpdateDat
     throw new Error(`An unknown error occurred while updating campaign ${id}.`);
   }
 }
+
+// Function to delete a campaign
+export async function deleteCampaign(campaignId: string): Promise<void> {
+  if (!campaignId) {
+    throw new Error("Campaign ID is required to delete a campaign.");
+  }
+  const campaignDocRef = doc(db, "campaigns", campaignId);
+  try {
+    const campaignSnap = await getDoc(campaignDocRef);
+    if (!campaignSnap.exists()) {
+      console.warn(`Campaign ${campaignId} not found. Skipping deletion.`);
+      return;
+    }
+    const campaignData = campaignSnap.data() as CampaignData;
+
+    // Delete associated image from Firebase Storage if it exists
+    if (campaignData.campaignImageUrl && !campaignData.campaignImageUrl.includes('placehold.co')) {
+      // The deleteImageFromStorage function in firebase.ts handles checks for valid Firebase Storage URLs.
+      await deleteImageFromStorage(campaignData.campaignImageUrl);
+    }
+
+    // Delete the campaign document from Firestore
+    await deleteDoc(campaignDocRef);
+    console.log(`Campaign ${campaignId} and its associated image (if any) deleted successfully.`);
+
+    // Optionally, delete related subcollections like 'likes' and 'supports'
+    const likesColRef = collection(db, "campaigns", campaignId, "likes");
+    const supportsColRef = collection(db, "campaigns", campaignId, "supports");
+
+    const batch = writeBatch(db);
+    const likesSnapshot = await getDocs(likesColRef);
+    likesSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    const supportsSnapshot = await getDocs(supportsColRef);
+    supportsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    await batch.commit();
+    console.log(`Subcollections for campaign ${campaignId} (likes, supports) also deleted.`);
+
+  } catch (error) {
+    console.error(`Error deleting campaign ${campaignId}:`, error);
+    if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+         console.error(`[campaignService.deleteCampaign] FIREBASE PERMISSION_DENIED: Check Firestore security rules for deleting document 'campaigns/${campaignId}' and its subcollections/storage objects.`);
+      }
+      throw new Error(`Failed to delete campaign: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while deleting the campaign.');
+  }
+}
+
 
 // Type for reaction
 export type ReactionType = 'like' | 'support';

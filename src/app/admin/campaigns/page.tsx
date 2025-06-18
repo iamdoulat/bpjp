@@ -35,8 +35,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ClipboardList, Search, PlusCircle, MoreHorizontal, AlertCircle, Edit, Eye, Trash2 } from "lucide-react";
-import { getCampaigns, type CampaignData } from "@/services/campaignService"; // Assuming deleteCampaign will be added here
+import { ClipboardList, Search, PlusCircle, MoreHorizontal, AlertCircle, Edit, Eye, Trash2, Loader2 } from "lucide-react";
+import { getCampaigns, deleteCampaign, type CampaignData } from "@/services/campaignService"; 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +62,7 @@ export default function ManageCampaignsPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [campaignToDelete, setCampaignToDelete] = React.useState<CampaignData | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false); // Added deleting state
   const router = useRouter();
   const { toast } = useToast();
 
@@ -114,14 +115,14 @@ export default function ManageCampaignsPage() {
 
   const handleDeleteCampaign = async () => {
     if (!campaignToDelete || !campaignToDelete.id) return;
+    setIsDeleting(true); // Start loading
     try {
-      // Placeholder for actual delete logic
-      // await deleteCampaign(campaignToDelete.id); 
+      await deleteCampaign(campaignToDelete.id); 
       toast({
-        title: "Campaign Deleted (Simulated)",
-        description: `Campaign "${campaignToDelete.campaignTitle}" would have been deleted.`,
+        title: "Campaign Deleted",
+        description: `Campaign "${campaignToDelete.campaignTitle}" has been successfully deleted.`,
       });
-      setCampaigns(prev => prev.filter(c => c.id !== campaignToDelete.id)); // Optimistic UI update
+      setCampaigns(prev => prev.filter(c => c.id !== campaignToDelete.id));
       setCampaignToDelete(null);
     } catch (e) {
       console.error("Failed to delete campaign:", e);
@@ -131,6 +132,8 @@ export default function ManageCampaignsPage() {
         variant: "destructive",
       });
       setCampaignToDelete(null);
+    } finally {
+      setIsDeleting(false); // Stop loading
     }
   };
 
@@ -230,17 +233,17 @@ export default function ManageCampaignsPage() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" disabled={isDeleting}>
                               <MoreHorizontal className="h-4 w-4" />
                               <span className="sr-only">Campaign actions for {campaign.campaignTitle}</span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => router.push(`/admin/campaigns/view/${campaign.id}`)}>
+                            <DropdownMenuItem onSelect={() => router.push(`/admin/campaigns/view/${campaign.id}`)} disabled={isDeleting}>
                               <Eye className="mr-2 h-4 w-4" />
                               View
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => router.push(`/admin/campaigns/edit/${campaign.id}`)}>
+                            <DropdownMenuItem onSelect={() => router.push(`/admin/campaigns/edit/${campaign.id}`)} disabled={isDeleting}>
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
@@ -248,6 +251,7 @@ export default function ManageCampaignsPage() {
                             <DropdownMenuItem 
                               className="text-destructive focus:text-destructive focus:bg-destructive/10" 
                               onSelect={() => setCampaignToDelete(campaign)}
+                              disabled={isDeleting}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete
@@ -271,15 +275,18 @@ export default function ManageCampaignsPage() {
               <AlertDialogTitle>Are you sure you want to delete this campaign?</AlertDialogTitle>
               <AlertDialogDescription>
                 This action cannot be undone. This will permanently delete the campaign
-                <span className="font-semibold"> "{campaignToDelete.campaignTitle}"</span>.
+                <span className="font-semibold"> "{campaignToDelete.campaignTitle}"</span> and its associated image from storage.
+                Any reaction data (likes/supports) for this campaign will also be deleted.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setCampaignToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setCampaignToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteCampaign}
                 className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                disabled={isDeleting}
               >
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -289,3 +296,4 @@ export default function ManageCampaignsPage() {
     </AppShell>
   );
 }
+
