@@ -322,7 +322,7 @@ export default function PublicViewEventPage() {
         </Button>
         <Card className="shadow-xl max-w-3xl mx-auto">
           <CardHeader className="bg-muted/30 p-4 md:p-6 border-b">
-            <CardTitle className="text-2xl md:text-3xl font-headline">{event.title}</CardTitle>
+            <CardTitle className="text-2xl font-headline">{event.title}</CardTitle>
             <CardDescription className="text-sm md:text-base">Event Details</CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-6">
