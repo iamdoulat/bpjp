@@ -37,8 +37,9 @@ export async function uploadImageToStorage(file: Blob | File, path: string): Pro
 }
 
 export async function deleteImageFromStorage(imageUrl: string): Promise<void> {
-  if (!imageUrl || !imageUrl.startsWith('gs://') && !imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
-    console.warn("Invalid or non-Firebase Storage URL provided for deletion:", imageUrl);
+  // Check if the URL is a Firebase Storage URL. If not, it might be a placeholder or external URL.
+  if (!imageUrl || (!imageUrl.startsWith('gs://') && !imageUrl.includes('firebasestorage.googleapis.com'))) {
+    console.warn("Skipping deletion: URL is not a Firebase Storage URL or is invalid.", imageUrl);
     return;
   }
   try {
