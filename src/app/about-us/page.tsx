@@ -8,7 +8,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck, FileText } from "lucide-react";
+import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck, FileText, Loader2 } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import type { OrganizationSettingsData } from "@/services/organizationSettingsService";
 import { getAdvisoryBoardMembers, type AdvisoryBoardMemberData } from "@/services/advisoryBoardService"; // Import service
@@ -165,7 +165,7 @@ export default function AboutUsPage() {
               {isLoadingAdvisory ? (
                  <div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : advisoryBoardMembers.length > 0 ? (
-                <Carousel opts={{ align: "start", loop: advisoryBoardMembers.length > 3 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto">
+                <Carousel opts={{ align: "start", loop: advisoryBoardMembers.length > 2 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto">
                   <CarouselContent className="-ml-4">
                     {advisoryBoardMembers.map((member) => (
                       <CarouselItem key={member.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
@@ -204,3 +204,4 @@ const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (<div clas
 
 interface LeadershipProfileProps { name: string; title: string; imageUrl?: string | null; mobileNumber?: string | null; dataAiHint?: string; }
 const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imageUrl, mobileNumber, dataAiHint }) => (<div className="flex flex-col items-center text-center p-4 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"><div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg"><Image src={imageUrl || `https://placehold.co/150x150.png?text=${name ? name.charAt(0) : 'L'}`} alt={name} layout="fill" objectFit="cover" data-ai-hint={dataAiHint || "person portrait"}/></div><h3 className="text-xl font-semibold text-foreground">{name}</h3><p className="text-muted-foreground">{title}</p>{mobileNumber && (<div className="flex items-center mt-1.5 text-sm text-muted-foreground"><Phone className="h-4 w-4 mr-1.5 text-green-600/80" />{mobileNumber}</div>)}</div>);
+

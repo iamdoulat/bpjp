@@ -116,7 +116,7 @@ export async function getAdvisoryBoardMembers(): Promise<AdvisoryBoardMemberData
   } catch (error) {
     console.error("Error fetching advisory board members:", error);
     if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
-        console.warn("Ensure Firestore rules allow reading the 'advisoryBoardMembers' subcollection.");
+        console.warn("Ensure Firestore rules allow reading the 'advisoryBoardMembers' subcollection under 'siteContent/organizationDetails'.");
     }
     return []; // Return empty array on error to prevent page crashes
   }
