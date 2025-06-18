@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Megaphone, UserCircle2, ShieldCheck, Users,
   CreditCard, ClipboardList, PlusCircle, LogIn, UserPlus as UserPlusIcon,
   History as HistoryIcon, ReceiptText, FilePlus2, CalendarCheck2, CalendarPlus,
-  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays, Vote, Gavel // Added Vote and Gavel
+  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays, Vote, Gavel
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -29,7 +29,7 @@ const generalNavLinks: NavItem[] = [
   { href: '/donors-list', label: 'Donors List', icon: Users },
   { href: '/expenses/history', label: 'Expenses History', icon: ReceiptText },
   { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2 },
-  { href: '/election-vote', label: 'Election & Vote', icon: Vote }, // New user link
+  { href: '/election-vote', label: 'Election & Vote', icon: Vote },
   { href: '/our-mission', label: 'Our Mission', icon: Target },
   { href: '/about-us', label: 'About Us', icon: Info },
   { href: '/profile', label: 'Profile', icon: UserCircle2 },
@@ -37,15 +37,12 @@ const generalNavLinks: NavItem[] = [
 
 const adminNavLinks: NavItem[] = [
   { href: '/admin/overview', label: 'Admin Overview', icon: ShieldCheck },
-  { href: '/new-campaign', label: 'Create Campaign', icon: PlusCircle },
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList },
   { href: '/admin/payments', label: 'Track Payments', icon: CreditCard },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
-  { href: '/admin/expenses/create', label: 'Create Expense', icon: FilePlus2 },
   { href: '/expenses/history-list', label: 'Expenses History List', icon: ListChecks },
-  { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus },
   { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
-  { href: '/admin/election-vote', label: 'Manage Election & Vote', icon: Gavel }, // New admin link
+  { href: '/admin/election-vote', label: 'Manage Election & Vote', icon: Gavel },
   { href: '/admin/mission/edit', label: 'Manage Mission Page', icon: FileEdit },
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
 ];
@@ -59,12 +56,6 @@ const publicPagesForUnauthenticated: NavItem[] = [
   { href: '/election-vote', label: 'Election & Vote', icon: Vote },
 ];
 
-// authActionPages not actively used in rendering logic below, can be removed if not planned for other use
-// const authActionPages: NavItem[] = [
-//   { href: '/login', label: 'Login', icon: LogIn },
-//   { href: '/signup', label: 'Sign Up', icon: UserPlusIcon },
-// ];
-
 export function SidebarNavItems() {
   const pathname = usePathname();
   const { user, loading, isAdmin } = useAuth(); 
@@ -72,7 +63,7 @@ export function SidebarNavItems() {
   if (loading) {
     return (
       <SidebarMenu>
-        {[...Array(18)].map((_, i) => ( // Increased skeleton items
+        {[...Array(18)].map((_, i) => (
           <SidebarMenuItem key={i}>
              <div className="flex items-center gap-2 p-2 w-full">
                 <Skeleton className="h-6 w-6 rounded" />
@@ -93,12 +84,10 @@ export function SidebarNavItems() {
       adminNavLinks.forEach(item => adminItemsToRender.push(item));
     }
   } else {
-    // For unauthenticated users, always add the login page as the first item if not already on login/signup
     if (pathname !== '/login' && pathname !== '/signup') {
       itemsToRender.push({ href: '/login', label: 'Login', icon: LogIn });
     }
     publicPagesForUnauthenticated.forEach(item => itemsToRender.push(item));
-    // Only add signup if not on login/signup
      if (pathname !== '/login' && pathname !== '/signup') {
       itemsToRender.push({ href: '/signup', label: 'Sign Up', icon: UserPlusIcon });
     }
