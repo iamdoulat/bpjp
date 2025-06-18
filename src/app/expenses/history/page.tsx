@@ -93,7 +93,7 @@ export default function ExpensesHistoryPage() {
               </p>
             </div>
           </div>
-          <div className="w-full md:w-auto md:min-w-[280px] md:max-w-xs mt-4 md:mt-0">
+          <div className="w-full md:w-auto mt-4 md:mt-0">
             <PlatformDonationsCard />
           </div>
         </div>
@@ -143,21 +143,21 @@ export default function ExpensesHistoryPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16 text-xs">No.</TableHead>
-                  <TableHead className="text-xs">Expense Name</TableHead>
-                  <TableHead className="text-right text-xs">Amount</TableHead>
-                  <TableHead className="text-xs">Date Recorded</TableHead>
-                  <TableHead className="w-24 text-center text-xs">Attachment</TableHead>
+                  <TableHead className="w-16 text-xs px-2 sm:px-4 py-3">No.</TableHead>
+                  <TableHead className="text-xs px-2 sm:px-4 py-3">Expense Name</TableHead>
+                  <TableHead className="text-right text-xs px-2 sm:px-4 py-3">Amount</TableHead>
+                  <TableHead className="text-xs px-2 sm:px-4 py-3">Date Recorded</TableHead>
+                  <TableHead className="w-24 text-center text-xs px-2 sm:px-4 py-3">Attachment</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedExpenses.map((expense, index) => (
                   <TableRow key={expense.id}>
-                    <TableCell className="text-xs">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
-                    <TableCell className="font-medium text-sm truncate max-w-xs sm:max-w-sm md:max-w-md">{expense.name}</TableCell>
-                    <TableCell className="text-right font-medium text-sm">{formatCurrency(expense.amount)}</TableCell>
-                    <TableCell className="text-xs">{formatDisplayDateTime(expense.createdAt)}</TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-xs px-2 sm:px-4 py-3">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
+                    <TableCell className="font-medium text-sm truncate max-w-xs sm:max-w-sm md:max-w-md px-2 sm:px-4 py-3">{expense.name}</TableCell>
+                    <TableCell className="text-right font-medium text-sm px-2 sm:px-4 py-3">{formatCurrency(expense.amount)}</TableCell>
+                    <TableCell className="text-xs px-2 sm:px-4 py-3">{formatDisplayDateTime(expense.createdAt)}</TableCell>
+                    <TableCell className="text-center px-2 sm:px-4 py-3">
                       {expense.attachmentUrl ? (
                         <Button variant="outline" size="icon" className="h-7 w-7" asChild>
                           <a href={expense.attachmentUrl} target="_blank" rel="noopener noreferrer" title="Download Attachment">
