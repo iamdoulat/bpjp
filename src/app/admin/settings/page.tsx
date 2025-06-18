@@ -21,6 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Settings, AlertCircle, Users, PlusCircle, Edit, Trash2 } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
@@ -41,10 +43,10 @@ import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
+  AlertDialogContent as ShadCNAlertDialogContentUI,
   AlertDialogDescription as ShadCNAlertDialogDescriptionUI,
-  AlertDialogFooter,
-  AlertDialogHeader,
+  AlertDialogFooter as ShadCNAlertDialogFooterUI,
+  AlertDialogHeader as ShadCNAlertDialogHeaderUI,
   AlertDialogTitle as ShadCNAlertDialogTitleUI,
 } from "@/components/ui/alert-dialog";
 
@@ -411,75 +413,80 @@ export default function AdminSettingsPage() {
                 <div className="space-y-4 p-4 border rounded-md"><h3 className="text-lg font-medium">President Information</h3><FormField control={orgForm.control} name="presidentName" render={({ field }) => (<FormItem><FormLabel>President's Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/><FormField control={orgForm.control} name="presidentMobileNumber" render={({ field }) => (<FormItem><FormLabel>President's Mobile Number (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/><FormItem><FormLabel htmlFor="presidentImageFile">President's Picture</FormLabel>{presidentPreview && (<div className="mt-2 mb-2 w-32 h-32 relative rounded-md overflow-hidden border"><Image src={presidentPreview} alt="President preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}<FormControl><Input id="presidentImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handlePresidentFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={presidentFileInputRef}/></FormControl><FormDescription>Upload a picture (150x150 recommended).</FormDescription><FormMessage>{orgForm.formState.errors.presidentImageFile?.message as React.ReactNode}</FormMessage></FormItem></div>
                 <div className="space-y-4 p-4 border rounded-md"><h3 className="text-lg font-medium">General Secretary Information</h3><FormField control={orgForm.control} name="secretaryName" render={({ field }) => (<FormItem><FormLabel>General Secretary's Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/><FormField control={orgForm.control} name="secretaryMobileNumber" render={({ field }) => (<FormItem><FormLabel>General Secretary's Mobile Number (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/><FormItem><FormLabel htmlFor="secretaryImageFile">General Secretary's Picture</FormLabel>{secretaryPreview && (<div className="mt-2 mb-2 w-32 h-32 relative rounded-md overflow-hidden border"><Image src={secretaryPreview} alt="Secretary preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}<FormControl><Input id="secretaryImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleSecretaryFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={secretaryFileInputRef}/></FormControl><FormDescription>Upload a picture (150x150 recommended).</FormDescription><FormMessage>{orgForm.formState.errors.secretaryImageFile?.message as React.ReactNode}</FormMessage></FormItem></div>
                 
-                {/* Advisory Board Configuration Section */}
-                <div className="space-y-6 p-4 border rounded-md mt-8">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-6 w-6 text-primary" />
-                    <h3 className="text-xl font-semibold text-foreground">Advisory Board Configuration</h3>
-                  </div>
-                  <FormDescription>Manage the members of your organization's advisory board. This information will be displayed on the "About Us" page.</FormDescription>
-
-                  {/* Add New Member Form */}
-                  <Card className="bg-muted/20">
-                    <CardHeader><CardTitle className="text-lg">Add New Advisory Member</CardTitle></CardHeader>
-                    <CardContent>
-                      <Form {...addAdvisoryMemberForm}>
-                        <form onSubmit={addAdvisoryMemberForm.handleSubmit(onAddAdvisoryMemberSubmit)} className="space-y-4">
-                          <FormField control={addAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Member Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
-                          <FormField control={addAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Member Title</FormLabel><FormControl><Input placeholder="e.g., Chief Strategic Advisor" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
-                          <FormItem>
-                            <FormLabel htmlFor="newAdvisoryMemberImageFile">Member Picture</FormLabel>
-                            {newAdvisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={newAdvisoryMemberImagePreview} alt="New member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
-                            <FormControl><Input id="newAdvisoryMemberImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'new')} className="block w-full text-sm" disabled={isAddingAdvisoryMember} ref={newAdvisoryMemberFileInputRef}/></FormControl>
-                            <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
-                            <FormMessage>{addAdvisoryMemberForm.formState.errors.imageFile?.message as React.ReactNode}</FormMessage>
-                          </FormItem>
-                          <Button type="submit" disabled={isAddingAdvisoryMember || !addAdvisoryMemberForm.formState.isValid}>
-                            {isAddingAdvisoryMember ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlusCircle className="mr-2 h-4 w-4" />} Add Member
-                          </Button>
-                        </form>
-                      </Form>
-                    </CardContent>
-                  </Card>
-
-                  {/* List Existing Members */}
-                  <div className="mt-6">
-                    <h4 className="text-md font-medium mb-2">Current Advisory Board Members</h4>
-                    {isLoadingAdvisoryMembers ? (
-                      <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
-                    ) : advisoryMembers.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No advisory board members added yet.</p>
-                    ) : (
-                      <ul className="space-y-3">
-                        {advisoryMembers.map(member => (
-                          <li key={member.id} className="flex items-center justify-between p-3 border rounded-md bg-card">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={member.imageUrl || `https://placehold.co/40x40.png?text=${member.name.charAt(0)}`} alt={member.name} data-ai-hint="person portrait"/>
-                                <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium text-sm">{member.name}</p>
-                                <p className="text-xs text-muted-foreground">{member.title}</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditAdvisoryMemberDialog(member)}><Edit className="h-4 w-4" /></Button>
-                              <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => confirmDeleteAdvisoryMember(member)}><Trash2 className="h-4 w-4" /></Button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-
+                {/* Main Form Submit Button */}
                 <Button type="submit" className="w-full md:w-auto" disabled={isSubmittingOrgSettings || isLoadingOrgData || (!orgForm.formState.isDirty && !orgForm.watch('presidentImageFile') && !orgForm.watch('secretaryImageFile') && !orgForm.watch('coverImageFile')) || !orgForm.formState.isValid}>
                   {isSubmittingOrgSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   {isSubmittingOrgSettings ? "Saving Settings..." : "Save All Organization Settings"}
                 </Button>
               </form>
             </Form>
+
+            {/* Advisory Board Configuration Section - INDEPENDENT of the main form */}
+            <div className="space-y-6 p-4 border rounded-md mt-8">
+              <div className="flex items-center gap-2">
+                <Users className="h-6 w-6 text-primary" />
+                <h3 className="text-xl font-semibold text-foreground">Advisory Board Configuration</h3>
+              </div>
+              <FormDescription>Manage the members of your organization's advisory board. This information will be displayed on the "About Us" page.</FormDescription>
+
+              {/* Add New Member Form */}
+              <Card className="bg-muted/20">
+                <CardHeader><CardTitle className="text-lg">Add New Advisory Member</CardTitle></CardHeader>
+                <CardContent>
+                  <Form {...addAdvisoryMemberForm}>
+                    <div className="space-y-4"> {/* Replaced <form> with <div> */}
+                      <FormField control={addAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Member Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
+                      <FormField control={addAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Member Title</FormLabel><FormControl><Input placeholder="e.g., Chief Strategic Advisor" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
+                      <FormItem>
+                        <FormLabel htmlFor="newAdvisoryMemberImageFile">Member Picture</FormLabel>
+                        {newAdvisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={newAdvisoryMemberImagePreview} alt="New member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
+                        <FormControl><Input id="newAdvisoryMemberImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'new')} className="block w-full text-sm" disabled={isAddingAdvisoryMember} ref={newAdvisoryMemberFileInputRef}/></FormControl>
+                        <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
+                        <FormMessage>{addAdvisoryMemberForm.formState.errors.imageFile?.message as React.ReactNode}</FormMessage>
+                      </FormItem>
+                      <Button 
+                        type="button"  // Changed from submit to button
+                        onClick={addAdvisoryMemberForm.handleSubmit(onAddAdvisoryMemberSubmit)} // Added onClick handler
+                        disabled={isAddingAdvisoryMember || !addAdvisoryMemberForm.formState.isValid}
+                      >
+                        {isAddingAdvisoryMember ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlusCircle className="mr-2 h-4 w-4" />} Add Member
+                      </Button>
+                    </div> {/* Closing <div> that replaced <form> */}
+                  </Form>
+                </CardContent>
+              </Card>
+
+              {/* List Existing Members */}
+              <div className="mt-6">
+                <h4 className="text-md font-medium mb-2">Current Advisory Board Members</h4>
+                {isLoadingAdvisoryMembers ? (
+                  <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+                ) : advisoryMembers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No advisory board members added yet.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {advisoryMembers.map(member => (
+                      <li key={member.id} className="flex items-center justify-between p-3 border rounded-md bg-card">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={member.imageUrl || `https://placehold.co/40x40.png?text=${member.name.charAt(0)}`} alt={member.name} data-ai-hint="person portrait"/>
+                            <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{member.name}</p>
+                            <p className="text-xs text-muted-foreground">{member.title}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditAdvisoryMemberDialog(member)}><Edit className="h-4 w-4" /></Button>
+                          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => confirmDeleteAdvisoryMember(member)}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
