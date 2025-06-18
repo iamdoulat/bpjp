@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
-import { Gavel, PlusCircle, Settings, ListChecks, Info } from "lucide-react";
+import { Gavel, PlusCircle, Settings, ListChecks, Info, Users } from "lucide-react"; // Added Users icon
 
 export default function ManageElectionVotePage() {
   return (
@@ -95,3 +95,4 @@ export default function ManageElectionVotePage() {
     </AppShell>
   );
 }
+
