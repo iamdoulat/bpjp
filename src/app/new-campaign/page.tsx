@@ -148,7 +148,7 @@ export default function NewCampaignPage() {
       let errorMessage = "An unexpected error occurred while creating the campaign.";
       if (error instanceof Error) {
         if (error.message.includes("storage/unauthorized") || error.message.includes("Firebase Storage permission denied")) {
-          errorMessage = "Failed to upload campaign image due to Firebase Storage permission issues. Please ensure your Firebase Storage security rules allow writes to the 'campaign_images/' path for authorized users (e.g., admins).";
+          errorMessage = "Failed to upload campaign image due to Firebase Storage permission issues. Please ensure your Firebase Storage security rules allow writes to the 'campaign_images/' path for authorized admin users.";
         } else if (error.message.includes("Missing or insufficient permissions")) {
            errorMessage = "Failed to save campaign data due to Firestore permission issues. Please check your Firestore security rules for the 'campaigns' collection.";
         }

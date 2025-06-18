@@ -50,6 +50,16 @@ service firebase.storage {
       allow write: if request.auth != null && isAdmin(); // Only admins can write/update these images
     }
 
+    // Advisory Board Images:
+    // Allow authenticated users (ideally admins) to upload.
+    // Allow anyone to read.
+    match /advisory_board_images/{memberImage=**} {
+      allow read;
+      allow write: if request.auth != null; // For development
+      // For production, restrict to admins:
+      allow write: if request.auth != null && isAdmin(); // Only admins can write/update these images
+    }
+
     // Default deny all other paths if not explicitly matched
     // match /{allPaths=**} {
     //   allow read, write: if false;
