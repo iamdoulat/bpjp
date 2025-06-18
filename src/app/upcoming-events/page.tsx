@@ -10,11 +10,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarClock, ServerCrash, Search, ChevronLeft, ChevronRight, Eye, Activity, CheckCircle2 } from "lucide-react"; // Added Activity, CalendarClock, CheckCircle2
+import { CalendarClock, ServerCrash, Search, ChevronLeft, ChevronRight, Eye, Activity, CheckCircle2 } from "lucide-react";
 import { getEvents, type EventData } from "@/services/eventService";
 import { Timestamp } from "firebase/firestore";
 
-const EVENTS_PER_PAGE = 3; // Adjusted for potentially more sections
+const EVENTS_PER_PAGE = 3;
 
 function formatDisplayDate(date: Timestamp | Date | undefined) {
   if (!date) return "N/A";
@@ -46,35 +46,21 @@ export default function EventsPage() {
       setLoading(true);
       setError(null);
       try {
-        const fetchedEvents = await getEvents('desc'); // Fetch all events, sort by eventDate descending initially
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const fetchedEvents = await getEvents('desc'); // Fetch all events
 
         const active: EventData[] = [];
         const upcoming: EventData[] = [];
         const completed: EventData[] = [];
 
         fetchedEvents.forEach(event => {
-          const eventDate = event.eventDate instanceof Timestamp ? event.eventDate.toDate() : event.eventDate;
-          
-          if (event.eventStatus === 'Cancelled' || event.eventStatus === 'Postponed') {
+          if (event.eventStatus === 'Confirmed') {
+            active.push(event);
+          } else if (event.eventStatus === 'Planned' || event.eventStatus === 'Postponed') {
+            upcoming.push(event);
+          } else if (event.eventStatus === 'Completed' || event.eventStatus === 'Cancelled') {
             completed.push(event);
-          } else if (event.eventStatus === 'Confirmed') {
-            if (eventDate < todayStart) { // Event date is in the past
-              completed.push(event);
-            } else if (eventDate >= todayStart && eventDate <= new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)) { // Event is today
-              active.push(event);
-            } else { // Event date is in the future
-              upcoming.push(event);
-            }
-          } else if (event.eventStatus === 'Planned') {
-             if (eventDate >= todayStart) {
-                upcoming.push(event);
-             } else {
-                // Planned event with past date could be considered 'completed' or 'archived'
-                completed.push(event);
-             }
           }
+          // Events with other statuses or no status will be ignored by this logic.
         });
 
         // Sort upcoming events by soonest first
@@ -87,10 +73,10 @@ export default function EventsPage() {
         active.sort((a, b) => {
             const dateA = a.eventDate instanceof Timestamp ? a.eventDate.toMillis() : a.eventDate.getTime();
             const dateB = b.eventDate instanceof Timestamp ? b.eventDate.toMillis() : b.eventDate.getTime();
-            if (dateB !== dateA) return dateB - dateA;
-            const createdAtA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
-            const createdAtB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
-            return createdAtB - createdAtA;
+            if (dateB !== dateA) return dateB - dateA; // Sort by event date first
+            const createdAtA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : (a.createdAt as Date).getTime(); // Handle if createdAt is Date
+            const createdAtB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : (b.createdAt as Date).getTime(); // Handle if createdAt is Date
+            return createdAtB - createdAtA; // Then by creation date
         });
         // Sort completed events by most recent end/event date
         completed.sort((a, b) => {
@@ -196,9 +182,9 @@ export default function EventsPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <CalendarClock className="h-10 w-10 text-green-600" /> {/* General Icon */}
+            <CalendarClock className="h-10 w-10 text-green-600" />
             <div>
-              <h1 className="text-2xl font-headline font-bold">Events</h1> {/* Changed Title */}
+              <h1 className="text-2xl font-headline font-bold">Events</h1>
               <p className="text-muted-foreground text-md">
                 Join our active events, see what's upcoming, or review past initiatives.
               </p>
