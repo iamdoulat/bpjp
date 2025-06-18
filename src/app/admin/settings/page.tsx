@@ -434,24 +434,30 @@ export default function AdminSettingsPage() {
                 <CardHeader><CardTitle className="text-lg">Add New Advisory Member</CardTitle></CardHeader>
                 <CardContent>
                   <Form {...addAdvisoryMemberForm}>
-                    <div className="space-y-4"> {/* Replaced <form> with <div> */}
+                    <div className="space-y-4">
                       <FormField control={addAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Member Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
                       <FormField control={addAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Member Title</FormLabel><FormControl><Input placeholder="e.g., Chief Strategic Advisor" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
-                      <FormItem>
-                        <FormLabel htmlFor="newAdvisoryMemberImageFile">Member Picture</FormLabel>
-                        {newAdvisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={newAdvisoryMemberImagePreview} alt="New member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
-                        <FormControl><Input id="newAdvisoryMemberImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'new')} className="block w-full text-sm" disabled={isAddingAdvisoryMember} ref={newAdvisoryMemberFileInputRef}/></FormControl>
-                        <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
-                        <FormMessage>{addAdvisoryMemberForm.formState.errors.imageFile?.message as React.ReactNode}</FormMessage>
-                      </FormItem>
+                      <FormField
+                        control={addAdvisoryMemberForm.control}
+                        name="imageFile"
+                        render={() => (
+                          <FormItem>
+                            <FormLabel htmlFor="newAdvisoryMemberImageFile">Member Picture</FormLabel>
+                            {newAdvisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={newAdvisoryMemberImagePreview} alt="New member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
+                            <FormControl><Input id="newAdvisoryMemberImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'new')} className="block w-full text-sm" disabled={isAddingAdvisoryMember} ref={newAdvisoryMemberFileInputRef}/></FormControl>
+                            <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
+                            <FormMessage>{addAdvisoryMemberForm.formState.errors.imageFile?.message as React.ReactNode}</FormMessage>
+                          </FormItem>
+                        )}
+                      />
                       <Button 
-                        type="button"  // Changed from submit to button
-                        onClick={addAdvisoryMemberForm.handleSubmit(onAddAdvisoryMemberSubmit)} // Added onClick handler
+                        type="button"
+                        onClick={addAdvisoryMemberForm.handleSubmit(onAddAdvisoryMemberSubmit)}
                         disabled={isAddingAdvisoryMember || !addAdvisoryMemberForm.formState.isValid}
                       >
                         {isAddingAdvisoryMember ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlusCircle className="mr-2 h-4 w-4" />} Add Member
                       </Button>
-                    </div> {/* Closing <div> that replaced <form> */}
+                    </div>
                   </Form>
                 </CardContent>
               </Card>
@@ -520,14 +526,20 @@ export default function AdminSettingsPage() {
                 <form onSubmit={editAdvisoryMemberForm.handleSubmit(onEditAdvisoryMemberSubmit)} className="space-y-4 py-2">
                   <FormField control={editAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={editAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormItem>
-                    <FormLabel htmlFor="editAdvisoryMemberImageFile">Member Picture</FormLabel>
-                    {editAdvisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={editAdvisoryMemberImagePreview} alt="Current member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
-                    <FormControl><Input id="editAdvisoryMemberImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'edit')} className="block w-full text-sm" disabled={isAddingAdvisoryMember} ref={editAdvisoryMemberFileInputRef} /></FormControl>
-                    <FormDescription>Upload new picture (150x150px). Leave blank or explicitly remove if no change/deletion desired.</FormDescription>
-                    {editingAdvisoryMember?.imageUrl && !editAdvisoryMemberForm.getValues("imageFile") && <Button type="button" variant="link" size="sm" className="text-destructive p-0 h-auto mt-1" onClick={() => handleRemoveAdvisoryImage('edit')}>Remove current image</Button>}
-                    <FormMessage>{editAdvisoryMemberForm.formState.errors.imageFile?.message as React.ReactNode}</FormMessage>
-                  </FormItem>
+                  <FormField
+                    control={editAdvisoryMemberForm.control}
+                    name="imageFile"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel htmlFor="editAdvisoryMemberImageFile">Member Picture</FormLabel>
+                        {editAdvisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={editAdvisoryMemberImagePreview} alt="Current member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
+                        <FormControl><Input id="editAdvisoryMemberImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'edit')} className="block w-full text-sm" disabled={isAddingAdvisoryMember} ref={editAdvisoryMemberFileInputRef} /></FormControl>
+                        <FormDescription>Upload new picture (150x150px). Leave blank or explicitly remove if no change/deletion desired.</FormDescription>
+                        {editingAdvisoryMember?.imageUrl && !editAdvisoryMemberForm.getValues("imageFile") && <Button type="button" variant="link" size="sm" className="text-destructive p-0 h-auto mt-1" onClick={() => handleRemoveAdvisoryImage('edit')}>Remove current image</Button>}
+                        <FormMessage>{editAdvisoryMemberForm.formState.errors.imageFile?.message as React.ReactNode}</FormMessage>
+                      </FormItem>
+                    )}
+                  />
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => {setIsEditingAdvisoryMemberDialogOpen(false); setEditingAdvisoryMember(null); setAdvisoryImageFileToSubmit(undefined);}} disabled={isAddingAdvisoryMember}>Cancel</Button>
                     <Button type="submit" disabled={isAddingAdvisoryMember || !editAdvisoryMemberForm.formState.isDirty && advisoryImageFileToSubmit === undefined || !editAdvisoryMemberForm.formState.isValid}>
@@ -543,16 +555,16 @@ export default function AdminSettingsPage() {
         {/* Delete Advisory Member Confirmation */}
         {advisoryMemberToDelete && (
           <AlertDialog open={!!advisoryMemberToDelete} onOpenChange={(open) => !open && setAdvisoryMemberToDelete(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader><ShadCNAlertDialogTitleUI>Delete Advisory Member?</ShadCNAlertDialogTitleUI></AlertDialogHeader>
+            <ShadCNAlertDialogContentUI>
+              <ShadCNAlertDialogHeaderUI><ShadCNAlertDialogTitleUI>Delete Advisory Member?</ShadCNAlertDialogTitleUI></ShadCNAlertDialogHeaderUI>
               <ShadCNAlertDialogDescriptionUI>Are you sure you want to delete {advisoryMemberToDelete.name}? This action cannot be undone and will remove their image.</ShadCNAlertDialogDescriptionUI>
-              <AlertDialogFooter>
+              <ShadCNAlertDialogFooterUI>
                 <AlertDialogCancel onClick={() => setAdvisoryMemberToDelete(null)} disabled={isDeletingAdvisoryMember}>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteAdvisoryMember} className="bg-destructive hover:bg-destructive/90" disabled={isDeletingAdvisoryMember}>
                   {isDeletingAdvisoryMember && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete
                 </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
+              </ShadCNAlertDialogFooterUI>
+            </ShadCNAlertDialogContentUI>
           </AlertDialog>
         )}
 
@@ -560,3 +572,4 @@ export default function AdminSettingsPage() {
     </AppShell>
   );
 }
+
