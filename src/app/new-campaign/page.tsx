@@ -119,7 +119,9 @@ export default function NewCampaignPage() {
     try {
       if (data.campaignImageFile) {
         const timestamp = new Date().getTime();
-        const uniqueFileName = `campaign_image_${timestamp}_${data.campaignImageFile.name}`;
+        // Ensure the filename is somewhat unique and clean, though Storage path uniqueness matters more
+        const safeFileName = data.campaignImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const uniqueFileName = `campaign_image_${timestamp}_${safeFileName}`;
         uploadedImageUrl = await uploadImageToStorage(data.campaignImageFile, `campaign_images/${uniqueFileName}`);
       }
 
@@ -143,14 +145,22 @@ export default function NewCampaignPage() {
       setCroppedImagePreview(null); 
     } catch (error) {
       console.error("Failed to save campaign:", error);
-      let errorMessage = "An unexpected error occurred.";
+      let errorMessage = "An unexpected error occurred while creating the campaign.";
       if (error instanceof Error) {
-        errorMessage = error.message;
+        if (error.message.includes("storage/unauthorized") || error.message.includes("Firebase Storage permission denied")) {
+          errorMessage = "Failed to upload campaign image due to Firebase Storage permission issues. Please ensure your Firebase Storage security rules allow writes to the 'campaign_images/' path for authorized users (e.g., admins).";
+        } else if (error.message.includes("Missing or insufficient permissions")) {
+           errorMessage = "Failed to save campaign data due to Firestore permission issues. Please check your Firestore security rules for the 'campaigns' collection.";
+        }
+        else {
+          errorMessage = error.message;
+        }
       }
       toast({
         title: "Error Creating Campaign",
         description: errorMessage,
         variant: "destructive",
+        duration: 9000, // Longer duration for important error messages
       });
     } finally {
       setIsSubmitting(false);
@@ -291,7 +301,7 @@ export default function NewCampaignPage() {
                     </FormControl>
                     {croppedImagePreview && (
                       <div className="mt-4 relative w-full aspect-[3/2] max-w-md mx-auto border rounded-md overflow-hidden">
-                        <Image src={croppedImagePreview} alt="Cropped campaign preview" layout="fill" objectFit="contain" />
+                        <Image src={croppedImagePreview} alt="Cropped campaign preview" layout="fill" objectFit="contain" data-ai-hint="campaign event" />
                       </div>
                     )}
                     <FormDescription>
