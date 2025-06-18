@@ -40,7 +40,7 @@ const adminNavLinks: NavItem[] = [
   { href: '/admin/campaigns', label: 'Manage Campaigns', icon: ClipboardList },
   { href: '/admin/payments', label: 'Track Payments', icon: CreditCard },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
-  { href: '/expenses/history-list', label: 'Expenses History List', icon: ListChecks },
+  { href: '/expenses/history-list', label: 'Manage Expenses', icon: ListChecks },
   { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
   { href: '/admin/election-vote', label: 'Manage Election & Vote', icon: Gavel },
   { href: '/admin/mission/edit', label: 'Manage Mission Page', icon: FileEdit },
