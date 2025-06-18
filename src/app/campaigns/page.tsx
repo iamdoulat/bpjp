@@ -80,10 +80,10 @@ export default function BrowseCampaignsPage() {
       <section className="mb-12">
         <div className="flex items-center gap-2 mb-2">
             <IconComponent className="h-7 w-7 text-green-600" />
-            <h2 className="text-3xl font-headline font-semibold text-foreground">{title}</h2>
+            <h2 className="text-xl font-headline font-semibold text-foreground">{title}</h2>
         </div>
         <p className="text-muted-foreground mb-6 ml-9"> {/* Indent description to align with title */}
-          {title === "Ongoing Campaigns" ? "Support these active initiatives today." :
+          {title === "Active Campaigns" ? "Support these active initiatives today." :
            title === "Upcoming Campaigns" ? "Get ready to support these upcoming causes." :
            "Review these successfully concluded campaigns."}
         </p>
@@ -138,7 +138,7 @@ export default function BrowseCampaignsPage() {
           <div className="flex items-center gap-3">
             <Megaphone className="h-10 w-10 text-green-600" />
             <div>
-              <h1 className="text-3xl font-headline font-bold">Browse Campaigns</h1>
+              <h1 className="text-2xl font-headline font-bold">Browse Campaigns</h1>
               <p className="text-muted-foreground text-md">
                 Find causes you care about and make a difference.
               </p>
@@ -147,7 +147,7 @@ export default function BrowseCampaignsPage() {
         </div>
 
         {renderCampaignSection(
-          "Ongoing Campaigns",
+          "Active Campaigns",
           displayedOngoing,
           currentOngoingPage,
           setCurrentOngoingPage,
@@ -199,4 +199,5 @@ function CampaignCardSkeleton() {
     </div>
   );
 }
+
 
