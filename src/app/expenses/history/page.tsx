@@ -39,7 +39,7 @@ function formatDisplayDateTime(date: Date | Timestamp | undefined): string {
   }).format(jsDate);
 }
 
-const ITEMS_PER_PAGE = 20; // Updated to 20
+const ITEMS_PER_PAGE = 10; // Changed to 10
 
 export default function ExpensesHistoryPage() {
   const router = useRouter();
@@ -114,7 +114,7 @@ export default function ExpensesHistoryPage() {
 
         {loading && (
           <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(ITEMS_PER_PAGE)].map((_, i) => (
               <Skeleton key={i} className="h-16 w-full rounded-md" />
             ))}
           </div>
@@ -206,3 +206,4 @@ export default function ExpensesHistoryPage() {
     </AppShell>
   );
 }
+
