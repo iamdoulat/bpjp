@@ -260,16 +260,16 @@ export default function PublicViewCampaignPage() {
           <Card className="shadow-lg overflow-hidden">
             <CardHeader className="bg-card p-4 md:p-6 border-b">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                <CardTitle className="text-3xl font-headline">{campaign.campaignTitle}</CardTitle>
+                <CardTitle className="text-2xl font-headline">{campaign.campaignTitle}</CardTitle>
                 <Badge
                   variant={getStatusBadgeVariant(campaign.initialStatus)}
-                  className={cn("text-base px-4 py-1.5", getStatusBadgeClassName(campaign.initialStatus))}
+                  className={cn("text-sm px-3 py-1", getStatusBadgeClassName(campaign.initialStatus))}
                 >
                   {campaign.initialStatus.charAt(0).toUpperCase() + campaign.initialStatus.slice(1)}
                 </Badge>
               </div>
               {campaign.organizerName && (
-                <CardDescription className="text-md mt-1">
+                <CardDescription className="text-sm mt-1">
                   Organized by: <span className="font-semibold">{campaign.organizerName}</span>
                 </CardDescription>
               )}

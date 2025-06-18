@@ -76,7 +76,7 @@ export default function UpcomingEventsPage() {
           <div className="flex items-center gap-3">
             <CalendarCheck2 className="h-10 w-10 text-green-600" />
             <div>
-              <h1 className="text-3xl font-headline font-bold">Upcoming Events</h1>
+              <h1 className="text-2xl font-headline font-bold">Upcoming Events</h1>
               <p className="text-muted-foreground text-md">
                 Discover and join our scheduled events.
               </p>
