@@ -12,7 +12,7 @@ export interface TokenDistributionEntry {
   tokenQty: number;
 }
 
-export type EventStatusType = "Planned" | "Confirmed" | "Postponed" | "Cancelled";
+export type EventStatusType = "Planned" | "Confirmed" | "Postponed" | "Cancelled" | "Completed";
 
 export interface EventData {
   id?: string;

@@ -34,7 +34,7 @@ import { Timestamp } from "firebase/firestore";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
 
-const eventStatusOptions: EventStatusType[] = ["Planned", "Confirmed", "Postponed", "Cancelled"];
+const eventStatusOptions: EventStatusType[] = ["Planned", "Confirmed", "Postponed", "Cancelled", "Completed"];
 
 const editEventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
@@ -453,4 +453,3 @@ export default function EditEventPage() {
     </AppShell>
   );
 }
-

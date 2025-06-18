@@ -30,7 +30,7 @@ import ImageCropDialog from "@/components/ui/image-crop-dialog";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
 
-const eventStatusOptions: EventStatusType[] = ["Planned", "Confirmed", "Postponed", "Cancelled"];
+const eventStatusOptions: EventStatusType[] = ["Planned", "Confirmed", "Postponed", "Cancelled", "Completed"];
 
 const eventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
@@ -39,7 +39,7 @@ const eventFormSchema = z.object({
   eventHour: z.string().regex(/^([01]\d|2[0-3])$/, { message: "Please select a valid hour (00-23)."}),
   eventMinute: z.string().regex(/^[0-5]\d$/, { message: "Please select a valid minute (00-59)."}),
   attachmentFile: z.instanceof(File).optional().nullable(),
-  eventStatus: z.enum(eventStatusOptions as [EventStatusType, ...EventStatusType[]], { // Ensure Zod gets a non-empty array
+  eventStatus: z.enum(eventStatusOptions as [EventStatusType, ...EventStatusType[]], { 
     required_error: "Event status is required.",
   }),
 });
