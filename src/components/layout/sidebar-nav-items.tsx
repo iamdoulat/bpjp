@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Megaphone, UserCircle2, ShieldCheck, Users,
   CreditCard, ClipboardList, PlusCircle, LogIn, UserPlus as UserPlusIcon,
   History as HistoryIcon, ReceiptText, FilePlus2, CalendarCheck2, CalendarPlus,
-  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays
+  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays, Vote, Gavel // Added Vote and Gavel
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -29,6 +29,7 @@ const generalNavLinks: NavItem[] = [
   { href: '/donors-list', label: 'Donors List', icon: Users },
   { href: '/expenses/history', label: 'Expenses History', icon: ReceiptText },
   { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2 },
+  { href: '/election-vote', label: 'Election & Vote', icon: Vote }, // New user link
   { href: '/our-mission', label: 'Our Mission', icon: Target },
   { href: '/about-us', label: 'About Us', icon: Info },
   { href: '/profile', label: 'Profile', icon: UserCircle2 },
@@ -44,6 +45,7 @@ const adminNavLinks: NavItem[] = [
   { href: '/expenses/history-list', label: 'Expenses History List', icon: ListChecks },
   { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus },
   { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
+  { href: '/admin/election-vote', label: 'Manage Election & Vote', icon: Gavel }, // New admin link
   { href: '/admin/mission/edit', label: 'Manage Mission Page', icon: FileEdit },
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
 ];
@@ -54,6 +56,7 @@ const publicPagesForUnauthenticated: NavItem[] = [
   { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2 },
   { href: '/about-us', label: 'About Us', icon: Info },
   { href: '/donors-list', label: 'Donors List', icon: Users },
+  { href: '/election-vote', label: 'Election & Vote', icon: Vote },
 ];
 
 // authActionPages not actively used in rendering logic below, can be removed if not planned for other use
@@ -69,7 +72,7 @@ export function SidebarNavItems() {
   if (loading) {
     return (
       <SidebarMenu>
-        {[...Array(16)].map((_, i) => (
+        {[...Array(18)].map((_, i) => ( // Increased skeleton items
           <SidebarMenuItem key={i}>
              <div className="flex items-center gap-2 p-2 w-full">
                 <Skeleton className="h-6 w-6 rounded" />
