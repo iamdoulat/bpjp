@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Settings, AlertCircle } from "lucide-react";
+import { Loader2, Save, Settings, AlertCircle, Users } from "lucide-react"; // Added Users icon
 import { useAppContext } from "@/contexts/AppContext";
 import { getOrganizationSettings, saveOrganizationSettings, type OrganizationSettingsData } from "@/services/organizationSettingsService";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -141,7 +141,7 @@ export default function AdminSettingsPage() {
       }
     }
     loadSettings();
-  }, [form, setAppNameState, appName]);
+  }, [form, setAppNameState, appName, toast]);
 
 
   const handlePresidentFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -243,7 +243,7 @@ export default function AdminSettingsPage() {
               <Skeleton className="h-4 w-4/5" />
             </CardHeader>
             <CardContent className="space-y-8 pt-6">
-              {[...Array(13)].map((_, i) => ( // Increased skeleton items for established year
+              {[...Array(13)].map((_, i) => ( 
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-4 w-1/4" />
                   <Skeleton className="h-10 w-full" />
@@ -424,7 +424,7 @@ export default function AdminSettingsPage() {
                        <Input id="coverImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleCoverFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting} ref={coverFileInputRef} />
                     </FormControl>
                     <FormDescription>Upload a cover image for the About Us page banner (recommended 1200x500px).</FormDescription>
-                    <FormMessage>{form.formState.errors.coverImageFile?.message}</FormMessage>
+                    <FormMessage>{form.formState.errors.coverImageFile?.message as React.ReactNode}</FormMessage>
                   </FormItem>
                 </div>
 
@@ -469,7 +469,7 @@ export default function AdminSettingsPage() {
                        <Input id="presidentImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handlePresidentFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting} ref={presidentFileInputRef}/>
                     </FormControl>
                     <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
-                    <FormMessage>{form.formState.errors.presidentImageFile?.message}</FormMessage>
+                    <FormMessage>{form.formState.errors.presidentImageFile?.message as React.ReactNode}</FormMessage>
                   </FormItem>
                 </div>
 
@@ -513,9 +513,34 @@ export default function AdminSettingsPage() {
                       <Input id="secretaryImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleSecretaryFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmitting} ref={secretaryFileInputRef}/>
                     </FormControl>
                      <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
-                    <FormMessage>{form.formState.errors.secretaryImageFile?.message}</FormMessage>
+                    <FormMessage>{form.formState.errors.secretaryImageFile?.message as React.ReactNode}</FormMessage>
                   </FormItem>
                 </div>
+                
+                {/* Advisory Board Configuration Section */}
+                <div className="space-y-4 p-4 border rounded-md">
+                  <h3 className="text-lg font-medium">Advisory Board Configuration</h3>
+                  <FormDescription>
+                    Manage the members of your organization's advisory board. This information will be displayed on the "About Us" page.
+                  </FormDescription>
+                  {/* Placeholder for future functionality */}
+                  <Alert variant="default" className="mt-4">
+                    <Users className="h-4 w-4" />
+                    <ShadCNAlertTitle>Coming Soon</ShadCNAlertTitle>
+                    <ShadCNAlertDescription>
+                      Functionality to add, edit, and remove advisory board members, including their names, titles, and photos, is planned for a future update.
+                      For now, advisory board members are hardcoded in the "About Us" page.
+                    </ShadCNAlertDescription>
+                  </Alert>
+                  {/* Example: Future input fields for adding a member (commented out for now)
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input placeholder="Member Name" disabled />
+                    <Input placeholder="Member Title" disabled />
+                  </div>
+                  <Button type="button" variant="outline" disabled>Add Advisory Member (Future)</Button>
+                  */}
+                </div>
+
 
                 <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || isLoadingData || (!form.formState.isDirty && !form.watch('presidentImageFile') && !form.watch('secretaryImageFile') && !form.watch('coverImageFile')) || !form.formState.isValid}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
