@@ -39,7 +39,7 @@ function formatDisplayDateTime(date: Date | Timestamp | undefined): string {
   }).format(jsDate);
 }
 
-const ITEMS_PER_PAGE = 10; // Changed to 10
+const ITEMS_PER_PAGE = 10;
 
 export default function ExpensesHistoryPage() {
   const router = useRouter();
@@ -143,19 +143,18 @@ export default function ExpensesHistoryPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[60px]">No.</TableHead>
-                  <TableHead className="min-w-[150px]">Expense Name</TableHead>
-                  <TableHead className="w-[120px] text-right">Amount</TableHead>
-                  <TableHead className="w-[180px]">Date Recorded</TableHead>
-                  <TableHead className="w-[100px] text-center">Attachment</TableHead>
-                  {/* Actions column removed */}
+                  <TableHead className="w-16 text-xs">No.</TableHead>
+                  <TableHead className="text-xs">Expense Name</TableHead>
+                  <TableHead className="text-right text-xs">Amount</TableHead>
+                  <TableHead className="text-xs">Date Recorded</TableHead>
+                  <TableHead className="w-24 text-center text-xs">Attachment</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedExpenses.map((expense, index) => (
                   <TableRow key={expense.id}>
                     <TableCell className="text-xs">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
-                    <TableCell className="font-medium text-sm truncate max-w-[150px]">{expense.name}</TableCell>
+                    <TableCell className="font-medium text-sm truncate max-w-xs sm:max-w-sm md:max-w-md">{expense.name}</TableCell>
                     <TableCell className="text-right font-medium text-sm">{formatCurrency(expense.amount)}</TableCell>
                     <TableCell className="text-xs">{formatDisplayDateTime(expense.createdAt)}</TableCell>
                     <TableCell className="text-center">
@@ -169,13 +168,12 @@ export default function ExpensesHistoryPage() {
                         <span className="text-xs text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
-                    {/* Actions cell removed */}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
              {totalPages > 1 && (
-                <div className="flex items-center justify-between p-4 border-t">
+                <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t gap-4 sm:gap-2">
                     <p className="text-xs text-muted-foreground">
                         Page {currentPage} of {totalPages} ({filteredExpenses.length} total expenses)
                     </p>
@@ -202,7 +200,6 @@ export default function ExpensesHistoryPage() {
           </div>
         )}
       </main>
-      {/* AlertDialog for delete confirmation removed as actions are removed */}
     </AppShell>
   );
 }
