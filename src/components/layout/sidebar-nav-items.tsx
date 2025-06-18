@@ -44,7 +44,7 @@ const adminNavLinks: NavItem[] = [
   { href: '/expenses/history-list', label: 'Expenses History List', icon: ListChecks },
   { href: '/admin/events/create', label: 'Create Event', icon: CalendarPlus },
   { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
-  { href: '/admin/mission/edit', label: 'Edit Mission Page', icon: FileEdit },
+  { href: '/admin/mission/edit', label: 'Manage Mission Page', icon: FileEdit },
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
 ];
 
