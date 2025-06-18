@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { AppProvider } from '@/contexts/AppContext';
+import { Analytics } from "@vercel/analytics/next"; // Added Vercel Analytics import
 
 // Metadata can be dynamic if we use generateMetadata with AppContext
 // For now, it's static or uses environment variables if needed before context is ready client-side
@@ -49,6 +50,7 @@ export default function RootLayout({
             </AuthProvider>
           </AppProvider>
         </ThemeProvider>
+        <Analytics /> {/* Added Vercel Analytics component here */}
       </body>
     </html>
   );
