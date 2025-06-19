@@ -145,10 +145,10 @@ export async function getCandidatesByPosition(position: CandidatePosition): Prom
        if (error.message.includes("Missing or insufficient permissions")) {
         throw new Error(`Failed to fetch candidates: Firestore permission denied for collection '${ELECTION_CANDIDATES_COLLECTION}' with position filter.`);
       }
-       if (error.message.toLowerCase().includes("query requires an index")) {
+       if (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("the query requires an index")) {
         const indexCreationLinkMatch = error.message.match(/(https?:\/\/[^\s]+)/);
-        const indexLink = indexCreationLinkMatch ? indexCreationLinkMatch[0] : "No link provided in error message.";
-        throw new Error(`Failed to fetch candidates: The query on '${ELECTION_CANDIDATES_COLLECTION}' requires a composite index for 'position' and 'createdAt'. Create it here: ${indexLink}`);
+        const indexLink = indexCreationLinkMatch ? indexCreationLinkMatch[0] : "Please check the Firebase console.";
+        throw new Error(`Failed to fetch candidates: The query on '${ELECTION_CANDIDATES_COLLECTION}' requires a composite index for 'position' (asc) and 'createdAt' (asc). Create it here: ${indexLink} (Link may also be in browser console).`);
       }
       throw new Error(`Failed to fetch candidates: ${error.message}`);
     }
