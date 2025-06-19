@@ -121,7 +121,7 @@ export default function ManageElectionVotePage() {
         </section>
 
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10 pt-6 border-t">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-10 pt-6 border-t"> {/* Adjusted grid for 2 items */}
           <Card className="shadow-md">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -135,23 +135,6 @@ export default function ManageElectionVotePage() {
               </CardDescription>
               <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push("/admin/election-vote")}>
                 Go to Admin Panel
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-lg">Candidate Management</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Manage candidate nominations, applications, and approvals (Admin Only).
-              </CardDescription>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push("/admin/election-vote/candidate-management")}>
-                Manage Candidates
               </Button>
             </CardContent>
           </Card>
@@ -179,7 +162,7 @@ export default function ManageElectionVotePage() {
             <ShadCNAlertTitle>Feature Under Development</ShadCNAlertTitle>
             <AlertDescription>
                 The full election and voting process, including secure vote casting and result tallying, is currently under development.
-                The candidate lists and vote buttons above are for demonstration purposes.
+                The candidate lists and vote buttons above are for demonstration purposes. Candidate management for Admins is available via the Admin Panel.
             </AlertDescription>
         </Alert>
 
