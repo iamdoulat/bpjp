@@ -8,10 +8,10 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck, FileText, Loader2 } from "lucide-react";
+import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck, FileText, Loader2, ServerCrash } from "lucide-react"; // Added ServerCrash
 import { useAppContext } from "@/contexts/AppContext";
 import type { OrganizationSettingsData } from "@/services/organizationSettingsService";
-import { getAdvisoryBoardMembers, type AdvisoryBoardMemberData } from "@/services/advisoryBoardService"; // Import service
+import { getAdvisoryBoardMembers, type AdvisoryBoardMemberData } from "@/services/advisoryBoardService";
 import {
   Carousel,
   CarouselContent,
@@ -19,12 +19,14 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Alert, AlertTitle as ShadcnAlertTitle, AlertDescription as ShadcnAlertDescription } from "@/components/ui/alert"; // Added Alert components
 
 export default function AboutUsPage() {
   const { organizationSettings, isLoadingAppSettings } = useAppContext();
   const [settingsToDisplay, setSettingsToDisplay] = React.useState<OrganizationSettingsData | null>(null);
   const [advisoryBoardMembers, setAdvisoryBoardMembers] = React.useState<AdvisoryBoardMemberData[]>([]);
   const [isLoadingAdvisory, setIsLoadingAdvisory] = React.useState(true);
+  const [advisoryError, setAdvisoryError] = React.useState<string | null>(null); // New state for advisory fetch error
 
   React.useEffect(() => {
     if (!isLoadingAppSettings && organizationSettings) {
@@ -35,12 +37,13 @@ export default function AboutUsPage() {
   React.useEffect(() => {
     async function fetchAdvisoryData() {
       setIsLoadingAdvisory(true);
+      setAdvisoryError(null); // Reset error on new fetch
       try {
         const members = await getAdvisoryBoardMembers();
         setAdvisoryBoardMembers(members);
       } catch (error) {
         console.error("Failed to load advisory board members:", error);
-        // Optionally set an error state to display to the user
+        setAdvisoryError(error instanceof Error ? error.message : "An unknown error occurred while fetching advisory board members.");
       } finally {
         setIsLoadingAdvisory(false);
       }
@@ -50,7 +53,8 @@ export default function AboutUsPage() {
 
   const coverImageUrlToUse = settingsToDisplay?.coverImageUrl || "https://placehold.co/1200x500.png";
 
-  if (isLoadingAppSettings || !settingsToDisplay || isLoadingAdvisory) {
+  // Combined loading state for initial page skeleton
+  if (isLoadingAppSettings || !settingsToDisplay) { 
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-8">
@@ -104,6 +108,7 @@ export default function AboutUsPage() {
     );
   }
   
+  // Handle case where organization settings are loaded but empty (no org name)
   if (!settingsToDisplay.organizationName && !isLoadingAppSettings) {
      return (
       <AppShell>
@@ -164,6 +169,15 @@ export default function AboutUsPage() {
               <h2 className="text-2xl font-headline font-bold text-foreground mb-6 text-center">Advisory Board</h2>
               {isLoadingAdvisory ? (
                  <div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : advisoryError ? (
+                  <Alert variant="destructive" className="max-w-lg mx-auto">
+                    <ServerCrash className="h-5 w-5" />
+                    <ShadcnAlertTitle>Error Loading Advisory Board</ShadcnAlertTitle>
+                    <ShadcnAlertDescription>
+                      {advisoryError}
+                      <p className="mt-2 text-xs">If this persists, please check the console for details or contact an administrator. Ensure Firestore permissions allow reading `siteContent/organizationDetails/advisoryBoardMembers`.</p>
+                    </ShadcnAlertDescription>
+                  </Alert>
               ) : advisoryBoardMembers.length > 0 ? (
                 <Carousel opts={{ align: "start", loop: advisoryBoardMembers.length > 2 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto">
                   <CarouselContent className="-ml-4">
@@ -202,6 +216,6 @@ export default function AboutUsPage() {
 interface InfoItemProps { icon: React.ReactNode; label: string; value: React.ReactNode; }
 const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (<div className="flex items-start space-x-3"><span className="mt-1 flex-shrink-0 w-5 h-5">{icon}</span><div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="text-md text-foreground">{value}</p></div></div>);
 
-interface LeadershipProfileProps { name: string; title: string; imageUrl?: string | null; mobileNumber?: string | null; dataAiHint?: string; }
-const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imageUrl, mobileNumber, dataAiHint }) => (<div className="flex flex-col items-center text-center p-4 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"><div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg"><Image src={imageUrl || `https://placehold.co/150x150.png?text=${name ? name.charAt(0) : 'L'}`} alt={name} layout="fill" objectFit="cover" data-ai-hint={dataAiHint || "person portrait"}/></div><h3 className="text-xl font-semibold text-foreground">{name}</h3><p className="text-muted-foreground">{title}</p>{mobileNumber && (<div className="flex items-center mt-1.5 text-sm text-muted-foreground"><Phone className="h-4 w-4 mr-1.5 text-green-600/80" />{mobileNumber}</div>)}</div>);
+interface LeadershipProfileProps { name?: string | null; title?: string | null; imageUrl?: string | null; mobileNumber?: string | null; dataAiHint?: string; }
+const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imageUrl, mobileNumber, dataAiHint }) => (<div className="flex flex-col items-center text-center p-4 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"><div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg"><Image src={imageUrl || `https://placehold.co/150x150.png?text=${name ? name.charAt(0) : 'L'}`} alt={name || 'Leader'} layout="fill" objectFit="cover" data-ai-hint={dataAiHint || "person portrait"}/></div><h3 className="text-xl font-semibold text-foreground">{name || "Not Provided"}</h3><p className="text-muted-foreground">{title || "N/A"}</p>{mobileNumber && (<div className="flex items-center mt-1.5 text-sm text-muted-foreground"><Phone className="h-4 w-4 mr-1.5 text-green-600/80" />{mobileNumber}</div>)}</div>);
 
