@@ -121,25 +121,8 @@ export default function ManageElectionVotePage() {
         </section>
 
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-10 pt-6 border-t"> {/* Adjusted grid for 2 items */}
-          <Card className="shadow-md">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-lg">Election Configuration</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                View election periods, defined positions, and voting rules (Admin Only).
-              </CardDescription>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push("/admin/election-vote")}>
-                Go to Admin Panel
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md">
+        <div className="mt-10 pt-6 border-t flex justify-center"> {/* Center the single card */}
+          <Card className="shadow-md max-w-sm w-full"> {/* Added max-w-sm and w-full */}
             <CardHeader>
               <div className="flex items-center gap-2">
                 <ListChecks className="h-5 w-5 text-muted-foreground" />
