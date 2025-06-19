@@ -140,15 +140,6 @@ export default function ManageElectionVotePage() {
           </Card>
         </div>
 
-        <Alert className="mt-8">
-            <Info className="h-4 w-4" />
-            <ShadCNAlertTitle>Feature Under Development</ShadCNAlertTitle>
-            <AlertDescription>
-                The full election and voting process, including secure vote casting and result tallying, is currently under development.
-                The candidate lists and vote buttons above are for demonstration purposes. Candidate management for Admins is available via the Admin Panel.
-            </AlertDescription>
-        </Alert>
-
       </main>
     </AppShell>
   );
