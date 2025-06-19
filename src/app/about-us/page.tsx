@@ -8,7 +8,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck, FileText, Loader2, ServerCrash } from "lucide-react"; // Added ServerCrash
+import { Info, MapPin, Building, Phone, Mail, UserCircle, Users, CalendarRange, AlertCircle, CalendarCheck, FileText, Loader2, ServerCrash } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import type { OrganizationSettingsData } from "@/services/organizationSettingsService";
 import { getAdvisoryBoardMembers, type AdvisoryBoardMemberData } from "@/services/advisoryBoardService";
@@ -19,14 +19,14 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Alert, AlertTitle as ShadcnAlertTitle, AlertDescription as ShadcnAlertDescription } from "@/components/ui/alert"; // Added Alert components
+import { Alert, AlertTitle as ShadcnAlertTitle, AlertDescription as ShadcnAlertDescription } from "@/components/ui/alert";
 
 export default function AboutUsPage() {
   const { organizationSettings, isLoadingAppSettings } = useAppContext();
   const [settingsToDisplay, setSettingsToDisplay] = React.useState<OrganizationSettingsData | null>(null);
   const [advisoryBoardMembers, setAdvisoryBoardMembers] = React.useState<AdvisoryBoardMemberData[]>([]);
   const [isLoadingAdvisory, setIsLoadingAdvisory] = React.useState(true);
-  const [advisoryError, setAdvisoryError] = React.useState<string | null>(null); // New state for advisory fetch error
+  const [advisoryError, setAdvisoryError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!isLoadingAppSettings && organizationSettings) {
@@ -37,13 +37,20 @@ export default function AboutUsPage() {
   React.useEffect(() => {
     async function fetchAdvisoryData() {
       setIsLoadingAdvisory(true);
-      setAdvisoryError(null); // Reset error on new fetch
+      setAdvisoryError(null);
       try {
         const members = await getAdvisoryBoardMembers();
         setAdvisoryBoardMembers(members);
       } catch (error) {
         console.error("Failed to load advisory board members:", error);
-        setAdvisoryError(error instanceof Error ? error.message : "An unknown error occurred while fetching advisory board members.");
+        let message = "An unknown error occurred while fetching advisory board members.";
+        if (error instanceof Error) {
+            message = error.message;
+            if (message.includes("permission denied")) {
+                message = "Could not load advisory board: Permission denied. Please check Firestore rules for 'siteContent/organizationDetails/advisoryBoardMembers'.";
+            }
+        }
+        setAdvisoryError(message);
       } finally {
         setIsLoadingAdvisory(false);
       }
@@ -108,7 +115,6 @@ export default function AboutUsPage() {
     );
   }
   
-  // Handle case where organization settings are loaded but empty (no org name)
   if (!settingsToDisplay.organizationName && !isLoadingAppSettings) {
      return (
       <AppShell>
@@ -175,7 +181,7 @@ export default function AboutUsPage() {
                     <ShadcnAlertTitle>Error Loading Advisory Board</ShadcnAlertTitle>
                     <ShadcnAlertDescription>
                       {advisoryError}
-                      <p className="mt-2 text-xs">If this persists, please check the console for details or contact an administrator. Ensure Firestore permissions allow reading `siteContent/organizationDetails/advisoryBoardMembers`.</p>
+                      {/* <p className="mt-2 text-xs">If this persists, please check the console for details or contact an administrator. Ensure Firestore permissions allow reading `siteContent/organizationDetails/advisoryBoardMembers`.</p> */}
                     </ShadcnAlertDescription>
                   </Alert>
               ) : advisoryBoardMembers.length > 0 ? (
@@ -187,7 +193,7 @@ export default function AboutUsPage() {
                           <Card className="shadow-md h-full flex flex-col bg-card hover:shadow-lg transition-shadow">
                             <CardContent className="flex flex-col items-center justify-start p-4 sm:p-6 flex-grow">
                               <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40 shadow-sm">
-                                <Image src={member.imageUrl || `https://placehold.co/150x150.png?text=${member.name.charAt(0)}`} alt={member.name} layout="fill" objectFit="cover" data-ai-hint="person portrait"/>
+                                <Image src={member.imageUrl || `https://placehold.co/150x150.png?text=${member.name ? member.name.charAt(0) : 'A'}`} alt={member.name || 'Advisory Member'} layout="fill" objectFit="cover" data-ai-hint="person portrait"/>
                               </div>
                               <p className="text-md sm:text-lg font-semibold text-center text-foreground">{member.name}</p>
                               <p className="text-xs sm:text-sm text-muted-foreground text-center mt-1">{member.title}</p>
@@ -219,3 +225,4 @@ const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (<div clas
 interface LeadershipProfileProps { name?: string | null; title?: string | null; imageUrl?: string | null; mobileNumber?: string | null; dataAiHint?: string; }
 const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imageUrl, mobileNumber, dataAiHint }) => (<div className="flex flex-col items-center text-center p-4 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"><div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg"><Image src={imageUrl || `https://placehold.co/150x150.png?text=${name ? name.charAt(0) : 'L'}`} alt={name || 'Leader'} layout="fill" objectFit="cover" data-ai-hint={dataAiHint || "person portrait"}/></div><h3 className="text-xl font-semibold text-foreground">{name || "Not Provided"}</h3><p className="text-muted-foreground">{title || "N/A"}</p>{mobileNumber && (<div className="flex items-center mt-1.5 text-sm text-muted-foreground"><Phone className="h-4 w-4 mr-1.5 text-green-600/80" />{mobileNumber}</div>)}</div>);
 
+    

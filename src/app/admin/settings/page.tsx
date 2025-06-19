@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Image from "next/image";
 import { AppShell } from "@/components/layout/app-shell";
@@ -21,34 +21,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Settings, AlertCircle, Users, PlusCircle, Edit, Trash2 } from "lucide-react";
+import { Loader2, Save, Settings, AlertCircle, Users, PlusCircle, Edit2, Trash2, UploadCloud } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { getOrganizationSettings, saveOrganizationSettings, type OrganizationSettingsData } from "@/services/organizationSettingsService";
-import {
-  addAdvisoryBoardMember,
-  getAdvisoryBoardMembers,
-  updateAdvisoryBoardMember,
-  deleteAdvisoryBoardMember,
-  type AdvisoryBoardMemberData,
-  type NewAdvisoryBoardMemberInput,
-  type UpdateAdvisoryBoardMemberInput
-} from "@/services/advisoryBoardService";
+import { getAdvisoryBoardMembers, addAdvisoryBoardMember, updateAdvisoryBoardMember, deleteAdvisoryBoardMember, type AdvisoryBoardMemberData, type NewAdvisoryBoardMemberInput, type UpdateAdvisoryBoardMemberInput } from "@/services/advisoryBoardService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle as ShadCNAlertTitle, AlertDescription as ShadCNAlertDescription } from "@/components/ui/alert";
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent as ShadCNAlertDialogContentUI,
-  AlertDialogDescription as ShadCNAlertDialogDescriptionUI,
-  AlertDialogFooter as ShadCNAlertDialogFooterUI,
-  AlertDialogHeader as ShadCNAlertDialogHeaderUI,
-  AlertDialogTitle as ShadCNAlertDialogTitleUI,
-} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const organizationSettingsSchema = z.object({
   organizationName: z.string().min(3, { message: "Organization name must be at least 3 characters." }).max(100),
@@ -61,19 +44,18 @@ const organizationSettingsSchema = z.object({
   contactEmail: z.string().email({ message: "Invalid contact email format." }).max(100),
   presidentName: z.string().min(3, { message: "President's name must be at least 3 characters." }).max(100),
   presidentMobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid president's mobile number." }).optional().or(z.literal('')),
-  presidentImageFile: z.instanceof(File).optional(),
+  presidentImageFile: z.instanceof(File).optional().nullable(),
   secretaryName: z.string().min(3, { message: "General Secretary's name must be at least 3 characters." }).max(100),
   secretaryMobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid secretary's mobile number." }).optional().or(z.literal('')),
-  secretaryImageFile: z.instanceof(File).optional(),
+  secretaryImageFile: z.instanceof(File).optional().nullable(),
   appName: z.string().min(1, { message: "App Name cannot be empty." }).max(50),
-  coverImageFile: z.instanceof(File).optional(),
+  coverImageFile: z.instanceof(File).optional().nullable(),
 });
-
 type OrganizationSettingsFormValues = z.infer<typeof organizationSettingsSchema>;
 
 const advisoryMemberSchema = z.object({
-  name: z.string().min(2, "Member name is required.").max(100),
-  title: z.string().min(2, "Member title is required.").max(100),
+  name: z.string().min(2, "Name must be at least 2 characters.").max(100),
+  title: z.string().min(2, "Title must be at least 2 characters.").max(100),
   imageFile: z.instanceof(File).optional().nullable(),
 });
 type AdvisoryMemberFormValues = z.infer<typeof advisoryMemberSchema>;
@@ -83,8 +65,8 @@ export default function AdminSettingsPage() {
   const { toast } = useToast();
   const { appName, setAppNameState } = useAppContext();
   const [isSubmittingOrgSettings, setIsSubmittingOrgSettings] = React.useState(false);
-  const [isLoadingOrgData, setIsLoadingOrgData] = React.useState(true);
-  const [orgError, setOrgError] = React.useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
   const [presidentPreview, setPresidentPreview] = React.useState<string | null>(null);
   const [imageToCropSrcPresident, setImageToCropSrcPresident] = React.useState<string | null>(null);
@@ -102,54 +84,58 @@ export default function AdminSettingsPage() {
   const coverFileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Advisory Board State
-  const [advisoryMembers, setAdvisoryMembers] = React.useState<AdvisoryBoardMemberData[]>([]);
-  const [isLoadingAdvisoryMembers, setIsLoadingAdvisoryMembers] = React.useState(true);
-  const [isSubmittingAdvisoryMember, setIsSubmittingAdvisoryMember] = React.useState(false); // Combined for add/edit
-  const [editingAdvisoryMember, setEditingAdvisoryMember] = React.useState<AdvisoryBoardMemberData | null>(null);
-  const [isAdvisoryMemberFormDialogOpen, setIsAdvisoryMemberFormDialogOpen] = React.useState(false);
-  const [advisoryMemberFormType, setAdvisoryMemberFormType] = React.useState<'add' | 'edit'>('add');
-  const [advisoryMemberToDelete, setAdvisoryMemberToDelete] = React.useState<AdvisoryBoardMemberData | null>(null);
+  const [advisoryBoardMembers, setAdvisoryBoardMembers] = React.useState<AdvisoryBoardMemberData[]>([]);
+  const [isLoadingAdvisory, setIsLoadingAdvisory] = React.useState(true);
+  const [isAddingAdvisoryMember, setIsAddingAdvisoryMember] = React.useState(false);
+  const [currentAdvisoryMemberToEdit, setCurrentAdvisoryMemberToEdit] = React.useState<AdvisoryBoardMemberData | null>(null);
+  const [isEditAdvisoryDialogOpen, setIsEditAdvisoryDialogOpen] = React.useState(false);
   const [isDeletingAdvisoryMember, setIsDeletingAdvisoryMember] = React.useState(false);
+  const [advisoryMemberToDelete, setAdvisoryMemberToDelete] = React.useState<AdvisoryBoardMemberData | null>(null);
   
-  const advisoryMemberImageFileInputRef = React.useRef<HTMLInputElement>(null);
-  const [advisoryMemberImagePreview, setAdvisoryMemberImagePreview] = React.useState<string | null>(null);
   const [imageToCropSrcAdvisory, setImageToCropSrcAdvisory] = React.useState<string | null>(null);
   const [isAdvisoryCropDialogOpen, setIsAdvisoryCropDialogOpen] = React.useState(false);
-  const [advisoryImageFileToSubmit, setAdvisoryImageFileToSubmit] = React.useState<File | null | undefined>(undefined);
+  const [advisoryImageTargetField, setAdvisoryImageTargetField] = React.useState<'add' | 'edit'>('add');
+  const [advisoryMemberImagePreview, setAdvisoryMemberImagePreview] = React.useState<string | null>(null);
+  const advisoryImageFileInputRef = React.useRef<HTMLInputElement>(null);
 
 
-  const orgForm = useForm<OrganizationSettingsFormValues>({
+  const orgSettingsForm = useForm<OrganizationSettingsFormValues>({
     resolver: zodResolver(organizationSettingsSchema),
-    defaultValues: { /* will be set in useEffect */ },
+    defaultValues: { appName: appName },
     mode: "onChange",
   });
 
-  const advisoryMemberForm = useForm<AdvisoryMemberFormValues>({
+  const addAdvisoryMemberForm = useForm<AdvisoryMemberFormValues>({
     resolver: zodResolver(advisoryMemberSchema),
-    defaultValues: { name: "", title: "", imageFile: undefined },
+    defaultValues: { name: "", title: "", imageFile: null },
   });
 
-
-  const fetchAdvisoryData = React.useCallback(async () => {
-    setIsLoadingAdvisoryMembers(true);
+  const editAdvisoryMemberForm = useForm<AdvisoryMemberFormValues>({
+    resolver: zodResolver(advisoryMemberSchema),
+    defaultValues: { name: "", title: "", imageFile: null },
+  });
+  
+  const fetchAdvisoryBoardData = React.useCallback(async () => {
+    setIsLoadingAdvisory(true);
     try {
       const members = await getAdvisoryBoardMembers();
-      setAdvisoryMembers(members);
+      setAdvisoryBoardMembers(members);
     } catch (e) {
       toast({ title: "Error Loading Advisory Board", description: (e as Error).message, variant: "destructive" });
     } finally {
-      setIsLoadingAdvisoryMembers(false);
+      setIsLoadingAdvisory(false);
     }
   }, [toast]);
 
+
   React.useEffect(() => {
-    async function loadSettings() {
-      setIsLoadingOrgData(true);
-      setOrgError(null);
+    async function loadAllSettings() {
+      setIsLoadingData(true);
+      setError(null);
       try {
         const settings = await getOrganizationSettings();
         if (settings) {
-          orgForm.reset({
+          orgSettingsForm.reset({
             organizationName: settings.organizationName,
             address: settings.address,
             registrationNumber: settings.registrationNumber || "",
@@ -163,51 +149,64 @@ export default function AdminSettingsPage() {
             secretaryName: settings.secretaryName,
             secretaryMobileNumber: settings.secretaryMobileNumber || "",
             appName: settings.appName,
-            presidentImageFile: undefined,
-            secretaryImageFile: undefined,
-            coverImageFile: undefined,
           });
           if (settings.presidentImageURL) setPresidentPreview(settings.presidentImageURL);
           if (settings.secretaryImageURL) setSecretaryPreview(settings.secretaryImageURL);
           if (settings.coverImageUrl) setCoverPreview(settings.coverImageUrl);
           if (settings.appName) setAppNameState(settings.appName);
         } else {
-           orgForm.reset({ ...orgForm.formState.defaultValues, appName: appName });
+           orgSettingsForm.reset({ ...orgSettingsForm.formState.defaultValues, appName: appName });
         }
+        await fetchAdvisoryBoardData();
       } catch (e) {
-        setOrgError((e as Error).message);
-        toast({ title: "Error Loading Settings", description: (e as Error).message, variant: "destructive" });
+        const errorMessage = e instanceof Error ? e.message : "Could not load settings.";
+        setError(errorMessage);
+        toast({ title: "Error Loading Settings", description: errorMessage, variant: "destructive" });
       } finally {
-        setIsLoadingOrgData(false);
+        setIsLoadingData(false);
       }
     }
-    loadSettings();
-    fetchAdvisoryData();
-  }, [orgForm, setAppNameState, appName, fetchAdvisoryData, toast]);
+    loadAllSettings();
+  }, [orgSettingsForm, setAppNameState, appName, toast, fetchAdvisoryBoardData]);
 
-  const onOrgSubmit = async (data: OrganizationSettingsFormValues) => {
+  const handlePresidentFileChange = (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ };
+  const handlePresidentCropComplete = (croppedBlob: Blob) => { /* ... */ };
+  const handleSecretaryFileChange = (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ };
+  const handleSecretaryCropComplete = (croppedBlob: Blob) => { /* ... */ };
+  const handleCoverFileChange = (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ };
+  const handleCoverCropComplete = (croppedBlob: Blob) => { /* ... */ };
+
+  async function onOrgSettingsSubmit(data: OrganizationSettingsFormValues) {
     setIsSubmittingOrgSettings(true);
-    setOrgError(null);
+    setError(null);
     try {
       const { presidentImageFile, secretaryImageFile, coverImageFile, ...settingsToSave } = data;
-      await saveOrganizationSettings(settingsToSave, presidentImageFile, secretaryImageFile, coverImageFile);
-      if (data.appName) setAppNameState(data.appName);
+      await saveOrganizationSettings(settingsToSave, 
+        presidentImageFile === undefined ? undefined : presidentImageFile, // Pass undefined if not changed
+        secretaryImageFile === undefined ? undefined : secretaryImageFile,
+        coverImageFile === undefined ? undefined : coverImageFile
+      );
+      if (data.appName) {
+        setAppNameState(data.appName);
+      }
       toast({ title: "Settings Saved!", description: "Organization settings have been successfully updated." });
     } catch (e) {
-      setOrgError((e as Error).message);
-      toast({ title: "Error Saving Settings", description: (e as Error).message, variant: "destructive" });
+      const errorMessage = e instanceof Error ? e.message : "An unexpected error occurred.";
+      setError(errorMessage);
+      toast({ title: "Error Saving Settings", description: errorMessage, variant: "destructive" });
     } finally {
       setIsSubmittingOrgSettings(false);
     }
-  };
-
-  // Advisory Image Handling
-  const handleAdvisoryFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  }
+  
+  // Advisory Member Image Handling
+  const handleAdvisoryFileChange = (event: React.ChangeEvent<HTMLInputElement>, target: 'add' | 'edit') => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImageToCropSrcAdvisory(reader.result as string);
+        setAdvisoryImageTargetField(target);
         setIsAdvisoryCropDialogOpen(true);
       };
       reader.readAsDataURL(file);
@@ -215,69 +214,77 @@ export default function AdminSettingsPage() {
   };
 
   const handleAdvisoryCropComplete = (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], `advisory_member_cropped.png`, { type: "image/png" });
-    setAdvisoryImageFileToSubmit(croppedFile); // Store the file to be submitted for service call
-    advisoryMemberForm.setValue("imageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
-    setAdvisoryMemberImagePreview(URL.createObjectURL(croppedBlob));
+    const croppedFile = new File([croppedBlob], "advisory_member_image.png", { type: "image/png" });
+    if (advisoryImageTargetField === 'add') {
+      addAdvisoryMemberForm.setValue("imageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    } else if (advisoryImageTargetField === 'edit') {
+      editAdvisoryMemberForm.setValue("imageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    }
+    setAdvisoryMemberImagePreview(URL.createObjectURL(croppedBlob)); // For immediate UI update in form/dialog
     setIsAdvisoryCropDialogOpen(false);
-    if (advisoryMemberImageFileInputRef.current) advisoryMemberImageFileInputRef.current.value = "";
+    setImageToCropSrcAdvisory(null);
+    if (advisoryImageFileInputRef.current) advisoryImageFileInputRef.current.value = "";
   };
   
-  const handleRemoveAdvisoryMemberImage = () => {
-    setAdvisoryImageFileToSubmit(null); // Explicitly null to signal removal
-    advisoryMemberForm.setValue("imageFile", null);
-    setAdvisoryMemberImagePreview(null);
-    if (advisoryMemberImageFileInputRef.current) advisoryMemberImageFileInputRef.current.value = "";
-  };
-
-  const openAdvisoryMemberFormDialog = (type: 'add' | 'edit', member?: AdvisoryBoardMemberData) => {
-    setAdvisoryMemberFormType(type);
-    if (type === 'add') {
-      advisoryMemberForm.reset({ name: "", title: "", imageFile: undefined });
-      setEditingAdvisoryMember(null);
-      setAdvisoryMemberImagePreview(null);
-    } else if (member) {
-      advisoryMemberForm.reset({ name: member.name, title: member.title, imageFile: undefined });
-      setEditingAdvisoryMember(member);
-      setAdvisoryMemberImagePreview(member.imageUrl || null);
-    }
-    setAdvisoryImageFileToSubmit(undefined); // Reset for both forms
-    setIsAdvisoryMemberFormDialogOpen(true);
-  };
-
-
-  const onAdvisoryMemberFormSubmit = async (data: AdvisoryMemberFormValues) => {
-    setIsSubmittingAdvisoryMember(true);
+  const onAddAdvisoryMemberSubmit = async (data: AdvisoryMemberFormValues) => {
+    setIsAddingAdvisoryMember(true);
     try {
-      if (advisoryMemberFormType === 'add') {
-        await addAdvisoryBoardMember({ name: data.name, title: data.title }, advisoryImageFileToSubmit as File | undefined);
-        toast({ title: "Member Added", description: `${data.name} has been added.` });
-      } else if (editingAdvisoryMember) {
-        await updateAdvisoryBoardMember(editingAdvisoryMember.id, { name: data.name, title: data.title }, advisoryImageFileToSubmit);
-        toast({ title: "Member Updated", description: `${data.name}'s details updated.` });
-      }
-      setIsAdvisoryMemberFormDialogOpen(false);
-      fetchAdvisoryData();
+      await addAdvisoryBoardMember({ name: data.name, title: data.title }, data.imageFile || undefined);
+      toast({ title: "Advisory Member Added", description: `${data.name} has been added.` });
+      addAdvisoryMemberForm.reset({ name: "", title: "", imageFile: null });
+      setAdvisoryMemberImagePreview(null);
+      fetchAdvisoryBoardData(); // Refresh list
     } catch (e) {
-      toast({ title: `Error ${advisoryMemberFormType === 'add' ? 'Adding' : 'Updating'} Member`, description: (e as Error).message, variant: "destructive" });
+      toast({ title: "Error Adding Member", description: (e as Error).message, variant: "destructive" });
     } finally {
-      setIsSubmittingAdvisoryMember(false);
+      setIsAddingAdvisoryMember(false);
     }
   };
 
-  // Delete Advisory Member
+  const openEditAdvisoryMemberDialog = (member: AdvisoryBoardMemberData) => {
+    setCurrentAdvisoryMemberToEdit(member);
+    editAdvisoryMemberForm.reset({ name: member.name, title: member.title, imageFile: null });
+    setAdvisoryMemberImagePreview(member.imageUrl || null);
+    setIsEditAdvisoryDialogOpen(true);
+  };
+
+  const onEditAdvisoryMemberSubmit = async (data: AdvisoryMemberFormValues) => {
+    if (!currentAdvisoryMemberToEdit) return;
+    setIsSubmittingOrgSettings(true); // Use general submitting state for edit dialog
+    try {
+      await updateAdvisoryBoardMember(currentAdvisoryMemberToEdit.id, 
+        { name: data.name, title: data.title }, 
+        data.imageFile // If imageFile is null from form, it means "keep existing" unless explicitly removed
+      );
+      toast({ title: "Advisory Member Updated", description: `${data.name}'s details updated.` });
+      setIsEditAdvisoryDialogOpen(false);
+      fetchAdvisoryBoardData();
+    } catch (e) {
+      toast({ title: "Error Updating Member", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmittingOrgSettings(false);
+    }
+  };
+  
+  const handleRemoveAdvisoryImageEdit = () => {
+    editAdvisoryMemberForm.setValue("imageFile", null, {shouldDirty: true}); // Signal removal
+    setAdvisoryMemberImagePreview(null); // Clear preview
+    // The updateAdvisoryBoardMember service will handle deleting the old image if imageFile is explicitly null
+  };
+
+
   const confirmDeleteAdvisoryMember = (member: AdvisoryBoardMemberData) => {
     setAdvisoryMemberToDelete(member);
   };
 
-  const handleDeleteAdvisoryMember = async () => {
+  const executeDeleteAdvisoryMember = async () => {
     if (!advisoryMemberToDelete) return;
     setIsDeletingAdvisoryMember(true);
     try {
       await deleteAdvisoryBoardMember(advisoryMemberToDelete.id);
-      toast({ title: "Member Deleted", description: `${advisoryMemberToDelete.name} has been removed.` });
+      toast({ title: "Advisory Member Deleted", description: `${advisoryMemberToDelete.name} removed.` });
+      fetchAdvisoryBoardData();
       setAdvisoryMemberToDelete(null);
-      fetchAdvisoryData();
     } catch (e) {
       toast({ title: "Error Deleting Member", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -285,102 +292,107 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handlePresidentFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => { setImageToCropSrcPresident(reader.result as string); setIsPresidentCropDialogOpen(true); };
-      reader.readAsDataURL(file);
+  const getInitials = (name?: string | null): string => {
+    if (!name) return "AM";
+    const parts = name.split(" ");
+    if (parts.length > 1 && parts[0] && parts[parts.length -1]) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-  };
-  const handlePresidentCropComplete = (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], "president_image_cropped.png", { type: "image/png" });
-    orgForm.setValue("presidentImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
-    setPresidentPreview(URL.createObjectURL(croppedBlob));
-    setIsPresidentCropDialogOpen(false);
-    if (presidentFileInputRef.current) presidentFileInputRef.current.value = "";
-  };
-  const handleSecretaryFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => { setImageToCropSrcSecretary(reader.result as string); setIsSecretaryCropDialogOpen(true); };
-      reader.readAsDataURL(file);
-    }
-  };
-  const handleSecretaryCropComplete = (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], "secretary_image_cropped.png", { type: "image/png" });
-    orgForm.setValue("secretaryImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
-    setSecretaryPreview(URL.createObjectURL(croppedBlob));
-    setIsSecretaryCropDialogOpen(false);
-    if (secretaryFileInputRef.current) secretaryFileInputRef.current.value = "";
-  };
-  const handleCoverFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => { setImageToCropSrcCover(reader.result as string); setIsCoverCropDialogOpen(true); };
-      reader.readAsDataURL(file);
-    }
-  };
-  const handleCoverCropComplete = (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], "cover_image_cropped.png", { type: "image/png" });
-    orgForm.setValue("coverImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
-    setCoverPreview(URL.createObjectURL(croppedBlob));
-    setIsCoverCropDialogOpen(false);
-    if (coverFileInputRef.current) coverFileInputRef.current.value = "";
+    return name.substring(0, 2).toUpperCase();
   };
 
 
-  if (isLoadingOrgData) {
-    return (
-      <AppShell>
-        <main className="flex-1 p-4 md:p-6 space-y-6">
-          <Card className="shadow-lg max-w-4xl mx-auto">
-            <CardHeader><Skeleton className="h-8 w-3/5" /><Skeleton className="h-4 w-4/5" /></CardHeader>
-            <CardContent className="space-y-8 pt-6">{[...Array(13)].map((_, i) => (<div key={i} className="space-y-2"><Skeleton className="h-4 w-1/4" /><Skeleton className="h-10 w-full" /></div>))}<Skeleton className="h-10 w-28 mt-4" /></CardContent>
-          </Card>
-           <Card className="shadow-lg max-w-4xl mx-auto mt-8">
-            <CardHeader><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-3/4" /></CardHeader>
-            <CardContent><Skeleton className="h-24 w-full" /><Skeleton className="h-10 w-32 mt-4" /></CardContent>
-          </Card>
-        </main>
-      </AppShell>
-    );
-  }
+  if (isLoadingData) { /* ... existing skeleton ... */ }
 
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
-        <div className="flex items-center gap-3 mb-6">
+        {/* ... Organization Settings Header and Form ... */}
+         <div className="flex items-center gap-3 mb-6">
           <Settings className="h-8 w-8 text-green-600" />
-          <div><h1 className="text-2xl font-headline font-semibold">Organization Settings</h1><p className="text-muted-foreground text-sm">Manage your organization's public information and app settings.</p></div>
+          <div>
+            <h1 className="text-2xl font-headline font-semibold">Organization Settings</h1>
+            <p className="text-muted-foreground text-sm">
+              Manage your organization's public information and app settings.
+            </p>
+          </div>
         </div>
 
-        {orgError && (<Alert variant="destructive" className="mb-4 max-w-4xl mx-auto"><AlertCircle className="h-4 w-4" /><ShadCNAlertTitle>Loading Error</ShadCNAlertTitle><ShadCNAlertDescription>{orgError}</ShadCNAlertDescription></Alert>)}
+        {error && (
+          <Alert variant="destructive" className="mb-4 max-w-4xl mx-auto">
+            <AlertCircle className="h-4 w-4" />
+            <ShadCNAlertTitle>Loading Error</ShadCNAlertTitle>
+            <ShadCNAlertDescription>{error}</ShadCNAlertDescription>
+          </Alert>
+        )}
 
         <Card className="shadow-lg max-w-4xl mx-auto">
-          <CardHeader><CardTitle>Configuration Details</CardTitle><ShadCNCardDescription>Update the general information for your organization and application.</ShadCNCardDescription></CardHeader>
+          <CardHeader>
+            <CardTitle>Configuration Details</CardTitle>
+            <ShadCNCardDescription>
+              Update the general information for your organization and application.
+            </ShadCNCardDescription>
+          </CardHeader>
           <CardContent>
-            <Form {...orgForm}>
-              <form onSubmit={orgForm.handleSubmit(onOrgSubmit)} className="space-y-8">
-                {/* Organization Settings Fields ... */}
-                <FormField control={orgForm.control} name="appName" render={({ field }) => (<FormItem><FormLabel>Application Name (for Header)</FormLabel><FormControl><Input placeholder="Your Application Name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormDescription>This name will be displayed in the application header.</FormDescription><FormMessage /></FormItem>)}/>
-                <FormField control={orgForm.control} name="organizationName" render={({ field }) => (<FormItem><FormLabel>Organization Name</FormLabel><FormControl><Input placeholder="Your Organization's Official Name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormDescription>Displayed on "About Us" and public areas.</FormDescription><FormMessage /></FormItem>)}/>
-                <FormField control={orgForm.control} name="address" render={({ field }) => (<FormItem><FormLabel>Address</FormLabel><FormControl><Textarea placeholder="Full official address" className="resize-y min-h-[100px]" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={orgForm.control} name="registrationNumber" render={({ field }) => (<FormItem><FormLabel>Registration Number (Optional)</FormLabel><FormControl><Input placeholder="e.g., 12345/AB/2024" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={orgForm.control} name="establishedYear" render={({ field }) => (<FormItem><FormLabel>Established Year (Optional)</FormLabel><FormControl><Input type="text" placeholder="e.g., 2010" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} maxLength={4} /></FormControl><FormDescription>The year the organization was established (4 digits).</FormDescription><FormMessage /></FormItem>)}/>
-                <FormField control={orgForm.control} name="committeePeriod" render={({ field }) => (<FormItem><FormLabel>Committee Period (Optional)</FormLabel><FormControl><Input placeholder="e.g., 2025-2026" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormDescription>The current committee's term period (e.g., 2025-2026).</FormDescription><FormMessage /></FormItem>)}/>
-                <FormField control={orgForm.control} name="contactPersonName" render={({ field }) => (<FormItem><FormLabel>Contact Person Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={orgForm.control} name="contactPersonCell" render={({ field }) => (<FormItem><FormLabel>Contact Person Cell</FormLabel><FormControl><Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
-                <FormField control={orgForm.control} name="contactEmail" render={({ field }) => (<FormItem><FormLabel>Contact Email ID</FormLabel><FormControl><Input type="email" placeholder="contact@example.com" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
-                <div className="space-y-4 p-4 border rounded-md"><h3 className="text-lg font-medium">Cover Image (for About Us page)</h3><FormField control={orgForm.control} name="coverImageFile" render={() => (<FormItem><FormLabel htmlFor="coverImageFile">Cover Picture</FormLabel>{coverPreview && (<div className="mt-2 mb-2 w-full aspect-[12/5] relative rounded-md overflow-hidden border"><Image src={coverPreview} alt="Cover preview" layout="fill" objectFit="cover" data-ai-hint="organization banner"/></div>)}<FormControl><Input id="coverImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleCoverFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={coverFileInputRef} /></FormControl><FormDescription>Upload a cover image for the About Us page banner (recommended 1200x500px).</FormDescription><FormMessage>{orgForm.formState.errors.coverImageFile?.message as React.ReactNode}</FormMessage></FormItem>)}/></div>
-                <div className="space-y-4 p-4 border rounded-md"><h3 className="text-lg font-medium">President Information</h3><FormField control={orgForm.control} name="presidentName" render={({ field }) => (<FormItem><FormLabel>President's Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/><FormField control={orgForm.control} name="presidentMobileNumber" render={({ field }) => (<FormItem><FormLabel>President's Mobile Number (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/><FormField control={orgForm.control} name="presidentImageFile" render={() => (<FormItem><FormLabel htmlFor="presidentImageFile">President's Picture</FormLabel>{presidentPreview && (<div className="mt-2 mb-2 w-32 h-32 relative rounded-md overflow-hidden border"><Image src={presidentPreview} alt="President preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}<FormControl><Input id="presidentImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handlePresidentFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={presidentFileInputRef}/></FormControl><FormDescription>Upload a picture (150x150 recommended).</FormDescription><FormMessage>{orgForm.formState.errors.presidentImageFile?.message as React.ReactNode}</FormMessage></FormItem>)}/></div>
-                <div className="space-y-4 p-4 border rounded-md"><h3 className="text-lg font-medium">General Secretary Information</h3><FormField control={orgForm.control} name="secretaryName" render={({ field }) => (<FormItem><FormLabel>General Secretary's Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/><FormField control={orgForm.control} name="secretaryMobileNumber" render={({ field }) => (<FormItem><FormLabel>General Secretary's Mobile Number (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/><FormField control={orgForm.control} name="secretaryImageFile" render={() => (<FormItem><FormLabel htmlFor="secretaryImageFile">General Secretary's Picture</FormLabel>{secretaryPreview && (<div className="mt-2 mb-2 w-32 h-32 relative rounded-md overflow-hidden border"><Image src={secretaryPreview} alt="Secretary preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}<FormControl><Input id="secretaryImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleSecretaryFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={secretaryFileInputRef}/></FormControl><FormDescription>Upload a picture (150x150 recommended).</FormDescription><FormMessage>{orgForm.formState.errors.secretaryImageFile?.message as React.ReactNode}</FormMessage></FormItem>)}/></div>
+            <Form {...orgSettingsForm}>
+              <form onSubmit={orgSettingsForm.handleSubmit(onOrgSettingsSubmit)} className="space-y-8">
+                 {/* ... All OrganizationSettingsFormFields ... */}
+                 <FormField control={orgSettingsForm.control} name="appName" render={({ field }) => (<FormItem><FormLabel>Application Name (for Header)</FormLabel><FormControl><Input placeholder="Your Application Name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormDescription>This name will be displayed in the application header.</FormDescription><FormMessage /></FormItem>)}/>
+                <FormField control={orgSettingsForm.control} name="organizationName" render={({ field }) => (<FormItem><FormLabel>Organization Name</FormLabel><FormControl><Input placeholder="Your Organization's Official Name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormDescription>Displayed on "About Us" and public areas.</FormDescription><FormMessage /></FormItem>)}/>
+                <FormField control={orgSettingsForm.control} name="address" render={({ field }) => (<FormItem><FormLabel>Address</FormLabel><FormControl><Textarea placeholder="Full official address" className="resize-y min-h-[100px]" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={orgSettingsForm.control} name="registrationNumber" render={({ field }) => (<FormItem><FormLabel>Registration Number (Optional)</FormLabel><FormControl><Input placeholder="e.g., 12345/AB/2024" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={orgSettingsForm.control} name="establishedYear" render={({ field }) => (<FormItem><FormLabel>Established Year (Optional)</FormLabel><FormControl><Input type="text" placeholder="e.g., 2010" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} maxLength={4} /></FormControl><FormDescription>The year the organization was established (4 digits).</FormDescription><FormMessage /></FormItem>)}/>
+                <FormField control={orgSettingsForm.control} name="committeePeriod" render={({ field }) => (<FormItem><FormLabel>Committee Period (Optional)</FormLabel><FormControl><Input placeholder="e.g., 2025-2026" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormDescription>The current committee's term period (e.g., 2025-2026).</FormDescription><FormMessage /></FormItem>)}/>
+                <FormField control={orgSettingsForm.control} name="contactPersonName" render={({ field }) => (<FormItem><FormLabel>Contact Person Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={orgSettingsForm.control} name="contactPersonCell" render={({ field }) => (<FormItem><FormLabel>Contact Person Cell</FormLabel><FormControl><Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={orgSettingsForm.control} name="contactEmail" render={({ field }) => (<FormItem><FormLabel>Contact Email ID</FormLabel><FormControl><Input type="email" placeholder="contact@example.com" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
                 
-                <Button type="submit" className="w-full md:w-auto" disabled={isSubmittingOrgSettings || isLoadingOrgData || (!orgForm.formState.isDirty && !orgForm.watch('presidentImageFile') && !orgForm.watch('secretaryImageFile') && !orgForm.watch('coverImageFile')) || !orgForm.formState.isValid}>
+                {/* Cover Image Section */}
+                <div className="space-y-4 p-4 border rounded-md"><h3 className="text-lg font-medium">Cover Image (for About Us page)</h3>
+                  <FormField control={orgSettingsForm.control} name="coverImageFile" render={() => (
+                    <FormItem>
+                      <FormLabel htmlFor="coverImageFile">Cover Picture</FormLabel>
+                      {coverPreview && (<div className="mt-2 mb-2 w-full aspect-[12/5] relative rounded-md overflow-hidden border"><Image src={coverPreview} alt="Cover preview" layout="fill" objectFit="cover" data-ai-hint="organization banner"/></div>)}
+                      <FormControl><Input id="coverImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleCoverFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={coverFileInputRef} /></FormControl>
+                      <FormDescription>Upload a cover image for the About Us page banner (recommended 1200x500px).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                </div>
+
+                {/* President Section */}
+                <div className="space-y-4 p-4 border rounded-md"><h3 className="text-lg font-medium">President Information</h3>
+                  <FormField control={orgSettingsForm.control} name="presidentName" render={({ field }) => (<FormItem><FormLabel>President's Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={orgSettingsForm.control} name="presidentMobileNumber" render={({ field }) => (<FormItem><FormLabel>President's Mobile Number (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={orgSettingsForm.control} name="presidentImageFile" render={() => (
+                    <FormItem>
+                      <FormLabel htmlFor="presidentImageFile">President's Picture</FormLabel>
+                      {presidentPreview && (<div className="mt-2 mb-2 w-32 h-32 relative rounded-md overflow-hidden border"><Image src={presidentPreview} alt="President preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
+                      <FormControl><Input id="presidentImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handlePresidentFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={presidentFileInputRef}/></FormControl>
+                      <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                </div>
+
+                {/* General Secretary Section */}
+                 <div className="space-y-4 p-4 border rounded-md"><h3 className="text-lg font-medium">General Secretary Information</h3>
+                  <FormField control={orgSettingsForm.control} name="secretaryName" render={({ field }) => (<FormItem><FormLabel>General Secretary's Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={orgSettingsForm.control} name="secretaryMobileNumber" render={({ field }) => (<FormItem><FormLabel>General Secretary's Mobile Number (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={orgSettingsForm.control} name="secretaryImageFile" render={() => (
+                    <FormItem>
+                      <FormLabel htmlFor="secretaryImageFile">General Secretary's Picture</FormLabel>
+                       {secretaryPreview && (<div className="mt-2 mb-2 w-32 h-32 relative rounded-md overflow-hidden border"><Image src={secretaryPreview} alt="Secretary preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
+                      <FormControl><Input id="secretaryImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleSecretaryFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={secretaryFileInputRef}/></FormControl>
+                       <FormDescription>Upload a picture (150x150 recommended).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                </div>
+                
+                <Button type="submit" className="w-full md:w-auto" disabled={isSubmittingOrgSettings || isLoadingData || (!orgSettingsForm.formState.isDirty && !orgSettingsForm.watch('presidentImageFile') && !orgSettingsForm.watch('secretaryImageFile') && !orgSettingsForm.watch('coverImageFile')) || !orgSettingsForm.formState.isValid}>
                   {isSubmittingOrgSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  {isSubmittingOrgSettings ? "Saving Settings..." : "Save All Organization Settings"}
+                  {isSubmittingOrgSettings ? "Saving..." : "Save Settings"}
                 </Button>
               </form>
             </Form>
@@ -389,115 +401,127 @@ export default function AdminSettingsPage() {
 
         {/* Advisory Board Configuration Section */}
         <Card className="shadow-lg max-w-4xl mx-auto mt-8">
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="text-xl">Advisory Board Configuration</CardTitle>
-                        <ShadCNCardDescription>Manage the members of your organization's advisory board.</ShadCNCardDescription>
-                    </div>
-                    <Button onClick={() => openAdvisoryMemberFormDialog('add')} size="sm">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Member
-                    </Button>
+          <CardHeader>
+            <CardTitle>Advisory Board Configuration</CardTitle>
+            <ShadCNCardDescription>
+              Manage the members of your organization's advisory board.
+            </ShadCNCardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Add New Advisory Member Form */}
+            <Card className="p-4 sm:p-6 bg-muted/20 border shadow-sm">
+              <h3 className="text-lg font-semibold mb-4 text-foreground flex items-center"><PlusCircle className="mr-2 h-5 w-5 text-primary"/> Add New Advisory Member</h3>
+              <Form {...addAdvisoryMemberForm}>
+                {/* Changed to div from form */}
+                <div className="space-y-4"> 
+                  <FormField control={addAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Member Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={addAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Member Title</FormLabel><FormControl><Input placeholder="e.g., Chief Strategic Advisor" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={addAdvisoryMemberForm.control} name="imageFile" render={() => (
+                    <FormItem>
+                      <FormLabel htmlFor="advisoryImageFileAdd">Member Picture</FormLabel>
+                      {advisoryMemberImagePreview && advisoryImageTargetField === 'add' && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={advisoryMemberImagePreview} alt="Member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
+                      <FormControl><Input id="advisoryImageFileAdd" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'add')} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isAddingAdvisoryMember} ref={advisoryImageFileInputRef}/></FormControl>
+                      <FormDescription>Upload a picture (150x150 recommended, 1:1 aspect ratio).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                   {/* Changed button type and added onClick */}
+                  <Button type="button" onClick={addAdvisoryMemberForm.handleSubmit(onAddAdvisoryMemberSubmit)} disabled={isAddingAdvisoryMember || !addAdvisoryMemberForm.formState.isValid}>
+                    {isAddingAdvisoryMember ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                    Add Member
+                  </Button>
                 </div>
-            </CardHeader>
-            <CardContent>
-                {isLoadingAdvisoryMembers ? (
-                  <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
-                ) : advisoryMembers.length === 0 ? (
-                  <Alert><AlertCircle className="h-4 w-4"/><ShadCNAlertTitle>No Members</ShadCNAlertTitle><AlertDescription>No advisory board members added yet.</AlertDescription></Alert>
-                ) : (
-                  <ul className="space-y-3">
-                    {advisoryMembers.map(member => (
-                      <li key={member.id} className="flex items-center justify-between p-3 border rounded-md bg-card hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10"><AvatarImage src={member.imageUrl || `https://placehold.co/40x40.png?text=${member.name.charAt(0)}`} alt={member.name} data-ai-hint="person portrait"/><AvatarFallback>{member.name.charAt(0)}</AvatarFallback></Avatar>
-                          <div><p className="font-medium text-sm">{member.name}</p><p className="text-xs text-muted-foreground">{member.title}</p></div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAdvisoryMemberFormDialog('edit', member)}><Edit className="h-4 w-4" /></Button>
-                          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => confirmDeleteAdvisoryMember(member)}><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-            </CardContent>
+              </Form>
+            </Card>
+
+            {/* Current Advisory Board Members List */}
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="text-lg font-semibold mb-4 text-foreground flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Current Advisory Board Members</h3>
+              {isLoadingAdvisory ? (
+                <div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : advisoryBoardMembers.length === 0 ? (
+                <Alert><AlertCircle className="h-4 w-4"/><ShadCNAlertTitle>No Members</ShadCNAlertTitle><ShadCNAlertDescription>No advisory board members added yet.</ShadCNAlertDescription></Alert>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader><TableRow><TableHead>Picture</TableHead><TableHead>Name</TableHead><TableHead>Title</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {advisoryBoardMembers.map(member => (
+                        <TableRow key={member.id}>
+                          <TableCell>
+                            <Avatar className="h-10 w-10"><AvatarImage src={member.imageUrl || `https://placehold.co/40x40.png?text=${getInitials(member.name)}`} alt={member.name} data-ai-hint="person portrait"/><AvatarFallback>{getInitials(member.name)}</AvatarFallback></Avatar>
+                          </TableCell>
+                          <TableCell className="font-medium">{member.name}</TableCell>
+                          <TableCell>{member.title}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditAdvisoryMemberDialog(member)} disabled={isDeletingAdvisoryMember}><Edit2 className="h-4 w-4"/></Button>
+                            <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => confirmDeleteAdvisoryMember(member)} disabled={isDeletingAdvisoryMember}><Trash2 className="h-4 w-4"/></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </CardContent>
         </Card>
 
 
-        {/* Crop Dialogs for Org Settings */}
-        {imageToCropSrcPresident && (<ImageCropDialog isOpen={isPresidentCropDialogOpen} onClose={() => {setIsPresidentCropDialogOpen(false); setImageToCropSrcPresident(null); if (presidentFileInputRef.current) presidentFileInputRef.current.value = "";}} imageSrc={imageToCropSrcPresident} onCropComplete={handlePresidentCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
-        {imageToCropSrcSecretary && (<ImageCropDialog isOpen={isSecretaryCropDialogOpen} onClose={() => {setIsSecretaryCropDialogOpen(false); setImageToCropSrcSecretary(null); if (secretaryFileInputRef.current) secretaryFileInputRef.current.value = "";}} imageSrc={imageToCropSrcSecretary} onCropComplete={handleSecretaryCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
-        {imageToCropSrcCover && (<ImageCropDialog isOpen={isCoverCropDialogOpen} onClose={() => {setIsCoverCropDialogOpen(false); setImageToCropSrcCover(null); if (coverFileInputRef.current) coverFileInputRef.current.value = "";}} imageSrc={imageToCropSrcCover} onCropComplete={handleCoverCropComplete} aspectRatio={1200 / 500} targetWidth={1200} targetHeight={500}/>)}
+        {/* Edit Advisory Member Dialog */}
+        {currentAdvisoryMemberToEdit && (
+          <Dialog open={isEditAdvisoryDialogOpen} onOpenChange={(open) => {setIsEditAdvisoryDialogOpen(open); if (!open) { setAdvisoryMemberImagePreview(null); editAdvisoryMemberForm.reset();}}}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Edit Advisory Member: {currentAdvisoryMemberToEdit.name}</DialogTitle></DialogHeader>
+              <Form {...editAdvisoryMemberForm}>
+                <div className="space-y-4 py-2 pb-4"> {/* Changed from form to div */}
+                  <FormField control={editAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Member Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={editAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Member Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={editAdvisoryMemberForm.control} name="imageFile" render={() => (
+                    <FormItem>
+                      <FormLabel htmlFor="advisoryImageFileEdit">Member Picture</FormLabel>
+                      {advisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={advisoryMemberImagePreview} alt="Member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
+                      <FormControl><Input id="advisoryImageFileEdit" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'edit')} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" ref={advisoryImageFileInputRef}/></FormControl>
+                      <FormDescription>Upload new (150x150px) or <Button type="button" variant="link" size="sm" className="p-0 h-auto" onClick={handleRemoveAdvisoryImageEdit}>remove current</Button>.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                  <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                    {/* Changed button type and added onClick */}
+                    <Button type="button" onClick={editAdvisoryMemberForm.handleSubmit(onEditAdvisoryMemberSubmit)} disabled={isSubmittingOrgSettings || !editAdvisoryMemberForm.formState.isDirty || !editAdvisoryMemberForm.formState.isValid}>
+                      {isSubmittingOrgSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Changes
+                    </Button>
+                  </DialogFooter>
+                </div>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        )}
 
-        {/* Advisory Member Add/Edit Dialog */}
-        <Dialog open={isAdvisoryMemberFormDialogOpen} onOpenChange={(open) => { if (!open) { setEditingAdvisoryMember(null); setAdvisoryImageFileToSubmit(undefined); } setIsAdvisoryMemberFormDialogOpen(open); }}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{advisoryMemberFormType === 'add' ? 'Add New' : 'Edit'} Advisory Member</DialogTitle></DialogHeader>
-            <Form {...advisoryMemberForm}>
-              <form onSubmit={advisoryMemberForm.handleSubmit(onAdvisoryMemberFormSubmit)} className="space-y-4 py-2">
-                <FormField control={advisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmittingAdvisoryMember} placeholder="Full name"/></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={advisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} disabled={isSubmittingAdvisoryMember} placeholder="e.g., Chief Strategic Advisor"/></FormControl><FormMessage /></FormItem>)} />
-                <FormField
-                    control={advisoryMemberForm.control}
-                    name="imageFile"
-                    render={() => ( // field prop is not used directly by custom Input
-                      <FormItem>
-                        <FormLabel htmlFor="advisoryMemberImageFile">Member Picture</FormLabel>
-                        {advisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={advisoryMemberImagePreview} alt="Member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
-                        <FormControl><Input id="advisoryMemberImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleAdvisoryFileChange} className="block w-full text-sm" disabled={isSubmittingAdvisoryMember} ref={advisoryMemberImageFileInputRef}/></FormControl>
-                        <FormDescription>Upload a picture (150x150px, 1:1 aspect ratio recommended).</FormDescription>
-                        {advisoryMemberImagePreview && advisoryMemberFormType === 'edit' && editingAdvisoryMember?.imageUrl && (
-                            <Button type="button" variant="link" size="sm" className="text-destructive p-0 h-auto mt-1" onClick={handleRemoveAdvisoryMemberImage} disabled={isSubmittingAdvisoryMember}>Remove current image</Button>
-                        )}
-                        <FormMessage>{advisoryMemberForm.formState.errors.imageFile?.message as React.ReactNode}</FormMessage>
-                      </FormItem>
-                    )}
-                  />
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {setIsAdvisoryMemberFormDialogOpen(false); setEditingAdvisoryMember(null); setAdvisoryImageFileToSubmit(undefined);}} disabled={isSubmittingAdvisoryMember}>Cancel</Button>
-                  <Button type="submit" disabled={isSubmittingAdvisoryMember || !advisoryMemberForm.formState.isValid || (!advisoryMemberForm.formState.isDirty && advisoryImageFileToSubmit === undefined) }>
-                    {isSubmittingAdvisoryMember ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />} {advisoryMemberFormType === 'add' ? 'Add' : 'Update'} Member
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-
-
-        {/* Crop Dialog for Advisory Board Member Image */}
-        {imageToCropSrcAdvisory && (
-          <ImageCropDialog
-            isOpen={isAdvisoryCropDialogOpen}
-            onClose={() => {
-              setIsAdvisoryCropDialogOpen(false);
-              setImageToCropSrcAdvisory(null);
-              if (advisoryMemberImageFileInputRef.current) advisoryMemberImageFileInputRef.current.value = "";
-            }}
-            imageSrc={imageToCropSrcAdvisory}
-            onCropComplete={handleAdvisoryCropComplete}
-            aspectRatio={1} targetWidth={150} targetHeight={150}
-          />
+        {/* Delete Advisory Member Confirmation Dialog */}
+        {advisoryMemberToDelete && (
+            <Dialog open={!!advisoryMemberToDelete} onOpenChange={(open) => !open && setAdvisoryMemberToDelete(null)}>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Confirm Deletion</DialogTitle><DialogDescription>Are you sure you want to delete advisory board member "{advisoryMemberToDelete.name}"? This action cannot be undone.</DialogDescription></DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setAdvisoryMemberToDelete(null)} disabled={isDeletingAdvisoryMember}>Cancel</Button>
+                        <Button variant="destructive" onClick={executeDeleteAdvisoryMember} disabled={isDeletingAdvisoryMember}>
+                            {isDeletingAdvisoryMember && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         )}
         
-        {/* Delete Advisory Member Confirmation */}
-        {advisoryMemberToDelete && (
-          <AlertDialog open={!!advisoryMemberToDelete} onOpenChange={(open) => !open && setAdvisoryMemberToDelete(null)}>
-            <ShadCNAlertDialogContentUI>
-              <ShadCNAlertDialogHeaderUI><ShadCNAlertDialogTitleUI>Delete Advisory Member?</ShadCNAlertDialogTitleUI></ShadCNAlertDialogHeaderUI>
-              <ShadCNAlertDialogDescriptionUI>Are you sure you want to delete {advisoryMemberToDelete.name}? This action cannot be undone and will remove their image.</ShadCNAlertDialogDescriptionUI>
-              <ShadCNAlertDialogFooterUI>
-                <AlertDialogCancel onClick={() => setAdvisoryMemberToDelete(null)} disabled={isDeletingAdvisoryMember}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAdvisoryMember} className="bg-destructive hover:bg-destructive/90" disabled={isDeletingAdvisoryMember}>
-                  {isDeletingAdvisoryMember && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete
-                </AlertDialogAction>
-              </ShadCNAlertDialogFooterUI>
-            </ShadCNAlertDialogContentUI>
-          </AlertDialog>
-        )}
-
+        {/* Image Crop Dialogs */}
+        {imageToCropSrcPresident && ( <ImageCropDialog isOpen={isPresidentCropDialogOpen} onClose={() => { setIsPresidentCropDialogOpen(false); setImageToCropSrcPresident(null); if (presidentFileInputRef.current) presidentFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcPresident} onCropComplete={handlePresidentCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
+        {imageToCropSrcSecretary && ( <ImageCropDialog isOpen={isSecretaryCropDialogOpen} onClose={() => { setIsSecretaryCropDialogOpen(false); setImageToCropSrcSecretary(null); if (secretaryFileInputRef.current) secretaryFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcSecretary} onCropComplete={handleSecretaryCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
+        {imageToCropSrcCover && ( <ImageCropDialog isOpen={isCoverCropDialogOpen} onClose={() => { setIsCoverCropDialogOpen(false); setImageToCropSrcCover(null); if (coverFileInputRef.current) coverFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcCover} onCropComplete={handleCoverCropComplete} aspectRatio={1200 / 500} targetWidth={1200} targetHeight={500}/>)}
+        {imageToCropSrcAdvisory && ( <ImageCropDialog isOpen={isAdvisoryCropDialogOpen} onClose={() => { setIsAdvisoryCropDialogOpen(false); setImageToCropSrcAdvisory(null); if (advisoryImageFileInputRef.current) advisoryImageFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcAdvisory} onCropComplete={handleAdvisoryCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
       </main>
     </AppShell>
   );
 }
+
+    

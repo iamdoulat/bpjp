@@ -83,6 +83,7 @@ export async function addAdvisoryBoardMember(
   try {
     let imageDetails: { imageUrl: string, imagePath: string } | undefined;
     if (imageFile) {
+      // For add, we don't have memberId yet for filename, timestamp will suffice
       imageDetails = await uploadAdvisoryImage(imageFile);
     }
 
@@ -101,6 +102,10 @@ export async function addAdvisoryBoardMember(
       if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
         throw new Error(`Failed to add advisory member: Firestore permission denied. Ensure admin user has write access to 'siteContent/${ORGANIZATION_DETAILS_DOC_ID}/${ADVISORY_BOARD_SUBCOLLECTION}'.`);
       }
+      // Check if it's an image upload error we re-threw
+      if (error.message.startsWith("Failed to upload advisory member image:")) {
+        throw error;
+      }
       throw new Error(`Failed to add advisory member: ${error.message}`);
     }
     throw new Error('An unknown error occurred while adding advisory member.');
@@ -110,7 +115,7 @@ export async function addAdvisoryBoardMember(
 export async function getAdvisoryBoardMembers(): Promise<AdvisoryBoardMemberData[]> {
   try {
     const membersCollectionRef = collection(db, SITE_CONTENT_COLLECTION, ORGANIZATION_DETAILS_DOC_ID, ADVISORY_BOARD_SUBCOLLECTION);
-    const q = query(membersCollectionRef, orderBy("createdAt", "asc"));
+    const q = query(membersCollectionRef, orderBy("createdAt", "asc")); // Or by "name" if preferred
     const querySnapshot = await getDocs(q);
     const members: AdvisoryBoardMemberData[] = [];
     querySnapshot.forEach((docSnap: QueryDocumentSnapshot<DocumentData>) => {
@@ -130,18 +135,18 @@ export async function getAdvisoryBoardMembers(): Promise<AdvisoryBoardMemberData
     console.error("[advisoryBoardService.getAdvisoryBoardMembers] Error fetching members:", error);
     if (error instanceof Error) {
        if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
-        throw new Error(`Failed to fetch advisory members: Firestore permission denied. Ensure public read/list access OR admin read/list access to 'siteContent/${ORGANIZATION_DETAILS_DOC_ID}/${ADVISORY_BOARD_SUBCOLLECTION}'.`);
+        throw new Error(`Failed to fetch advisory members: Firestore permission denied. Ensure admin user (or public, for 'About Us' page) has read/list access to 'siteContent/${ORGANIZATION_DETAILS_DOC_ID}/${ADVISORY_BOARD_SUBCOLLECTION}'.`);
       }
       throw new Error(`Failed to fetch advisory members: ${error.message}`);
     }
-    return [];
+    throw new Error('An unknown error occurred while fetching advisory members.');
   }
 }
 
 export async function updateAdvisoryBoardMember(
   memberId: string,
   updates: UpdateAdvisoryBoardMemberInput,
-  newImageFile?: File | null
+  newImageFile?: File | null // null means remove existing image
 ): Promise<void> {
   try {
     const memberDocRef = doc(db, SITE_CONTENT_COLLECTION, ORGANIZATION_DETAILS_DOC_ID, ADVISORY_BOARD_SUBCOLLECTION, memberId);
@@ -153,13 +158,13 @@ export async function updateAdvisoryBoardMember(
     const currentMemberSnap = await getDoc(memberDocRef);
     const currentMemberData = currentMemberSnap.data() as AdvisoryBoardMemberData | undefined;
 
-    if (newImageFile === null) {
+    if (newImageFile === null) { // Explicitly removing image
       if (currentMemberData?.imagePath) {
         await deleteAdvisoryImage(currentMemberData.imagePath);
       }
       dataToUpdate.imageUrl = null;
       dataToUpdate.imagePath = null;
-    } else if (newImageFile) {
+    } else if (newImageFile) { // New image file provided
       if (currentMemberData?.imagePath) {
         await deleteAdvisoryImage(currentMemberData.imagePath);
       }
@@ -167,6 +172,7 @@ export async function updateAdvisoryBoardMember(
       dataToUpdate.imageUrl = imageDetails.imageUrl;
       dataToUpdate.imagePath = imageDetails.imagePath;
     }
+    // If newImageFile is undefined, no change to image is made
 
     await updateDoc(memberDocRef, dataToUpdate);
   } catch (error) {
@@ -174,6 +180,9 @@ export async function updateAdvisoryBoardMember(
     if (error instanceof Error) {
       if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
         throw new Error(`Failed to update advisory member: Firestore permission denied. Ensure admin user has write access to 'siteContent/${ORGANIZATION_DETAILS_DOC_ID}/${ADVISORY_BOARD_SUBCOLLECTION}/${memberId}'.`);
+      }
+      if (error.message.startsWith("Failed to upload advisory member image:")) {
+        throw error;
       }
       throw new Error(`Failed to update advisory member: ${error.message}`);
     }
@@ -203,3 +212,5 @@ export async function deleteAdvisoryBoardMember(memberId: string): Promise<void>
     throw new Error('An unknown error occurred while deleting advisory member.');
   }
 }
+
+    
