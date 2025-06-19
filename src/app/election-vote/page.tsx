@@ -1,33 +1,219 @@
-
 // src/app/election-vote/page.tsx
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
-import { Gavel, PlusCircle, Settings, ListChecks, Info, Users, Vote as VoteIcon, Shield, Award } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { getCandidatesByPosition, recordVote, getUserVotes, type ElectionCandidateData, type CandidatePosition, type UserVoteData } from "@/services/electionCandidateService";
 
-export default function ManageElectionVotePage() {
+interface CandidateCardProps {
+  candidate: ElectionCandidateData;
+  onVote: (candidateId: string, candidateName: string, position: CandidatePosition) => void;
+  isVotedFor: boolean;
+  canVote: boolean; // Can the user vote in this section (i.e., haven't voted for this position yet)
+  isVoting: boolean; // Is a vote currently being submitted for THIS candidate
+  isLoggedIn: boolean;
+}
+
+const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVotedFor, canVote, isVoting, isLoggedIn }) => {
+  const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
+  
+  return (
+    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow flex flex-col", isVotedFor && "border-2 border-green-500 ring-2 ring-green-500/50")}>
+      <CardHeader className="items-center text-center">
+        <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50 mb-3 shadow-md">
+          <Image 
+            src={candidate.imageUrl || `https://placehold.co/150x150.png?text=${getInitials(candidate.name)}`} 
+            alt={candidate.name} 
+            layout="fill" 
+            objectFit="cover"
+            data-ai-hint="person portrait"
+          />
+        </div>
+        <CardTitle className="text-lg">{candidate.name}</CardTitle>
+        <CardDescription>Symbol: {candidate.electionSymbol}</CardDescription>
+        <CardDescription className="text-xs">Votes: {candidate.voteCount || 0}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-grow flex items-end justify-center p-4">
+        <Button
+          className={cn(
+            "w-full font-bold text-base py-3",
+            isVotedFor ? "bg-green-600 hover:bg-green-700 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
+          )}
+          onClick={() => onVote(candidate.id, candidate.name, candidate.position)}
+          disabled={!isLoggedIn || isVotedFor || !canVote || isVoting}
+        >
+          {isVoting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isVotedFor ? <CheckCircle2 className="mr-2 h-5 w-5" /> : <VoteIcon className="mr-2 h-5 w-5" />}
+          {isVoting ? "Voting..." : isVotedFor ? "Voted" : "Vote"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+
+export default function ElectionVotePage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
 
-  // Placeholder for actual candidates; replace with fetched data
-  const presidentCandidates = [
-    { id: "p1", name: "Candidate P-Alpha", symbol: "Eagle", imageUrl: "https://placehold.co/150x150.png?text=P1" },
-    { id: "p2", name: "Candidate P-Beta", symbol: "Lion", imageUrl: "https://placehold.co/150x150.png?text=P2" },
-  ];
-  const secretaryCandidates = [
-    { id: "s1", name: "Candidate S-Gamma", symbol: "Book", imageUrl: "https://placehold.co/150x150.png?text=S1" },
-    { id: "s2", name: "Candidate S-Delta", symbol: "Star", imageUrl: "https://placehold.co/150x150.png?text=S2" },
-  ];
+  const [presidentCandidates, setPresidentCandidates] = React.useState<ElectionCandidateData[]>([]);
+  const [secretaryCandidates, setSecretaryCandidates] = React.useState<ElectionCandidateData[]>([]);
+  const [loadingCandidates, setLoadingCandidates] = React.useState(true);
+  const [errorCandidates, setErrorCandidates] = React.useState<string | null>(null);
 
-  const handleVote = (candidateName: string, position: string) => {
-    alert(`Voted for ${candidateName} for ${position}. (Voting functionality under development)`);
-    // Later, integrate with a real voting service
+  const [userVotes, setUserVotes] = React.useState<UserVoteData | null>(null);
+  const [loadingUserVotes, setLoadingUserVotes] = React.useState(true);
+
+  const [isVotingState, setIsVotingState] = React.useState<{ [candidateId: string]: boolean }>({});
+
+  React.useEffect(() => {
+    async function fetchData() {
+      setLoadingCandidates(true);
+      setErrorCandidates(null);
+      try {
+        const [pres, sec] = await Promise.all([
+          getCandidatesByPosition("President"),
+          getCandidatesByPosition("GeneralSecretary")
+        ]);
+        setPresidentCandidates(pres);
+        setSecretaryCandidates(sec);
+      } catch (e) {
+        console.error("Failed to fetch candidates:", e);
+        setErrorCandidates(e instanceof Error ? e.message : "Could not load candidates.");
+      } finally {
+        setLoadingCandidates(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  React.useEffect(() => {
+    if (user && !authLoading) {
+      setLoadingUserVotes(true);
+      getUserVotes(user.uid)
+        .then(votes => setUserVotes(votes))
+        .catch(err => {
+          console.error("Error fetching user votes:", err);
+          // Optionally, show a toast for this error if it's critical
+        })
+        .finally(() => setLoadingUserVotes(false));
+    } else if (!user && !authLoading) {
+      setLoadingUserVotes(false);
+      setUserVotes(null);
+    }
+  }, [user, authLoading]);
+
+  const handleVote = async (candidateId: string, candidateName: string, position: CandidatePosition) => {
+    if (!user) {
+      toast({ title: "Login Required", description: "Please log in to cast your vote.", variant: "destructive" });
+      router.push("/login");
+      return;
+    }
+    if (isVotingState[candidateId]) return; // Prevent double submission
+
+    setIsVotingState(prev => ({ ...prev, [candidateId]: true }));
+
+    try {
+      await recordVote(user.uid, candidateId, candidateName, position);
+      toast({ title: "Vote Cast!", description: `Your vote for ${candidateName} as ${position} has been recorded.`, variant: "default" });
+      
+      // Update userVotes state
+      setUserVotes(prev => ({
+        ...(prev || { userId: user.uid }),
+        [position === 'President' ? 'presidentCandidateId' : 'generalSecretaryCandidateId']: candidateId,
+      }));
+
+      // Optimistically update candidate's vote count locally or refetch
+      const updateLocalCandidates = (prevCandidates: ElectionCandidateData[]) => 
+        prevCandidates.map(c => c.id === candidateId ? { ...c, voteCount: (c.voteCount || 0) + 1 } : c);
+      
+      if (position === 'President') {
+        setPresidentCandidates(updateLocalCandidates);
+      } else {
+        setSecretaryCandidates(updateLocalCandidates);
+      }
+
+    } catch (e) {
+      console.error("Voting failed:", e);
+      toast({ title: "Voting Failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsVotingState(prev => ({ ...prev, [candidateId]: false }));
+    }
   };
+  
+  const isLoadingPage = loadingCandidates || authLoading || loadingUserVotes;
+
+  const renderCandidateSection = (
+    title: string,
+    candidates: ElectionCandidateData[],
+    position: CandidatePosition,
+    icon: React.ElementType
+  ) => {
+    const IconComponent = icon;
+    const votedCandidateId = position === 'President' ? userVotes?.presidentCandidateId : userVotes?.generalSecretaryCandidateId;
+    const canVoteForPosition = !votedCandidateId;
+
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <IconComponent className="h-7 w-7 text-green-600" />
+          <h2 className="text-xl font-headline font-semibold text-foreground">{title}</h2>
+        </div>
+        {isLoadingPage ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(2)].map((_, i) => <CandidateCardSkeleton key={i} />)}
+          </div>
+        ) : errorCandidates ? (
+          <Alert variant="destructive"><ShadCNAlertTitle>Error Loading Candidates</ShadCNAlertTitle><AlertDescription>{errorCandidates}</AlertDescription></Alert>
+        ) : candidates.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {candidates.map((candidate) => (
+              <CandidateCard
+                key={candidate.id}
+                candidate={candidate}
+                onVote={handleVote}
+                isVotedFor={candidate.id === votedCandidateId}
+                canVote={canVoteForPosition}
+                isVoting={isVotingState[candidate.id] || false}
+                isLoggedIn={!!user}
+              />
+            ))}
+          </div>
+        ) : (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <ShadCNAlertTitle>No {position} Candidates</ShadCNAlertTitle>
+            <AlertDescription>{position} candidate nominations are not yet available.</AlertDescription>
+          </Alert>
+        )}
+      </div>
+    );
+  };
+  
+  const CandidateCardSkeleton = () => (
+    <Card className="shadow-lg flex flex-col">
+      <CardHeader className="items-center text-center">
+        <Skeleton className="w-24 h-24 rounded-full mb-3" />
+        <Skeleton className="h-5 w-3/4 mb-1" />
+        <Skeleton className="h-4 w-1/2 mb-1" />
+        <Skeleton className="h-3 w-1/4" />
+      </CardHeader>
+      <CardContent className="flex-grow flex items-end justify-center p-4">
+        <Skeleton className="h-10 w-full" />
+      </CardContent>
+    </Card>
+  );
+
 
   return (
     <AppShell>
@@ -42,87 +228,25 @@ export default function ManageElectionVotePage() {
               </p>
             </div>
           </div>
-          {/* Removed "Create New Election" button to focus on voting for now */}
         </div>
 
-        {/* Candidate Nomination Sections */}
-        <section className="space-y-8 mt-8">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-7 w-7 text-green-600" />
-              <h2 className="text-xl font-headline font-semibold text-foreground">President Candidate Nominations</h2>
-            </div>
-            {presidentCandidates.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {presidentCandidates.map((candidate) => (
-                  <Card key={candidate.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
-                    <CardHeader className="items-center text-center">
-                      <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50 mb-3">
-                        <img src={candidate.imageUrl} alt={candidate.name} className="object-cover w-full h-full" data-ai-hint="person portrait" />
-                      </div>
-                      <CardTitle className="text-lg">{candidate.name}</CardTitle>
-                      <CardDescription>Symbol: {candidate.symbol}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow flex items-end justify-center p-4">
-                      <Button
-                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-base py-3"
-                        onClick={() => handleVote(candidate.name, "President")}
-                      >
-                        <VoteIcon className="mr-2 h-5 w-5" /> Vote
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <ShadCNAlertTitle>No President Candidates</ShadCNAlertTitle>
-                <AlertDescription>President candidate nominations are not yet available.</AlertDescription>
-              </Alert>
-            )}
-          </div>
+        {!user && !isLoadingPage && (
+          <Alert variant="default" className="mt-6">
+             <UserX className="h-4 w-4"/>
+            <ShadCNAlertTitle>Login to Vote</ShadCNAlertTitle>
+            <AlertDescription>
+                You must be logged in to cast your vote. Please <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/login')}>login</Button> or <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/signup')}>sign up</Button>.
+            </AlertDescription>
+          </Alert>
+        )}
 
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Award className="h-7 w-7 text-green-600" />
-              <h2 className="text-xl font-headline font-semibold text-foreground">General Secretary Candidate Nominations</h2>
-            </div>
-            {secretaryCandidates.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {secretaryCandidates.map((candidate) => (
-                  <Card key={candidate.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
-                     <CardHeader className="items-center text-center">
-                      <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50 mb-3">
-                        <img src={candidate.imageUrl} alt={candidate.name} className="object-cover w-full h-full" data-ai-hint="person portrait" />
-                      </div>
-                      <CardTitle className="text-lg">{candidate.name}</CardTitle>
-                      <CardDescription>Symbol: {candidate.symbol}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow flex items-end justify-center p-4">
-                      <Button
-                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-base py-3"
-                        onClick={() => handleVote(candidate.name, "General Secretary")}
-                      >
-                         <VoteIcon className="mr-2 h-5 w-5" /> Vote
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <ShadCNAlertTitle>No General Secretary Candidates</ShadCNAlertTitle>
-                <AlertDescription>General Secretary candidate nominations are not yet available.</AlertDescription>
-              </Alert>
-            )}
-          </div>
+        <section className="space-y-8 mt-8">
+          {renderCandidateSection("President Candidate Nominations", presidentCandidates, "President", Shield)}
+          {renderCandidateSection("General Secretary Candidate Nominations", secretaryCandidates, "GeneralSecretary", Award)}
         </section>
 
-
-        <div className="mt-10 pt-6 border-t flex justify-center"> {/* Center the single card */}
-          <Card className="shadow-md max-w-sm w-full"> {/* Added max-w-sm and w-full */}
+        <div className="mt-10 pt-6 border-t flex justify-center">
+          <Card className="shadow-md max-w-sm w-full">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <ListChecks className="h-5 w-5 text-muted-foreground" />
@@ -134,15 +258,12 @@ export default function ManageElectionVotePage() {
                 Monitor voting progress and view final election results (Admin Only).
               </CardDescription>
               <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push("/admin/election-vote")}>
-                 View Results
+                 View Results (Admin)
               </Button>
             </CardContent>
           </Card>
         </div>
-
       </main>
     </AppShell>
   );
 }
-
-    
