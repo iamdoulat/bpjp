@@ -18,34 +18,45 @@ export interface OrganizationSettingsData {
   presidentName: string;
   presidentMobileNumber?: string | null;
   presidentImageURL?: string | null;
+  presidentImagePath?: string | null; // For storage path
   secretaryName: string;
   secretaryMobileNumber?: string | null;
   secretaryImageURL?: string | null;
+  secretaryImagePath?: string | null; // For storage path
   appName: string;
   lastUpdated?: Timestamp;
   coverImageUrl?: string | null; // For the About Us page banner
+  coverImagePath?: string | null; // For storage path
 }
 
 const SETTINGS_DOC_ID = 'organizationDetails';
-const SITE_CONTENT_COLLECTION = 'siteContent'; // Using the same collection as missionService for consistency
+const SITE_CONTENT_COLLECTION = 'siteContent';
 
-async function uploadImage(file: File, path: string): Promise<string> {
+async function uploadImage(file: File, path: string): Promise<{ imageUrl: string, imagePath: string }> {
   const storageRef = ref(storage, path);
-  const snapshot = await uploadBytes(storageRef, file);
-  return getDownloadURL(snapshot.ref);
+  try {
+    const snapshot = await uploadBytes(storageRef, file);
+    const imageUrl = await getDownloadURL(snapshot.ref);
+    return { imageUrl, imagePath: path };
+  } catch (uploadError: any) {
+    console.error("[organizationSettingsService.uploadImage] Error uploading image: ", uploadError);
+    if (uploadError.code === 'storage/unauthorized' || (uploadError.message && uploadError.message.includes('storage/unauthorized'))) {
+        throw new Error(`Failed to upload organization image: Firebase Storage permission denied. Please verify admin role and Storage security rules for '${path.substring(0, path.lastIndexOf('/'))}/'. Path: ${uploadError.metadata?.fullPath || 'unknown'}`);
+    }
+    throw new Error(`Failed to upload organization image: ${uploadError.message || 'Unknown storage error'}`);
+  }
 }
 
-async function deleteImage(imageUrl?: string | null) {
-    if (imageUrl) {
+async function deleteImage(imagePath?: string | null) {
+    if (imagePath) {
         try {
-            const imageRef = ref(storage, imageUrl);
+            const imageRef = ref(storage, imagePath);
             await deleteObject(imageRef);
         } catch (error: any) {
             if (error.code === 'storage/object-not-found') {
-                console.warn(`Image not found, skipping deletion: ${imageUrl}`);
+                console.warn(`[organizationSettingsService.deleteImage] Image not found, skipping deletion: ${imagePath}`);
             } else {
-                console.error(`Error deleting image ${imageUrl}:`, error);
-                // Optionally re-throw or handle as critical
+                console.error(`[organizationSettingsService.deleteImage] Error deleting image ${imagePath}:`, error);
             }
         }
     }
@@ -61,33 +72,34 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       return {
         id: docSnap.id,
         ...data,
-        // Ensure all fields are correctly mapped and defaults provided if necessary
         organizationName: data.organizationName || "BPJP Default Org Name",
         address: data.address || "Default Address",
         contactPersonName: data.contactPersonName || "Default Contact Person",
         contactEmail: data.contactEmail || "default@example.com",
         presidentName: data.presidentName || "Default President",
         presidentMobileNumber: data.presidentMobileNumber || null,
+        presidentImageURL: data.presidentImageURL || null,
+        presidentImagePath: data.presidentImagePath || null,
         secretaryName: data.secretaryName || "Default Secretary",
         secretaryMobileNumber: data.secretaryMobileNumber || null,
+        secretaryImageURL: data.secretaryImageURL || null,
+        secretaryImagePath: data.secretaryImagePath || null,
         appName: data.appName || process.env.NEXT_PUBLIC_APP_NAME || "BPJP",
         registrationNumber: data.registrationNumber || null,
-        establishedYear: data.establishedYear || null, // Handle new field
+        establishedYear: data.establishedYear || null,
         committeePeriod: data.committeePeriod || null,
         contactPersonCell: data.contactPersonCell || null,
-        presidentImageURL: data.presidentImageURL || null,
-        secretaryImageURL: data.secretaryImageURL || null,
         coverImageUrl: data.coverImageUrl || null,
+        coverImagePath: data.coverImagePath || null,
         lastUpdated: data.lastUpdated as Timestamp,
       } as OrganizationSettingsData;
     }
-    // Return a default structure if the document doesn't exist, for initial setup
     return {
       id: SETTINGS_DOC_ID,
       organizationName: "BPJP Default Org Name",
       address: "123 Main Street, Anytown, USA",
       registrationNumber: null,
-      establishedYear: null, // Default for new field
+      establishedYear: null,
       committeePeriod: null,
       contactPersonName: "John Doe",
       contactPersonCell: null,
@@ -95,16 +107,24 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       presidentName: "Alice President",
       presidentMobileNumber: null,
       presidentImageURL: null,
+      presidentImagePath: null,
       secretaryName: "Bob Secretary",
       secretaryMobileNumber: null,
       secretaryImageURL: null,
+      secretaryImagePath: null,
       appName: process.env.NEXT_PUBLIC_APP_NAME || "BPJP",
       coverImageUrl: null,
+      coverImagePath: null,
       lastUpdated: undefined,
     };
   } catch (error) {
-    console.error("Error fetching organization settings:", error);
-    // Return default structure on error to prevent app crash
+    console.error("[organizationSettingsService.getOrganizationSettings] Error fetching organization settings:", error);
+    if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
+        throw new Error(`Failed to fetch organization settings: Firestore permission denied. Ensure public read access to 'siteContent/${SETTINGS_DOC_ID}'.`);
+      }
+      throw new Error(`Failed to fetch organization settings: ${error.message}`);
+    }
     return {
       id: SETTINGS_DOC_ID,
       organizationName: "Error Loading Name",
@@ -117,62 +137,73 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       secretaryName: "Error",
       secretaryMobileNumber: null,
       lastUpdated: undefined,
-      // ensure all required fields are present
       registrationNumber: null,
-      establishedYear: null, // Default for new field on error
+      establishedYear: null,
       committeePeriod: null,
       contactPersonCell: null,
       presidentImageURL: null,
+      presidentImagePath: null,
       secretaryImageURL: null,
+      secretaryImagePath: null,
       coverImageUrl: null,
+      coverImagePath: null,
     };
   }
 }
 
 export async function saveOrganizationSettings(
-  settingsData: Omit<OrganizationSettingsData, 'id' | 'lastUpdated' | 'presidentImageURL' | 'secretaryImageURL' | 'coverImageUrl'>,
+  settingsData: Omit<OrganizationSettingsData, 'id' | 'lastUpdated' | 'presidentImageURL' | 'secretaryImageURL' | 'coverImageUrl' | 'presidentImagePath' | 'secretaryImagePath' | 'coverImagePath'>,
   presidentImageFile?: File,
   secretaryImageFile?: File,
   coverImageFile?: File
 ): Promise<void> {
   try {
     const docRef = doc(db, SITE_CONTENT_COLLECTION, SETTINGS_DOC_ID);
-    const currentSettings = await getOrganizationSettings(); // Fetch current settings to get existing image URLs
+    const currentSettings = await getDoc(docRef); // Fetch current doc to get existing image paths
 
     const dataToSave: Partial<OrganizationSettingsData> = {
-      ...settingsData, // This now includes presidentMobileNumber and secretaryMobileNumber, and establishedYear
+      ...settingsData,
       lastUpdated: serverTimestamp() as Timestamp,
     };
 
     if (presidentImageFile) {
-      if (currentSettings?.presidentImageURL) {
-        await deleteImage(currentSettings.presidentImageURL);
+      if (currentSettings.exists() && currentSettings.data()?.presidentImagePath) {
+        await deleteImage(currentSettings.data()?.presidentImagePath);
       }
-      dataToSave.presidentImageURL = await uploadImage(presidentImageFile, `organization/${SETTINGS_DOC_ID}/president_image.${presidentImageFile.name.split('.').pop()}`);
+      const presImgDetails = await uploadImage(presidentImageFile, `organization/${SETTINGS_DOC_ID}/president_image.${presidentImageFile.name.split('.').pop()}`);
+      dataToSave.presidentImageURL = presImgDetails.imageUrl;
+      dataToSave.presidentImagePath = presImgDetails.imagePath;
     }
 
     if (secretaryImageFile) {
-      if (currentSettings?.secretaryImageURL) {
-        await deleteImage(currentSettings.secretaryImageURL);
+      if (currentSettings.exists() && currentSettings.data()?.secretaryImagePath) {
+        await deleteImage(currentSettings.data()?.secretaryImagePath);
       }
-      dataToSave.secretaryImageURL = await uploadImage(secretaryImageFile, `organization/${SETTINGS_DOC_ID}/secretary_image.${secretaryImageFile.name.split('.').pop()}`);
-    }
-    
-    if (coverImageFile) {
-      if (currentSettings?.coverImageUrl) {
-        await deleteImage(currentSettings.coverImageUrl);
-      }
-      dataToSave.coverImageUrl = await uploadImage(coverImageFile, `organization/${SETTINGS_DOC_ID}/cover_image.${coverImageFile.name.split('.').pop()}`);
+      const secImgDetails = await uploadImage(secretaryImageFile, `organization/${SETTINGS_DOC_ID}/secretary_image.${secretaryImageFile.name.split('.').pop()}`);
+      dataToSave.secretaryImageURL = secImgDetails.imageUrl;
+      dataToSave.secretaryImagePath = secImgDetails.imagePath;
     }
 
+    if (coverImageFile) {
+      if (currentSettings.exists() && currentSettings.data()?.coverImagePath) {
+        await deleteImage(currentSettings.data()?.coverImagePath);
+      }
+      const coverImgDetails = await uploadImage(coverImageFile, `organization/${SETTINGS_DOC_ID}/cover_image.${coverImageFile.name.split('.').pop()}`);
+      dataToSave.coverImageUrl = coverImgDetails.imageUrl;
+      dataToSave.coverImagePath = coverImgDetails.imagePath;
+    }
 
     await setDoc(docRef, dataToSave, { merge: true });
   } catch (error) {
-    console.error("Error saving organization settings:", error);
+    console.error("[organizationSettingsService.saveOrganizationSettings] Error saving organization settings:", error);
     if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
+        throw new Error(`Failed to save organization settings: Firestore permission denied. Ensure admin user has write access to 'siteContent/${SETTINGS_DOC_ID}'. Also, check Storage rules for 'organization/' path if image upload fails.`);
+      }
       throw new Error(`Failed to save organization settings: ${error.message}`);
     }
     throw new Error('An unknown error occurred while saving organization settings.');
   }
 }
 
+    
