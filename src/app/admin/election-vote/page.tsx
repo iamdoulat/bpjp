@@ -1,15 +1,17 @@
-
 // src/app/admin/election-vote/page.tsx
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation"; // Added useRouter
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
-import { Gavel, PlusCircle, Settings, ListChecks, Info, Users } from "lucide-react"; // Added Users icon
+import { Gavel, PlusCircle, Settings, ListChecks, Info, Users } from "lucide-react";
 
 export default function ManageElectionVotePage() {
+  const router = useRouter(); // Initialize router
+
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
@@ -58,7 +60,7 @@ export default function ManageElectionVotePage() {
               <CardDescription>
                 Manage candidate nominations, applications, and approvals.
               </CardDescription>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => alert("Manage candidates (to be implemented)")}>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push("/admin/election-vote/candidate-management")}>
                 View Candidates
               </Button>
             </CardContent>
@@ -95,4 +97,3 @@ export default function ManageElectionVotePage() {
     </AppShell>
   );
 }
-
