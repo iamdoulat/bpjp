@@ -12,10 +12,10 @@ import {
   orderBy,
   query,
   where,
-  runTransaction, // Import runTransaction
-  increment, // Import increment
-  getDoc, // Import getDoc
-  setDoc, // Import setDoc
+  runTransaction,
+  increment,
+  getDoc,
+  setDoc,
   type DocumentData,
   type QueryDocumentSnapshot
 } from 'firebase/firestore';
@@ -31,7 +31,8 @@ export interface ElectionCandidateData {
   imageUrl?: string | null;
   imagePath?: string | null; // For Firebase Storage path
   createdAt: Timestamp;
-  voteCount: number; // Added voteCount
+  lastUpdated?: Timestamp; // Added for tracking updates
+  voteCount: number;
 }
 
 export interface NewCandidateInput {
@@ -41,14 +42,17 @@ export interface NewCandidateInput {
   imageFile?: File | null;
 }
 
-export interface UpdateCandidateInput extends Partial<Omit<NewCandidateInput, 'imageFile'>> {
-  imageFile?: File | null; // Allow null to remove image
-  voteCount?: number; // Allow updating voteCount if needed directly (though usually by recordVote)
+// Used for updating, fields are optional
+export interface UpdateCandidateInput {
+  name?: string;
+  electionSymbol?: string;
+  // imageFile will be handled separately in the updateCandidate function
+  // position is typically not changed after creation
 }
 
 
 const ELECTION_CANDIDATES_COLLECTION = 'electionCandidates';
-const ELECTION_VOTES_COLLECTION = 'electionVotes'; // New collection for votes
+const ELECTION_VOTES_COLLECTION = 'electionVotes';
 const CANDIDATE_IMAGE_STORAGE_PATH = 'election_candidates';
 
 
@@ -81,6 +85,7 @@ async function deleteCandidateImage(imagePath?: string | null): Promise<void> {
       console.warn(`[electionCandidateService.deleteCandidateImage] Image not found, skipping deletion: ${imagePath}`);
     } else {
       console.error(`[electionCandidateService.deleteCandidateImage] Error deleting image ${imagePath}:`, error);
+      // Optionally rethrow if deletion failure is critical, though for now we just log
     }
   }
 }
@@ -90,12 +95,13 @@ export async function addCandidate(data: NewCandidateInput): Promise<string> {
     throw new Error("User must be authenticated to add a candidate.");
   }
   try {
-    const candidateDataForFirestore: Omit<ElectionCandidateData, 'id' | 'imageUrl' | 'imagePath' | 'createdAt'> & { createdAt: Timestamp, imageUrl?: null, imagePath?: null } = {
+    const candidateDataForFirestore: Omit<ElectionCandidateData, 'id' | 'imageUrl' | 'imagePath' | 'createdAt' | 'lastUpdated'> & { createdAt: Timestamp, imageUrl?: null, imagePath?: null, lastUpdated?: Timestamp } = {
       name: data.name,
       electionSymbol: data.electionSymbol,
       position: data.position,
-      voteCount: 0, // Initialize voteCount
+      voteCount: 0,
       createdAt: serverTimestamp() as Timestamp,
+      lastUpdated: serverTimestamp() as Timestamp,
       imageUrl: null,
       imagePath: null,
     };
@@ -144,7 +150,8 @@ export async function getCandidatesByPosition(position: CandidatePosition): Prom
         imageUrl: data.imageUrl || null,
         imagePath: data.imagePath || null,
         createdAt: data.createdAt as Timestamp,
-        voteCount: data.voteCount || 0, // Fetch voteCount
+        lastUpdated: data.lastUpdated as Timestamp,
+        voteCount: data.voteCount || 0,
       });
     });
     return candidates;
@@ -180,7 +187,7 @@ export async function getUserVotes(userId: string): Promise<UserVoteData | null>
     if (docSnap.exists()) {
       return { userId, ...(docSnap.data() as Omit<UserVoteData, 'userId'>) };
     }
-    return null; // No votes cast yet by this user
+    return null;
   } catch (error) {
     console.error(`[electionCandidateService.getUserVotes] Error fetching votes for user ${userId}:`, error);
     if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
@@ -193,7 +200,7 @@ export async function getUserVotes(userId: string): Promise<UserVoteData | null>
 export async function recordVote(
   userId: string,
   candidateId: string,
-  candidateName: string, // For potential logging or notifications, not stored in vote doc
+  candidateName: string,
   position: CandidatePosition
 ): Promise<void> {
   if (!userId) throw new Error("User ID is required to record a vote.");
@@ -221,21 +228,15 @@ export async function recordVote(
       const voteField = position === 'President' ? 'presidentCandidateId' : 'generalSecretaryCandidateId';
 
       if (userVoteData[voteField]) {
-        // User has already voted for this position. For now, we prevent re-voting.
-        // In a more complex scenario, you might allow changing votes, which would involve
-        // decrementing the old candidate's voteCount.
         throw new Error(`You have already cast your vote for ${position}.`);
       }
 
-      // Record the vote
       const updatedVoteData: UserVoteData = {
         ...userVoteData,
         [voteField]: candidateId,
         lastVotedAt: serverTimestamp() as Timestamp,
       };
       transaction.set(userVoteDocRef, updatedVoteData, { merge: true });
-
-      // Increment candidate's vote count
       transaction.update(candidateDocRef, { voteCount: increment(1) });
     });
     console.log(`[electionCandidateService.recordVote] Vote by ${userId} for ${candidateName} (${candidateId}) for ${position} recorded.`);
@@ -245,80 +246,94 @@ export async function recordVote(
         if (error.message.includes("Missing or insufficient permissions")) {
             throw new Error(`Failed to record vote: Firestore permission denied. Check rules for '${ELECTION_VOTES_COLLECTION}/${userId}' and '${ELECTION_CANDIDATES_COLLECTION}/${candidateId}'.`);
         }
-        throw error; // Re-throw specific errors like "already voted"
+        throw error;
     }
     throw new Error('An unknown error occurred while recording the vote.');
   }
 }
 
 
-export async function updateCandidate(candidateId: string, updates: UpdateCandidateInput, newImageFile?: File | null): Promise<void> {
-    if (!auth.currentUser) {
-        throw new Error("User must be authenticated to update a candidate.");
+export async function updateCandidate(
+  candidateId: string,
+  updates: UpdateCandidateInput,
+  newImageFile?: File | null, // File object for new image, null to remove, undefined to keep current
+  currentImagePath?: string | null // Needed if newImageFile is provided, to delete the old one
+): Promise<void> {
+  if (!auth.currentUser) {
+    throw new Error("User must be authenticated to update a candidate.");
+  }
+  const candidateDocRef = doc(db, ELECTION_CANDIDATES_COLLECTION, candidateId);
+  const dataToUpdate: Partial<Omit<ElectionCandidateData, 'id' | 'createdAt' | 'position' | 'voteCount'>> & { lastUpdated: Timestamp } = {
+    ...updates,
+    lastUpdated: serverTimestamp() as Timestamp,
+  };
+
+  try {
+    const currentCandidateSnap = await getDoc(candidateDocRef);
+    if (!currentCandidateSnap.exists()) {
+      throw new Error("Candidate not found for update.");
     }
-    const candidateDocRef = doc(db, ELECTION_CANDIDATES_COLLECTION, candidateId);
-    const dataToUpdate: Partial<ElectionCandidateData> = { ...updates, lastUpdated: serverTimestamp() as Timestamp };
-    delete (dataToUpdate as any).imageFile; // Remove File object if present
+    const currentCandidateData = currentCandidateSnap.data() as ElectionCandidateData;
 
-    try {
-        const currentCandidateSnap = await getDoc(candidateDocRef);
-        if (!currentCandidateSnap.exists()) throw new Error("Candidate not found.");
-        const currentCandidateData = currentCandidateSnap.data() as ElectionCandidateData;
-
-        if (newImageFile === null) { // Explicit request to remove image
-            if (currentCandidateData.imagePath) {
-                await deleteCandidateImage(currentCandidateData.imagePath);
-            }
-            dataToUpdate.imageUrl = null;
-            dataToUpdate.imagePath = null;
-        } else if (newImageFile) { // New image provided
-            if (currentCandidateData.imagePath) {
-                await deleteCandidateImage(currentCandidateData.imagePath);
-            }
-            const imageDetails = await uploadCandidateImage(newImageFile, currentCandidateData.position, candidateId);
-            dataToUpdate.imageUrl = imageDetails.imageUrl;
-            dataToUpdate.imagePath = imageDetails.imagePath;
-        }
-        // If newImageFile is undefined, image is not being changed.
-
-        await updateDoc(candidateDocRef, dataToUpdate);
-    } catch (error) {
-        console.error(`[electionCandidateService.updateCandidate] Error updating candidate ${candidateId}:`, error);
-        if (error instanceof Error) {
-            if (error.message.includes("Missing or insufficient permissions")) {
-                throw new Error(`Failed to update candidate: Firestore/Storage permission denied for candidate '${candidateId}'.`);
-            }
-            if (error.message.startsWith("Failed to upload candidate image:")) {
-                throw error;
-            }
-            throw new Error(`Failed to update candidate: ${error.message}`);
-        }
-        throw new Error('An unknown error occurred while updating the candidate.');
+    if (newImageFile === null) { // Explicitly remove current image
+      if (currentCandidateData.imagePath) {
+        await deleteCandidateImage(currentCandidateData.imagePath);
+      }
+      dataToUpdate.imageUrl = null;
+      dataToUpdate.imagePath = null;
+    } else if (newImageFile instanceof File) { // New image provided
+      if (currentCandidateData.imagePath) {
+        await deleteCandidateImage(currentCandidateData.imagePath);
+      }
+      const imageDetails = await uploadCandidateImage(newImageFile, currentCandidateData.position, candidateId);
+      dataToUpdate.imageUrl = imageDetails.imageUrl;
+      dataToUpdate.imagePath = imageDetails.imagePath;
     }
+    // If newImageFile is undefined, image is not being changed by this update operation.
+
+    await updateDoc(candidateDocRef, dataToUpdate);
+  } catch (error) {
+    console.error(`[electionCandidateService.updateCandidate] Error updating candidate ${candidateId}:`, error);
+    if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+        throw new Error(`Failed to update candidate: Firestore/Storage permission denied for candidate '${candidateId}'.`);
+      }
+      if (error.message.startsWith("Failed to upload candidate image:")) { // Catch re-thrown error from upload
+        throw error;
+      }
+      throw new Error(`Failed to update candidate: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while updating the candidate.');
+  }
 }
 
 export async function deleteCandidate(candidateId: string): Promise<void> {
-    if (!auth.currentUser) {
-        throw new Error("User must be authenticated to delete a candidate.");
+  if (!auth.currentUser) {
+    throw new Error("User must be authenticated to delete a candidate.");
+  }
+  const candidateDocRef = doc(db, ELECTION_CANDIDATES_COLLECTION, candidateId);
+  try {
+    const candidateSnap = await getDoc(candidateDocRef);
+    if (candidateSnap.exists()) {
+      const candidateData = candidateSnap.data() as ElectionCandidateData;
+      if (candidateData.imagePath) {
+        await deleteCandidateImage(candidateData.imagePath);
+      }
+      await deleteDoc(candidateDocRef);
+      // Note: Deleting votes associated with this candidate is complex and typically not done,
+      // as it would involve querying all votes. Votes usually remain as a historical record.
+      // If vote count needs adjustment, it would require a more complex transaction or a cloud function.
+    } else {
+      console.warn(`[electionCandidateService.deleteCandidate] Candidate ${candidateId} not found. Skipping deletion.`);
     }
-    const candidateDocRef = doc(db, ELECTION_CANDIDATES_COLLECTION, candidateId);
-    try {
-        const candidateSnap = await getDoc(candidateDocRef);
-        if (candidateSnap.exists()) {
-            const candidateData = candidateSnap.data() as ElectionCandidateData;
-            if (candidateData.imagePath) {
-                await deleteCandidateImage(candidateData.imagePath);
-            }
-        }
-        await deleteDoc(candidateDocRef);
-    } catch (error) {
-        console.error(`[electionCandidateService.deleteCandidate] Error deleting candidate ${candidateId}:`, error);
-        if (error instanceof Error) {
-            if (error.message.includes("Missing or insufficient permissions")) {
-                throw new Error(`Failed to delete candidate: Firestore/Storage permission denied for candidate '${candidateId}'.`);
-            }
-            throw new Error(`Failed to delete candidate: ${error.message}`);
-        }
-        throw new Error('An unknown error occurred while deleting the candidate.');
+  } catch (error) {
+    console.error(`[electionCandidateService.deleteCandidate] Error deleting candidate ${candidateId}:`, error);
+    if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+        throw new Error(`Failed to delete candidate: Firestore/Storage permission denied for candidate '${candidateId}'.`);
+      }
+      throw new Error(`Failed to delete candidate: ${error.message}`);
     }
+    throw new Error('An unknown error occurred while deleting the candidate.');
+  }
 }

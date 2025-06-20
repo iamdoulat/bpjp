@@ -23,27 +23,62 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, List, Users, Shield, Award, Edit, Trash2, UploadCloud, ServerCrash, AlertCircle } from "lucide-react";
-import { addCandidate, getCandidatesByPosition, type ElectionCandidateData, type NewCandidateInput, type CandidatePosition } from "@/services/electionCandidateService";
+import { Loader2, UserPlus, List, Users, Shield, Award, Edit, Trash2, ServerCrash, AlertCircle, Save, X } from "lucide-react";
+import {
+  addCandidate,
+  getCandidatesByPosition,
+  updateCandidate,
+  deleteCandidate,
+  type ElectionCandidateData,
+  type NewCandidateInput,
+  type CandidatePosition,
+  type UpdateCandidateInput,
+} from "@/services/electionCandidateService";
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
-import { Timestamp } from "firebase/firestore";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription as ShadCNDialogDescription, // Aliasing to avoid conflict
+  DialogFooter,
+  DialogHeader,
+  DialogTitle as ShadCNDialogTitle, // Aliasing
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent as ShadCNAlertDialogContent,
+  AlertDialogDescription as ShadCNAlertDialogDescription,
+  AlertDialogFooter as ShadCNAlertDialogFooter,
+  AlertDialogHeader as ShadCNAlertDialogHeader,
+  AlertDialogTitle as ShadCNAlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-const candidateFormSchema = z.object({
+
+const addCandidateFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters.").max(100),
   electionSymbol: z.string().min(2, "Symbol must be at least 2 characters.").max(50),
-  imageFile: z.instanceof(File).optional().nullable(),
+  // imageFile is handled by the component state now, not directly in form schema for add
 });
-type CandidateFormValues = z.infer<typeof candidateFormSchema>;
+type AddCandidateFormValues = z.infer<typeof addCandidateFormSchema>;
+
+
+// Schema for editing, fields are optional for partial updates
+const editCandidateFormSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters.").max(100).optional(),
+  electionSymbol: z.string().min(2, "Symbol must be at least 2 characters.").max(50).optional(),
+  // imageFile will be File | null | undefined (File for new/replace, null to remove, undefined to keep current)
+});
+type EditCandidateFormValues = z.infer<typeof editCandidateFormSchema>;
+
 
 interface CandidateFormProps {
   position: CandidatePosition;
-  form: UseFormReturn<CandidateFormValues>;
-  onSubmit: (data: CandidateFormValues, position: CandidatePosition) => Promise<void>;
+  form: UseFormReturn<AddCandidateFormValues>; // Specifically for Add form
+  onSubmit: (data: AddCandidateFormValues, position: CandidatePosition, imageFile?: File) => Promise<void>;
   isSubmitting: boolean;
-  croppedImagePreview: string | null;
-  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  clearImagePreview: () => void;
+  isLoadingCandidates: boolean;
 }
 
 const CandidateSectionForm: React.FC<CandidateFormProps> = ({
@@ -51,28 +86,69 @@ const CandidateSectionForm: React.FC<CandidateFormProps> = ({
   form,
   onSubmit,
   isSubmitting,
-  croppedImagePreview,
-  handleFileChange,
-  fileInputRef,
-  clearImagePreview,
-}) => (
+  isLoadingCandidates,
+}) => {
+  const [imageToCropSrc, setImageToCropSrc] = React.useState<string | null>(null);
+  const [croppedImageFile, setCroppedImageFile] = React.useState<File | null>(null);
+  const [croppedImagePreview, setCroppedImagePreview] = React.useState<string | null>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrc(reader.result as string);
+        setIsCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const newCroppedFile = new File([croppedBlob], `candidate_image_${position}.png`, { type: "image/png" });
+    setCroppedImageFile(newCroppedFile);
+    setCroppedImagePreview(URL.createObjectURL(croppedBlob));
+    setIsCropDialogOpen(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const clearImagePreview = () => {
+    setCroppedImageFile(null);
+    setCroppedImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSubmitWithImage = (data: AddCandidateFormValues) => {
+    onSubmit(data, position, croppedImageFile || undefined).then(() => {
+        form.reset(); // Reset form fields on successful submission
+        clearImagePreview(); // Clear image preview and file
+    }).catch(err => {
+        // Error is handled by parent, toast shown there.
+        // Could add specific UI error display here if needed.
+    });
+  };
+
+
+  return (
   <Card className="shadow-md mb-6">
     <CardHeader>
       <div className="flex items-center gap-2">
-        {position === "President" ? <Shield className="h-5 w-5 text-primary" /> : <Award className="h-5 w-5 text-primary" />}
+        {position === "President" ? <Shield className="h-5 w-5 text-green-600" /> : <Award className="h-5 w-5 text-green-600" />}
         <CardTitle className="text-lg">{position} Candidate Nomination</CardTitle>
       </div>
     </CardHeader>
     <CardContent>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit((data) => onSubmit(data, position))} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmitWithImage)} className="space-y-6">
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Candidate Name</FormLabel>
-                <FormControl><Input placeholder="Full Name" {...field} disabled={isSubmitting} /></FormControl>
+                <FormControl><Input placeholder="Full Name" {...field} disabled={isSubmitting || isLoadingCandidates} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -83,49 +159,51 @@ const CandidateSectionForm: React.FC<CandidateFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Election Symbol</FormLabel>
-                <FormControl><Input placeholder="e.g., Star, Book" {...field} disabled={isSubmitting} /></FormControl>
+                <FormControl><Input placeholder="e.g., Star, Book" {...field} disabled={isSubmitting || isLoadingCandidates} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="imageFile"
-            render={() => ( // field is not directly used here, custom handler
-              <FormItem>
-                <FormLabel>Candidate Picture (1:1)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="file"
-                    accept="image/png, image/jpeg, image/gif"
-                    onChange={handleFileChange}
-                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                    disabled={isSubmitting}
-                    ref={fileInputRef}
-                  />
-                </FormControl>
-                {croppedImagePreview && (
-                  <div className="mt-4 relative w-32 h-32 border rounded-md overflow-hidden">
-                    <Image src={croppedImagePreview} alt="Candidate preview" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
-                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-6 w-6 bg-black/30 text-white hover:bg-black/50" onClick={clearImagePreview} disabled={isSubmitting}>
-                        <Trash2 className="h-3.5 w-3.5"/>
-                     </Button>
-                  </div>
-                )}
-                <FormDescription>Upload a picture (150x150px recommended).</FormDescription>
-                <FormMessage />
-              </FormItem>
+          <FormItem>
+            <FormLabel>Candidate Picture (1:1)</FormLabel>
+            <FormControl>
+              <Input
+                type="file"
+                accept="image/png, image/jpeg, image/gif"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                disabled={isSubmitting || isLoadingCandidates}
+                ref={fileInputRef}
+              />
+            </FormControl>
+            {croppedImagePreview && (
+              <div className="mt-4 relative w-32 h-32 border rounded-md overflow-hidden">
+                <Image src={croppedImagePreview} alt="Candidate preview" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                  <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-6 w-6 bg-black/30 text-white hover:bg-black/50" onClick={clearImagePreview} disabled={isSubmitting || isLoadingCandidates}>
+                    <Trash2 className="h-3.5 w-3.5"/>
+                  </Button>
+              </div>
             )}
-          />
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <FormDescription>Upload a picture (150x150px recommended).</FormDescription>
+          </FormItem>
+          <Button type="submit" disabled={isSubmitting || isLoadingCandidates || !form.formState.isValid}>
+            {(isSubmitting || isLoadingCandidates) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Add {position} Candidate
           </Button>
         </form>
       </Form>
+      {imageToCropSrc && (
+        <ImageCropDialog
+          isOpen={isCropDialogOpen}
+          onClose={() => { setIsCropDialogOpen(false); setImageToCropSrc(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+          imageSrc={imageToCropSrc}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1} targetWidth={150} targetHeight={150}
+        />
+      )}
     </CardContent>
   </Card>
-);
+)};
 
 interface CandidateListProps {
   position: CandidatePosition;
@@ -134,9 +212,10 @@ interface CandidateListProps {
   error: string | null;
   onEdit: (candidate: ElectionCandidateData) => void;
   onDelete: (candidate: ElectionCandidateData) => void;
+  isProcessingAction: boolean; // Generic flag for edit/delete in progress
 }
 
-const CandidateSectionList: React.FC<CandidateListProps> = ({ position, candidates, isLoading, error, onEdit, onDelete }) => {
+const CandidateSectionList: React.FC<CandidateListProps> = ({ position, candidates, isLoading, error, onEdit, onDelete, isProcessingAction }) => {
   const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
   
   return (
@@ -171,7 +250,7 @@ const CandidateSectionList: React.FC<CandidateListProps> = ({ position, candidat
             <li key={candidate.id} className="flex items-center justify-between p-3 border rounded-md shadow-sm bg-card hover:bg-muted/50">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={candidate.imageUrl || `https://placehold.co/150x150.png?text=${getInitials(candidate.name)}`} alt={candidate.name} data-ai-hint="person portrait" />
+                  <AvatarImage src={candidate.imageUrl || `https://placehold.co/150x150.png?text=${getInitials(candidate.name)}`} alt={candidate.name} data-ai-hint="person portrait"/>
                   <AvatarFallback>{getInitials(candidate.name)}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -180,8 +259,8 @@ const CandidateSectionList: React.FC<CandidateListProps> = ({ position, candidat
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onEdit(candidate)}><Edit className="h-4 w-4" /></Button>
-                <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => onDelete(candidate)}><Trash2 className="h-4 w-4" /></Button>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onEdit(candidate)} disabled={isProcessingAction}><Edit className="h-4 w-4" /></Button>
+                <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => onDelete(candidate)} disabled={isProcessingAction}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </li>
           ))}
@@ -194,29 +273,42 @@ const CandidateSectionList: React.FC<CandidateListProps> = ({ position, candidat
 
 export default function CandidateManagementPage() {
   const { toast } = useToast();
-  const [isSubmittingPresident, setIsSubmittingPresident] = React.useState(false);
-  const [isSubmittingSecretary, setIsSubmittingSecretary] = React.useState(false);
+  const [isSubmittingPresidentAdd, setIsSubmittingPresidentAdd] = React.useState(false);
+  const [isSubmittingSecretaryAdd, setIsSubmittingSecretaryAdd] = React.useState(false);
   const [presidentCandidates, setPresidentCandidates] = React.useState<ElectionCandidateData[]>([]);
   const [secretaryCandidates, setSecretaryCandidates] = React.useState<ElectionCandidateData[]>([]);
-  const [loadingPresident, setLoadingPresident] = React.useState(true);
-  const [loadingSecretary, setLoadingSecretary] = React.useState(true);
-  const [errorPresident, setErrorPresident] = React.useState<string | null>(null);
-  const [errorSecretary, setErrorSecretary] = React.useState<string | null>(null);
+  const [loadingPresidentList, setLoadingPresidentList] = React.useState(true);
+  const [loadingSecretaryList, setLoadingSecretaryList] = React.useState(true);
+  const [errorPresidentList, setErrorPresidentList] = React.useState<string | null>(null);
+  const [errorSecretaryList, setErrorSecretaryList] = React.useState<string | null>(null);
 
-  const [imageToCropSrc, setImageToCropSrc] = React.useState<string | null>(null);
-  const [isCropDialogOpen, setIsCropDialogOpen] = React.useState(false);
-  const [currentCroppedImagePreview, setCurrentCroppedImagePreview] = React.useState<string | null>(null);
-  const [activeForm, setActiveForm] = React.useState<UseFormReturn<CandidateFormValues> | null>(null);
+  // Edit Dialog State
+  const [editingCandidate, setEditingCandidate] = React.useState<ElectionCandidateData | null>(null);
+  const [isEditCandidateDialogOpen, setIsEditCandidateDialogOpen] = React.useState(false);
+  const [isSubmittingEdit, setIsSubmittingEdit] = React.useState(false);
+  const [editDialogImageToCropSrc, setEditDialogImageToCropSrc] = React.useState<string | null>(null);
+  const [isEditDialogCropOpen, setIsEditDialogCropOpen] = React.useState(false);
+  const [editDialogCroppedImageFile, setEditDialogCroppedImageFile] = React.useState<File | null>(null);
+  const [editDialogImagePreview, setEditDialogImagePreview] = React.useState<string | null>(null); // For newly cropped or existing image
+  const [removeCurrentImageInEdit, setRemoveCurrentImageInEdit] = React.useState(false);
+  const editDialogFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Delete Dialog State
+  const [candidateToDelete, setCandidateToDelete] = React.useState<ElectionCandidateData | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const presidentAddForm = useForm<AddCandidateFormValues>({ resolver: zodResolver(addCandidateFormSchema), defaultValues: { name: "", electionSymbol: "" } });
+  const secretaryAddForm = useForm<AddCandidateFormValues>({ resolver: zodResolver(addCandidateFormSchema), defaultValues: { name: "", electionSymbol: "" } });
   
-  const presidentFileInputRef = React.useRef<HTMLInputElement>(null);
-  const secretaryFileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const presidentForm = useForm<CandidateFormValues>({ resolver: zodResolver(candidateFormSchema), defaultValues: { name: "", electionSymbol: "", imageFile: null } });
-  const secretaryForm = useForm<CandidateFormValues>({ resolver: zodResolver(candidateFormSchema), defaultValues: { name: "", electionSymbol: "", imageFile: null } });
+  const editCandidateForm = useForm<EditCandidateFormValues>({
+    resolver: zodResolver(editCandidateFormSchema),
+    defaultValues: { name: "", electionSymbol: "" },
+  });
 
   const fetchCandidates = React.useCallback(async (position: CandidatePosition) => {
-    const setLoading = position === "President" ? setLoadingPresident : setLoadingSecretary;
-    const setError = position === "President" ? setErrorPresident : setErrorSecretary;
+    const setLoading = position === "President" ? setLoadingPresidentList : setLoadingSecretaryList;
+    const setError = position === "President" ? setErrorPresidentList : setErrorSecretaryList;
     const setCandidates = position === "President" ? setPresidentCandidates : setSecretaryCandidates;
     
     setLoading(true);
@@ -225,69 +317,28 @@ export default function CandidateManagementPage() {
       const fetched = await getCandidatesByPosition(position);
       setCandidates(fetched);
     } catch (e) {
-      setError(e instanceof Error ? e.message : `Could not load ${position} candidates.`);
+      const errorMessage = e instanceof Error ? e.message : `Could not load ${position} candidates.`;
+      setError(errorMessage);
+      toast({ title: `Error Loading ${position} Candidates`, description: errorMessage, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   React.useEffect(() => {
     fetchCandidates("President");
     fetchCandidates("GeneralSecretary");
   }, [fetchCandidates]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, formInstance: UseFormReturn<CandidateFormValues>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setActiveForm(formInstance); // Set which form is active for cropping
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageToCropSrc(reader.result as string);
-        setIsCropDialogOpen(true);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-  
-  const handleCropComplete = (croppedBlob: Blob) => {
-    if (activeForm) {
-      const croppedFile = new File([croppedBlob], "candidate_image.png", { type: "image/png" });
-      activeForm.setValue("imageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
-      setCurrentCroppedImagePreview(URL.createObjectURL(croppedBlob));
-    }
-    setIsCropDialogOpen(false);
-    // Reset the correct file input
-    if (activeForm === presidentForm && presidentFileInputRef.current) presidentFileInputRef.current.value = "";
-    if (activeForm === secretaryForm && secretaryFileInputRef.current) secretaryFileInputRef.current.value = "";
-    setImageToCropSrc(null); // Clear source after crop
-  };
-  
-  const clearImagePreview = (formInstance: UseFormReturn<CandidateFormValues>) => {
-      formInstance.setValue("imageFile", null, {shouldValidate: true, shouldDirty: true});
-      setCurrentCroppedImagePreview(null); // Clear preview specific to this form
-      if (formInstance === presidentForm && presidentFileInputRef.current) presidentFileInputRef.current.value = "";
-      if (formInstance === secretaryForm && secretaryFileInputRef.current) secretaryFileInputRef.current.value = "";
-  };
-
-  const onSubmitCandidate = async (data: CandidateFormValues, position: CandidatePosition) => {
-    const setIsSubmitting = position === "President" ? setIsSubmittingPresident : setIsSubmittingSecretary;
-    const formInstance = position === "President" ? presidentForm : secretaryForm;
-    const fileInputRefInstance = position === "President" ? presidentFileInputRef : secretaryFileInputRef;
-
+  const onSubmitAddCandidate = async (data: AddCandidateFormValues, position: CandidatePosition, imageFile?: File) => {
+    const setIsSubmitting = position === "President" ? setIsSubmittingPresidentAdd : setIsSubmittingSecretaryAdd;
     setIsSubmitting(true);
     try {
-      const candidateInput: NewCandidateInput = {
-        name: data.name,
-        electionSymbol: data.electionSymbol,
-        position: position,
-        imageFile: data.imageFile,
-      };
+      const candidateInput: NewCandidateInput = { ...data, position, imageFile: imageFile || null };
       await addCandidate(candidateInput);
       toast({ title: "Candidate Added", description: `${data.name} has been added as a ${position} candidate.` });
-      formInstance.reset();
-      setCurrentCroppedImagePreview(null); // Clear preview
-      if (fileInputRefInstance.current) fileInputRefInstance.current.value = "";
-      fetchCandidates(position);
+      fetchCandidates(position); // Refresh list
+      // Form reset is handled within CandidateSectionForm
     } catch (e) {
       toast({ title: "Error Adding Candidate", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -295,21 +346,96 @@ export default function CandidateManagementPage() {
     }
   };
 
-  const handleEditCandidate = (candidate: ElectionCandidateData) => {
-    // Placeholder for edit functionality
-    toast({ title: "Edit Candidate", description: `Edit functionality for ${candidate.name} to be implemented.` });
+  // Edit Dialog Handlers
+  const handleOpenEditDialog = (candidate: ElectionCandidateData) => {
+    setEditingCandidate(candidate);
+    editCandidateForm.reset({ name: candidate.name, electionSymbol: candidate.electionSymbol });
+    setEditDialogImagePreview(candidate.imageUrl || null); // Preview existing image
+    setEditDialogCroppedImageFile(null); // Clear any previously cropped file for edit
+    setRemoveCurrentImageInEdit(false);
+    setIsEditCandidateDialogOpen(true);
   };
 
-  const handleDeleteCandidate = (candidate: ElectionCandidateData) => {
-    // Placeholder for delete functionality
-    toast({ title: "Delete Candidate", description: `Delete functionality for ${candidate.name} to be implemented.` });
+  const handleEditDialogFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditDialogImageToCropSrc(reader.result as string);
+        setIsEditDialogCropOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
   };
+
+  const handleEditDialogCropComplete = (croppedBlob: Blob) => {
+    const newCroppedFile = new File([croppedBlob], "edited_candidate_image.png", { type: "image/png" });
+    setEditDialogCroppedImageFile(newCroppedFile);
+    setEditDialogImagePreview(URL.createObjectURL(croppedBlob)); // Show newly cropped image
+    setRemoveCurrentImageInEdit(false); // If new image is cropped, don't remove
+    setIsEditDialogCropOpen(false);
+    if (editDialogFileInputRef.current) editDialogFileInputRef.current.value = "";
+  };
+  
+  const handleRemoveCurrentImageInEditDialog = () => {
+    setRemoveCurrentImageInEdit(true);
+    setEditDialogImagePreview(null); // Clear preview
+    setEditDialogCroppedImageFile(null); // Clear any potential new file
+    if (editDialogFileInputRef.current) editDialogFileInputRef.current.value = "";
+  };
+
+  const onEditCandidateFormSubmit = async (data: EditCandidateFormValues) => {
+    if (!editingCandidate) return;
+    setIsSubmittingEdit(true);
+    try {
+      const updateData: UpdateCandidateInput = {};
+      if (data.name && data.name !== editingCandidate.name) updateData.name = data.name;
+      if (data.electionSymbol && data.electionSymbol !== editingCandidate.electionSymbol) updateData.electionSymbol = data.electionSymbol;
+
+      await updateCandidate(
+        editingCandidate.id,
+        updateData,
+        removeCurrentImageInEdit ? null : (editDialogCroppedImageFile || undefined), // null to remove, file to update, undefined to keep
+        editingCandidate.imagePath // Pass current image path for potential deletion
+      );
+      toast({ title: "Candidate Updated", description: `${data.name || editingCandidate.name}'s details updated.` });
+      fetchCandidates(editingCandidate.position);
+      setIsEditCandidateDialogOpen(false);
+    } catch (e) {
+      toast({ title: "Error Updating Candidate", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  // Delete Dialog Handlers
+  const handleOpenDeleteDialog = (candidate: ElectionCandidateData) => {
+    setCandidateToDelete(candidate);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const executeDeleteCandidate = async () => {
+    if (!candidateToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteCandidate(candidateToDelete.id);
+      toast({ title: "Candidate Deleted", description: `${candidateToDelete.name} removed.` });
+      fetchCandidates(candidateToDelete.position);
+      setIsDeleteConfirmOpen(false);
+    } catch (e) {
+      toast({ title: "Error Deleting Candidate", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+      setCandidateToDelete(null);
+    }
+  };
+
 
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-8 overflow-auto pb-20 md:pb-6">
         <div className="flex items-center gap-3 mb-6">
-          <Users className="h-8 w-8 text-primary" />
+          <Users className="h-8 w-8 text-green-600" />
           <div>
             <h1 className="text-2xl font-headline font-semibold">Candidate Management</h1>
             <p className="text-muted-foreground text-sm">
@@ -318,67 +444,134 @@ export default function CandidateManagementPage() {
           </div>
         </div>
 
-        {/* President Candidates Section */}
         <section>
           <CandidateSectionForm
             position="President"
-            form={presidentForm}
-            onSubmit={onSubmitCandidate}
-            isSubmitting={isSubmittingPresident}
-            croppedImagePreview={activeForm === presidentForm ? currentCroppedImagePreview : null}
-            handleFileChange={(e) => handleFileChange(e, presidentForm)}
-            fileInputRef={presidentFileInputRef}
-            clearImagePreview={() => clearImagePreview(presidentForm)}
+            form={presidentAddForm}
+            onSubmit={onSubmitAddCandidate}
+            isSubmitting={isSubmittingPresidentAdd}
+            isLoadingCandidates={loadingPresidentList}
           />
           <CandidateSectionList
             position="President"
             candidates={presidentCandidates}
-            isLoading={loadingPresident}
-            error={errorPresident}
-            onEdit={handleEditCandidate}
-            onDelete={handleDeleteCandidate}
+            isLoading={loadingPresidentList}
+            error={errorPresidentList}
+            onEdit={handleOpenEditDialog}
+            onDelete={handleOpenDeleteDialog}
+            isProcessingAction={isSubmittingEdit || isDeleting}
           />
         </section>
 
-        {/* General Secretary Candidates Section */}
         <section className="mt-10">
           <CandidateSectionForm
             position="GeneralSecretary"
-            form={secretaryForm}
-            onSubmit={onSubmitCandidate}
-            isSubmitting={isSubmittingSecretary}
-            croppedImagePreview={activeForm === secretaryForm ? currentCroppedImagePreview : null}
-            handleFileChange={(e) => handleFileChange(e, secretaryForm)}
-            fileInputRef={secretaryFileInputRef}
-            clearImagePreview={() => clearImagePreview(secretaryForm)}
+            form={secretaryAddForm}
+            onSubmit={onSubmitAddCandidate}
+            isSubmitting={isSubmittingSecretaryAdd}
+            isLoadingCandidates={loadingSecretaryList}
           />
           <CandidateSectionList
             position="GeneralSecretary"
             candidates={secretaryCandidates}
-            isLoading={loadingSecretary}
-            error={errorSecretary}
-            onEdit={handleEditCandidate}
-            onDelete={handleDeleteCandidate}
+            isLoading={loadingSecretaryList}
+            error={errorSecretaryList}
+            onEdit={handleOpenEditDialog}
+            onDelete={handleOpenDeleteDialog}
+            isProcessingAction={isSubmittingEdit || isDeleting}
           />
         </section>
 
-        {imageToCropSrc && (
+        {/* Edit Candidate Dialog */}
+        {editingCandidate && (
+          <Dialog open={isEditCandidateDialogOpen} onOpenChange={(open) => {
+            if (!open) setEditingCandidate(null); // Clear editing candidate when dialog closes
+            setIsEditCandidateDialogOpen(open);
+          }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <ShadCNDialogTitle>Edit Candidate: {editingCandidate.name}</ShadCNDialogTitle>
+                <ShadCNDialogDescription>Update the details for this candidate.</ShadCNDialogDescription>
+              </DialogHeader>
+              <Form {...editCandidateForm}>
+                <form onSubmit={editCandidateForm.handleSubmit(onEditCandidateFormSubmit)} className="space-y-4 py-2 pb-4">
+                  <FormField control={editCandidateForm.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Candidate Name</FormLabel><FormControl><Input {...field} disabled={isSubmittingEdit} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={editCandidateForm.control} name="electionSymbol" render={({ field }) => (
+                    <FormItem><FormLabel>Election Symbol</FormLabel><FormControl><Input {...field} disabled={isSubmittingEdit} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormItem>
+                    <FormLabel>Candidate Picture (1:1)</FormLabel>
+                    {(editDialogImagePreview || (!removeCurrentImageInEdit && editingCandidate.imageUrl)) && (
+                      <div className="mt-2 mb-2 w-32 h-32 relative rounded-md overflow-hidden border">
+                        <Image src={editDialogImagePreview || editingCandidate.imageUrl!} alt="Candidate preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/>
+                      </div>
+                    )}
+                    {!editDialogImagePreview && removeCurrentImageInEdit && (
+                        <p className="text-sm text-muted-foreground">Current image will be removed.</p>
+                    )}
+                    <FormControl>
+                      <Input
+                        type="file"
+                        accept="image/png, image/jpeg, image/gif"
+                        onChange={handleEditDialogFileChange}
+                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        disabled={isSubmittingEdit}
+                        ref={editDialogFileInputRef}
+                      />
+                    </FormControl>
+                    {editingCandidate.imageUrl && !editDialogCroppedImageFile && !removeCurrentImageInEdit && (
+                        <Button type="button" variant="outline" size="sm" className="mt-1" onClick={handleRemoveCurrentImageInEditDialog} disabled={isSubmittingEdit}>
+                            <X className="mr-1.5 h-3.5 w-3.5"/> Remove Current Image
+                        </Button>
+                    )}
+                    <FormDescription>Upload a new picture (150x150px), or remove the current one.</FormDescription>
+                  </FormItem>
+                  <DialogFooter className="pt-4">
+                    <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmittingEdit}>Cancel</Button></DialogClose>
+                    <Button type="submit" disabled={isSubmittingEdit || (!editCandidateForm.formState.isDirty && !editDialogCroppedImageFile && !removeCurrentImageInEdit) || !editCandidateForm.formState.isValid}>
+                      {isSubmittingEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Image Crop Dialog for Edit Form */}
+        {editDialogImageToCropSrc && (
           <ImageCropDialog
-            isOpen={isCropDialogOpen}
-            onClose={() => {
-              setIsCropDialogOpen(false);
-              setImageToCropSrc(null);
-              if (activeForm === presidentForm && presidentFileInputRef.current) presidentFileInputRef.current.value = "";
-              if (activeForm === secretaryForm && secretaryFileInputRef.current) secretaryFileInputRef.current.value = "";
-              setActiveForm(null);
-            }}
-            imageSrc={imageToCropSrc}
-            onCropComplete={handleCropComplete}
-            aspectRatio={1} // 1:1 for profile pictures
-            targetWidth={150}
-            targetHeight={150}
+            isOpen={isEditDialogCropOpen}
+            onClose={() => { setIsEditDialogCropOpen(false); setEditDialogImageToCropSrc(null); if (editDialogFileInputRef.current) editDialogFileInputRef.current.value = ""; }}
+            imageSrc={editDialogImageToCropSrc}
+            onCropComplete={handleEditDialogCropComplete}
+            aspectRatio={1} targetWidth={150} targetHeight={150}
           />
         )}
+
+        {/* Delete Candidate Confirmation Dialog */}
+        {candidateToDelete && (
+          <AlertDialog open={isDeleteConfirmOpen} onOpenChange={(open) => { if(!open) setCandidateToDelete(null); setIsDeleteConfirmOpen(open);}}>
+            <ShadCNAlertDialogContent>
+              <ShadCNAlertDialogHeader>
+                <ShadCNAlertDialogTitle>Confirm Deletion</ShadCNAlertDialogTitle>
+                <ShadCNAlertDialogDescription>
+                  Are you sure you want to delete candidate "{candidateToDelete.name}" for {candidateToDelete.position}?
+                  Their image will also be removed. This action cannot be undone.
+                </ShadCNAlertDialogDescription>
+              </ShadCNAlertDialogHeader>
+              <ShadCNAlertDialogFooter>
+                <AlertDialogCancel onClick={() => setIsDeleteConfirmOpen(false)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={executeDeleteCandidate} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
+                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete
+                </AlertDialogAction>
+              </ShadCNAlertDialogFooter>
+            </ShadCNAlertDialogContent>
+          </AlertDialog>
+        )}
+
       </main>
     </AppShell>
   );
