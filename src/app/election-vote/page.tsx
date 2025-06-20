@@ -114,7 +114,7 @@ export default function ElectionVotePage() {
   React.useEffect(() => {
     if (user && !authLoading) {
       setLoadingUserVotes(true);
-      setUserVotesError(null); // Reset error before fetching
+      setUserVotesError(null);
       getUserVotes(user.uid)
         .then(votes => setUserVotes(votes))
         .catch(err => {
@@ -262,25 +262,6 @@ export default function ElectionVotePage() {
           {renderCandidateSection("President Candidate Nominations", presidentCandidates, "President", Shield)}
           {renderCandidateSection("General Secretary Candidate Nominations", secretaryCandidates, "GeneralSecretary", Award)}
         </section>
-
-        <div className="mt-10 pt-6 border-t flex justify-center">
-          <Card className="shadow-md max-w-sm w-full">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <ListChecks className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-lg">Voting Results</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Monitor voting progress and view final election results (Admin Only).
-              </CardDescription>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push("/admin/election-vote")}>
-                 View Results (Admin)
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
       </main>
     </AppShell>
   );
