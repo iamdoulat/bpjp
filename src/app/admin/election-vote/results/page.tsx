@@ -115,7 +115,7 @@ export default function ElectionResultsPage() {
     <Card className="shadow-md">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Icon className="h-6 w-6 text-primary" />
+          <Icon className="h-6 w-6 text-green-600" />
           <CardTitle className="text-xl">{title} Results</CardTitle>
         </div>
       </CardHeader>
@@ -184,7 +184,7 @@ export default function ElectionResultsPage() {
       <AppShell>
         <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
           <div className="flex items-center gap-3 mb-6">
-            <BarChart3 className="h-8 w-8 text-primary" />
+            <BarChart3 className="h-8 w-8 text-green-600" />
             <div><Skeleton className="h-7 w-48" /><Skeleton className="h-4 w-64 mt-1" /></div>
           </div>
           <div className="space-y-6">
@@ -228,7 +228,7 @@ export default function ElectionResultsPage() {
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <BarChart3 className="h-8 w-8 text-primary" />
+            <BarChart3 className="h-8 w-8 text-green-600" />
             <div>
               <h1 className="text-2xl font-headline font-semibold">Election Results</h1>
               <p className="text-muted-foreground text-sm">
@@ -259,7 +259,7 @@ export default function ElectionResultsPage() {
         <Card className="mt-8 shadow-md">
           <CardHeader>
             <div className="flex items-center gap-2">
-                <Settings className="h-6 w-6 text-primary" />
+                <Settings className="h-6 w-6 text-green-600" />
                 <CardTitle className="text-xl">Election Control</CardTitle>
             </div>
             <CardDescription>Manage the visibility of results and voting status.</CardDescription>
