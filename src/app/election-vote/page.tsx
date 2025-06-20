@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX } from "lucide-react";
+import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -19,8 +19,8 @@ interface CandidateCardProps {
   candidate: ElectionCandidateData;
   onVote: (candidateId: string, candidateName: string, position: CandidatePosition) => void;
   isVotedFor: boolean;
-  canVote: boolean; // Can the user vote in this section (i.e., haven't voted for this position yet)
-  isVoting: boolean; // Is a vote currently being submitted for THIS candidate
+  canVote: boolean; 
+  isVoting: boolean; 
   isLoggedIn: boolean;
 }
 
@@ -73,6 +73,7 @@ export default function ElectionVotePage() {
 
   const [userVotes, setUserVotes] = React.useState<UserVoteData | null>(null);
   const [loadingUserVotes, setLoadingUserVotes] = React.useState(true);
+  const [userVotesError, setUserVotesError] = React.useState<string | null>(null);
 
   const [isVotingState, setIsVotingState] = React.useState<{ [candidateId: string]: boolean }>({});
 
@@ -100,16 +101,22 @@ export default function ElectionVotePage() {
   React.useEffect(() => {
     if (user && !authLoading) {
       setLoadingUserVotes(true);
+      setUserVotesError(null); 
       getUserVotes(user.uid)
         .then(votes => setUserVotes(votes))
         .catch(err => {
           console.error("Error fetching user votes:", err);
-          // Optionally, show a toast for this error if it's critical
+          if (err instanceof Error) {
+            setUserVotesError(err.message); 
+          } else {
+            setUserVotesError("An unknown error occurred while fetching your vote status.");
+          }
         })
         .finally(() => setLoadingUserVotes(false));
     } else if (!user && !authLoading) {
       setLoadingUserVotes(false);
       setUserVotes(null);
+      setUserVotesError(null);
     }
   }, [user, authLoading]);
 
@@ -119,21 +126,22 @@ export default function ElectionVotePage() {
       router.push("/login");
       return;
     }
-    if (isVotingState[candidateId]) return; // Prevent double submission
+    if (isVotingState[candidateId]) return; 
 
     setIsVotingState(prev => ({ ...prev, [candidateId]: true }));
 
     try {
+      // const currentPresidentVote = userVotes?.presidentCandidateId || null; // Not needed for current recordVote
+      // const currentGeneralSecretaryVote = userVotes?.generalSecretaryCandidateId || null; // Not needed
+
       await recordVote(user.uid, candidateId, candidateName, position);
       toast({ title: "Vote Cast!", description: `Your vote for ${candidateName} as ${position} has been recorded.`, variant: "default" });
       
-      // Update userVotes state
       setUserVotes(prev => ({
         ...(prev || { userId: user.uid }),
         [position === 'President' ? 'presidentCandidateId' : 'generalSecretaryCandidateId']: candidateId,
       }));
 
-      // Optimistically update candidate's vote count locally or refetch
       const updateLocalCandidates = (prevCandidates: ElectionCandidateData[]) => 
         prevCandidates.map(c => c.id === candidateId ? { ...c, voteCount: (c.voteCount || 0) + 1 } : c);
       
@@ -153,6 +161,20 @@ export default function ElectionVotePage() {
   
   const isLoadingPage = loadingCandidates || authLoading || loadingUserVotes;
 
+  const CandidateCardSkeleton = () => (
+    <Card className="shadow-lg flex flex-col">
+      <CardHeader className="items-center text-center">
+        <Skeleton className="w-24 h-24 rounded-full mb-3" />
+        <Skeleton className="h-5 w-3/4 mb-1" />
+        <Skeleton className="h-4 w-1/2 mb-1" />
+        <Skeleton className="h-3 w-1/4" />
+      </CardHeader>
+      <CardContent className="flex-grow flex items-end justify-center p-4">
+        <Skeleton className="h-10 w-full" />
+      </CardContent>
+    </Card>
+  );
+
   const renderCandidateSection = (
     title: string,
     candidates: ElectionCandidateData[],
@@ -169,9 +191,9 @@ export default function ElectionVotePage() {
           <IconComponent className="h-7 w-7 text-green-600" />
           <h2 className="text-xl font-headline font-semibold text-foreground">{title}</h2>
         </div>
-        {isLoadingPage ? (
+        {loadingCandidates ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(2)].map((_, i) => <CandidateCardSkeleton key={i} />)}
+            {[...Array(2)].map((_, i) => <CandidateCardSkeleton key={`${title}-skeleton-${i}`} />)}
           </div>
         ) : errorCandidates ? (
           <Alert variant="destructive"><ShadCNAlertTitle>Error Loading Candidates</ShadCNAlertTitle><AlertDescription>{errorCandidates}</AlertDescription></Alert>
@@ -200,21 +222,6 @@ export default function ElectionVotePage() {
     );
   };
   
-  const CandidateCardSkeleton = () => (
-    <Card className="shadow-lg flex flex-col">
-      <CardHeader className="items-center text-center">
-        <Skeleton className="w-24 h-24 rounded-full mb-3" />
-        <Skeleton className="h-5 w-3/4 mb-1" />
-        <Skeleton className="h-4 w-1/2 mb-1" />
-        <Skeleton className="h-3 w-1/4" />
-      </CardHeader>
-      <CardContent className="flex-grow flex items-end justify-center p-4">
-        <Skeleton className="h-10 w-full" />
-      </CardContent>
-    </Card>
-  );
-
-
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
@@ -229,6 +236,19 @@ export default function ElectionVotePage() {
             </div>
           </div>
         </div>
+
+        {userVotesError && !loadingUserVotes && (
+          <Alert variant="destructive" className="mt-6">
+            <AlertTriangle className="h-4 w-4" />
+            <ShadCNAlertTitle>Error Loading Your Vote Status</ShadCNAlertTitle>
+            <AlertDescription>
+              {userVotesError}
+              <p className="mt-2 text-xs font-medium">
+                This might be due to a permission issue. Please ensure your Firestore security rules allow you to read your own vote document from the 'electionVotes' collection (e.g., `match /electionVotes/{userId} { allow read: if request.auth.uid == userId; }`).
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {!user && !isLoadingPage && (
           <Alert variant="default" className="mt-6">
