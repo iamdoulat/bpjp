@@ -19,22 +19,22 @@ interface CandidateCardProps {
   candidate: ElectionCandidateData;
   onVote: (candidateId: string, candidateName: string, position: CandidatePosition) => void;
   isVotedFor: boolean;
-  canVote: boolean; 
-  isVoting: boolean; 
+  canVote: boolean;
+  isVoting: boolean;
   isLoggedIn: boolean;
 }
 
 const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVotedFor, canVote, isVoting, isLoggedIn }) => {
   const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
-  
+
   return (
     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow flex flex-col", isVotedFor && "border-2 border-green-500 ring-2 ring-green-500/50")}>
       <CardHeader className="items-center text-center">
         <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50 mb-3 shadow-md">
-          <Image 
-            src={candidate.imageUrl || `https://placehold.co/150x150.png?text=${getInitials(candidate.name)}`} 
-            alt={candidate.name} 
-            layout="fill" 
+          <Image
+            src={candidate.imageUrl || `https://placehold.co/150x150.png?text=${getInitials(candidate.name)}`}
+            alt={candidate.name}
+            layout="fill"
             objectFit="cover"
             data-ai-hint="person portrait"
           />
@@ -101,16 +101,16 @@ export default function ElectionVotePage() {
   React.useEffect(() => {
     if (user && !authLoading) {
       setLoadingUserVotes(true);
-      setUserVotesError(null); 
+      setUserVotesError(null);
       getUserVotes(user.uid)
         .then(votes => setUserVotes(votes))
         .catch(err => {
           console.error("Error fetching user votes:", err);
+          let detailedErrorMessage = "An unknown error occurred while fetching your vote status.";
           if (err instanceof Error) {
-            setUserVotesError(err.message); 
-          } else {
-            setUserVotesError("An unknown error occurred while fetching your vote status.");
+            detailedErrorMessage = err.message; // This will include the "Firestore permission denied..." message from the service
           }
+          setUserVotesError(detailedErrorMessage);
         })
         .finally(() => setLoadingUserVotes(false));
     } else if (!user && !authLoading) {
@@ -126,25 +126,22 @@ export default function ElectionVotePage() {
       router.push("/login");
       return;
     }
-    if (isVotingState[candidateId]) return; 
+    if (isVotingState[candidateId]) return;
 
     setIsVotingState(prev => ({ ...prev, [candidateId]: true }));
 
     try {
-      // const currentPresidentVote = userVotes?.presidentCandidateId || null; // Not needed for current recordVote
-      // const currentGeneralSecretaryVote = userVotes?.generalSecretaryCandidateId || null; // Not needed
-
       await recordVote(user.uid, candidateId, candidateName, position);
       toast({ title: "Vote Cast!", description: `Your vote for ${candidateName} as ${position} has been recorded.`, variant: "default" });
-      
+
       setUserVotes(prev => ({
         ...(prev || { userId: user.uid }),
         [position === 'President' ? 'presidentCandidateId' : 'generalSecretaryCandidateId']: candidateId,
       }));
 
-      const updateLocalCandidates = (prevCandidates: ElectionCandidateData[]) => 
+      const updateLocalCandidates = (prevCandidates: ElectionCandidateData[]) =>
         prevCandidates.map(c => c.id === candidateId ? { ...c, voteCount: (c.voteCount || 0) + 1 } : c);
-      
+
       if (position === 'President') {
         setPresidentCandidates(updateLocalCandidates);
       } else {
@@ -158,7 +155,7 @@ export default function ElectionVotePage() {
       setIsVotingState(prev => ({ ...prev, [candidateId]: false }));
     }
   };
-  
+
   const isLoadingPage = loadingCandidates || authLoading || loadingUserVotes;
 
   const CandidateCardSkeleton = () => (
@@ -221,7 +218,7 @@ export default function ElectionVotePage() {
       </div>
     );
   };
-  
+
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
@@ -243,9 +240,11 @@ export default function ElectionVotePage() {
             <ShadCNAlertTitle>Error Loading Your Vote Status</ShadCNAlertTitle>
             <AlertDescription>
               {userVotesError}
-              <p className="mt-2 text-xs font-medium">
-                This might be due to a permission issue. Please ensure your Firestore security rules allow you to read your own vote document from the 'electionVotes' collection (e.g., `match /electionVotes/{userId} { allow read: if request.auth.uid == userId; }`).
-              </p>
+              {userVotesError.includes("permission denied") && (
+                <p className="mt-2 text-xs font-medium">
+                  This might be due to a permission issue. Please ensure your Firestore security rules allow you to read your own vote document from the 'electionVotes' collection (e.g., `match /electionVotes/{'{userId}'} {'{ allow read: if request.auth.uid == userId; }'}`).
+                </p>
+              )}
             </AlertDescription>
           </Alert>
         )}
