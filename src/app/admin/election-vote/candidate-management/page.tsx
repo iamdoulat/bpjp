@@ -18,12 +18,13 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, List, Users, Shield, Award, Edit, Trash2, ServerCrash, AlertCircle, Save, X } from "lucide-react";
+import { Loader2, UserPlus, List, Users, Shield, Award, Edit, Trash2, ServerCrash, AlertCircle, Save, X, BookOpenCheck } from "lucide-react";
 import {
   addCandidate,
   getCandidatesByPosition,
@@ -34,14 +35,15 @@ import {
   type CandidatePosition,
   type UpdateCandidateInput,
 } from "@/services/electionCandidateService";
+import { getElectionControlSettings, updateElectionControlSettings, type ElectionControlSettings } from "@/services/electionControlService";
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
 import {
   Dialog,
   DialogContent,
-  DialogDescription as ShadCNDialogDescription, // Aliasing to avoid conflict
+  DialogDescription as ShadCNDialogDescription, 
   DialogFooter,
   DialogHeader,
-  DialogTitle as ShadCNDialogTitle, // Aliasing
+  DialogTitle as ShadCNDialogTitle, 
   DialogClose,
 } from "@/components/ui/dialog";
 import {
@@ -59,23 +61,25 @@ import {
 const addCandidateFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters.").max(100),
   electionSymbol: z.string().min(2, "Symbol must be at least 2 characters.").max(50),
-  // imageFile is handled by the component state now, not directly in form schema for add
 });
 type AddCandidateFormValues = z.infer<typeof addCandidateFormSchema>;
 
 
-// Schema for editing, fields are optional for partial updates
 const editCandidateFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters.").max(100).optional(),
   electionSymbol: z.string().min(2, "Symbol must be at least 2 characters.").max(50).optional(),
-  // imageFile will be File | null | undefined (File for new/replace, null to remove, undefined to keep current)
 });
 type EditCandidateFormValues = z.infer<typeof editCandidateFormSchema>;
+
+const voteInstructionsFormSchema = z.object({
+  instructions: z.string().max(5000, "Instructions cannot exceed 5000 characters.").optional().or(z.literal('')),
+});
+type VoteInstructionsFormValues = z.infer<typeof voteInstructionsFormSchema>;
 
 
 interface CandidateFormProps {
   position: CandidatePosition;
-  form: UseFormReturn<AddCandidateFormValues>; // Specifically for Add form
+  form: UseFormReturn<AddCandidateFormValues>; 
   onSubmit: (data: AddCandidateFormValues, position: CandidatePosition, imageFile?: File) => Promise<void>;
   isSubmitting: boolean;
   isLoadingCandidates: boolean;
@@ -122,11 +126,9 @@ const CandidateSectionForm: React.FC<CandidateFormProps> = ({
 
   const handleSubmitWithImage = (data: AddCandidateFormValues) => {
     onSubmit(data, position, croppedImageFile || undefined).then(() => {
-        form.reset(); // Reset form fields on successful submission
-        clearImagePreview(); // Clear image preview and file
+        form.reset(); 
+        clearImagePreview(); 
     }).catch(err => {
-        // Error is handled by parent, toast shown there.
-        // Could add specific UI error display here if needed.
     });
   };
 
@@ -212,7 +214,7 @@ interface CandidateListProps {
   error: string | null;
   onEdit: (candidate: ElectionCandidateData) => void;
   onDelete: (candidate: ElectionCandidateData) => void;
-  isProcessingAction: boolean; // Generic flag for edit/delete in progress
+  isProcessingAction: boolean; 
 }
 
 const CandidateSectionList: React.FC<CandidateListProps> = ({ position, candidates, isLoading, error, onEdit, onDelete, isProcessingAction }) => {
@@ -282,21 +284,24 @@ export default function CandidateManagementPage() {
   const [errorPresidentList, setErrorPresidentList] = React.useState<string | null>(null);
   const [errorSecretaryList, setErrorSecretaryList] = React.useState<string | null>(null);
 
-  // Edit Dialog State
   const [editingCandidate, setEditingCandidate] = React.useState<ElectionCandidateData | null>(null);
   const [isEditCandidateDialogOpen, setIsEditCandidateDialogOpen] = React.useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = React.useState(false);
   const [editDialogImageToCropSrc, setEditDialogImageToCropSrc] = React.useState<string | null>(null);
   const [isEditDialogCropOpen, setIsEditDialogCropOpen] = React.useState(false);
   const [editDialogCroppedImageFile, setEditDialogCroppedImageFile] = React.useState<File | null>(null);
-  const [editDialogImagePreview, setEditDialogImagePreview] = React.useState<string | null>(null); // For newly cropped or existing image
+  const [editDialogImagePreview, setEditDialogImagePreview] = React.useState<string | null>(null); 
   const [removeCurrentImageInEdit, setRemoveCurrentImageInEdit] = React.useState(false);
   const editDialogFileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Delete Dialog State
   const [candidateToDelete, setCandidateToDelete] = React.useState<ElectionCandidateData | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const [voteInstructions, setVoteInstructions] = React.useState("");
+  const [isLoadingInstructions, setIsLoadingInstructions] = React.useState(true);
+  const [isSubmittingInstructions, setIsSubmittingInstructions] = React.useState(false);
+
 
   const presidentAddForm = useForm<AddCandidateFormValues>({ resolver: zodResolver(addCandidateFormSchema), defaultValues: { name: "", electionSymbol: "" } });
   const secretaryAddForm = useForm<AddCandidateFormValues>({ resolver: zodResolver(addCandidateFormSchema), defaultValues: { name: "", electionSymbol: "" } });
@@ -304,6 +309,11 @@ export default function CandidateManagementPage() {
   const editCandidateForm = useForm<EditCandidateFormValues>({
     resolver: zodResolver(editCandidateFormSchema),
     defaultValues: { name: "", electionSymbol: "" },
+  });
+
+  const instructionsForm = useForm<VoteInstructionsFormValues>({
+    resolver: zodResolver(voteInstructionsFormSchema),
+    defaultValues: { instructions: "" },
   });
 
   const fetchCandidates = React.useCallback(async (position: CandidatePosition) => {
@@ -328,7 +338,21 @@ export default function CandidateManagementPage() {
   React.useEffect(() => {
     fetchCandidates("President");
     fetchCandidates("GeneralSecretary");
-  }, [fetchCandidates]);
+
+    async function fetchInstructions() {
+      setIsLoadingInstructions(true);
+      try {
+        const settings = await getElectionControlSettings();
+        instructionsForm.setValue("instructions", settings.voteInstructions || "");
+        setVoteInstructions(settings.voteInstructions || "");
+      } catch (e) {
+        toast({ title: "Error Loading Instructions", description: (e as Error).message, variant: "destructive" });
+      } finally {
+        setIsLoadingInstructions(false);
+      }
+    }
+    fetchInstructions();
+  }, [fetchCandidates, instructionsForm, toast]);
 
   const onSubmitAddCandidate = async (data: AddCandidateFormValues, position: CandidatePosition, imageFile?: File) => {
     const setIsSubmitting = position === "President" ? setIsSubmittingPresidentAdd : setIsSubmittingSecretaryAdd;
@@ -337,8 +361,7 @@ export default function CandidateManagementPage() {
       const candidateInput: NewCandidateInput = { ...data, position, imageFile: imageFile || null };
       await addCandidate(candidateInput);
       toast({ title: "Candidate Added", description: `${data.name} has been added as a ${position} candidate.` });
-      fetchCandidates(position); // Refresh list
-      // Form reset is handled within CandidateSectionForm
+      fetchCandidates(position); 
     } catch (e) {
       toast({ title: "Error Adding Candidate", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -346,12 +369,11 @@ export default function CandidateManagementPage() {
     }
   };
 
-  // Edit Dialog Handlers
   const handleOpenEditDialog = (candidate: ElectionCandidateData) => {
     setEditingCandidate(candidate);
     editCandidateForm.reset({ name: candidate.name, electionSymbol: candidate.electionSymbol });
-    setEditDialogImagePreview(candidate.imageUrl || null); // Preview existing image
-    setEditDialogCroppedImageFile(null); // Clear any previously cropped file for edit
+    setEditDialogImagePreview(candidate.imageUrl || null); 
+    setEditDialogCroppedImageFile(null); 
     setRemoveCurrentImageInEdit(false);
     setIsEditCandidateDialogOpen(true);
   };
@@ -371,16 +393,16 @@ export default function CandidateManagementPage() {
   const handleEditDialogCropComplete = (croppedBlob: Blob) => {
     const newCroppedFile = new File([croppedBlob], "edited_candidate_image.png", { type: "image/png" });
     setEditDialogCroppedImageFile(newCroppedFile);
-    setEditDialogImagePreview(URL.createObjectURL(croppedBlob)); // Show newly cropped image
-    setRemoveCurrentImageInEdit(false); // If new image is cropped, don't remove
+    setEditDialogImagePreview(URL.createObjectURL(croppedBlob)); 
+    setRemoveCurrentImageInEdit(false); 
     setIsEditDialogCropOpen(false);
     if (editDialogFileInputRef.current) editDialogFileInputRef.current.value = "";
   };
   
   const handleRemoveCurrentImageInEditDialog = () => {
     setRemoveCurrentImageInEdit(true);
-    setEditDialogImagePreview(null); // Clear preview
-    setEditDialogCroppedImageFile(null); // Clear any potential new file
+    setEditDialogImagePreview(null); 
+    setEditDialogCroppedImageFile(null); 
     if (editDialogFileInputRef.current) editDialogFileInputRef.current.value = "";
   };
 
@@ -395,8 +417,8 @@ export default function CandidateManagementPage() {
       await updateCandidate(
         editingCandidate.id,
         updateData,
-        removeCurrentImageInEdit ? null : (editDialogCroppedImageFile || undefined), // null to remove, file to update, undefined to keep
-        editingCandidate.imagePath // Pass current image path for potential deletion
+        removeCurrentImageInEdit ? null : (editDialogCroppedImageFile || undefined), 
+        editingCandidate.imagePath 
       );
       toast({ title: "Candidate Updated", description: `${data.name || editingCandidate.name}'s details updated.` });
       fetchCandidates(editingCandidate.position);
@@ -408,7 +430,6 @@ export default function CandidateManagementPage() {
     }
   };
 
-  // Delete Dialog Handlers
   const handleOpenDeleteDialog = (candidate: ElectionCandidateData) => {
     setCandidateToDelete(candidate);
     setIsDeleteConfirmOpen(true);
@@ -427,6 +448,19 @@ export default function CandidateManagementPage() {
     } finally {
       setIsDeleting(false);
       setCandidateToDelete(null);
+    }
+  };
+
+  const onInstructionsSubmit = async (data: VoteInstructionsFormValues) => {
+    setIsSubmittingInstructions(true);
+    try {
+      await updateElectionControlSettings({ voteInstructions: data.instructions || null });
+      setVoteInstructions(data.instructions || "");
+      toast({ title: "Instructions Saved", description: "Voting instructions have been updated." });
+    } catch (e) {
+      toast({ title: "Error Saving Instructions", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmittingInstructions(false);
     }
   };
 
@@ -482,10 +516,58 @@ export default function CandidateManagementPage() {
           />
         </section>
 
-        {/* Edit Candidate Dialog */}
+        {/* Vote Instructions Section */}
+        <section className="mt-10">
+          <Card className="shadow-md">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <BookOpenCheck className="h-5 w-5 text-green-600" />
+                <CardTitle className="text-lg">Voting Instructions</CardTitle>
+              </div>
+              <CardDescription>
+                Provide instructions or guidelines for voters. This text will appear on the public voting page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingInstructions ? (
+                <Skeleton className="h-32 w-full" />
+              ) : (
+                <Form {...instructionsForm}>
+                  <form onSubmit={instructionsForm.handleSubmit(onInstructionsSubmit)} className="space-y-6">
+                    <FormField
+                      control={instructionsForm.control}
+                      name="instructions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Instructions Text</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter voting instructions here..."
+                              className="resize-y min-h-[150px]"
+                              {...field}
+                              disabled={isSubmittingInstructions}
+                            />
+                          </FormControl>
+                          <FormDescription>Max 5000 characters. This will be displayed on the public voting page.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" disabled={isSubmittingInstructions || !instructionsForm.formState.isDirty}>
+                      {isSubmittingInstructions && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save Instructions
+                    </Button>
+                  </form>
+                </Form>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+
         {editingCandidate && (
           <Dialog open={isEditCandidateDialogOpen} onOpenChange={(open) => {
-            if (!open) setEditingCandidate(null); // Clear editing candidate when dialog closes
+            if (!open) setEditingCandidate(null); 
             setIsEditCandidateDialogOpen(open);
           }}>
             <DialogContent className="sm:max-w-md">
@@ -540,7 +622,6 @@ export default function CandidateManagementPage() {
           </Dialog>
         )}
 
-        {/* Image Crop Dialog for Edit Form */}
         {editDialogImageToCropSrc && (
           <ImageCropDialog
             isOpen={isEditDialogCropOpen}
@@ -551,7 +632,6 @@ export default function CandidateManagementPage() {
           />
         )}
 
-        {/* Delete Candidate Confirmation Dialog */}
         {candidateToDelete && (
           <AlertDialog open={isDeleteConfirmOpen} onOpenChange={(open) => { if(!open) setCandidateToDelete(null); setIsDeleteConfirmOpen(open);}}>
             <ShadCNAlertDialogContent>

@@ -1,4 +1,3 @@
-
 // src/services/electionControlService.ts
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -9,6 +8,7 @@ const MAIN_ELECTION_DOC_ID = 'mainElection';
 export interface ElectionControlSettings {
   resultsPublished: boolean;
   votingClosed: boolean;
+  voteInstructions?: string | null; // Added voteInstructions
   lastUpdated?: Timestamp;
 }
 
@@ -22,19 +22,18 @@ export async function getElectionControlSettings(): Promise<ElectionControlSetti
       return {
         resultsPublished: data.resultsPublished || false,
         votingClosed: data.votingClosed || false,
+        voteInstructions: data.voteInstructions || null, // Fetch instructions
         lastUpdated: data.lastUpdated as Timestamp,
       };
     }
-    // Default settings if document doesn't exist
     console.warn(`[electionControlService.getElectionControlSettings] Document '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}' not found. Returning default settings. Ensure this document is initialized if needed.`);
-    return { resultsPublished: false, votingClosed: false };
+    return { resultsPublished: false, votingClosed: false, voteInstructions: null };
   } catch (error) {
     console.error("[electionControlService.getElectionControlSettings] Error fetching settings:", error);
     if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
-        throw new Error(`Failed to fetch election settings: Firestore permission denied for '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}'. Ensure this document is readable by users (e.g., via 'allow read: if true;' or 'allow read: if request.auth != null;').`);
+        throw new Error(`Failed to fetch election settings: Firestore permission denied for '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}'. Ensure public read access or appropriate admin rules.`);
     }
-    // Fallback to default on other errors to prevent page crashes, but log the error.
-    return { resultsPublished: false, votingClosed: false };
+    return { resultsPublished: false, votingClosed: false, voteInstructions: null };
   }
 }
 
@@ -46,7 +45,7 @@ export async function setResultsPublished(isPublic: boolean): Promise<void> {
       resultsPublished: isPublic,
       votingClosed: isPublic, // When results go public, voting is automatically closed.
       lastUpdated: serverTimestamp(),
-    }, { merge: true }); // Use merge to create if not exists, or update if it does
+    }, { merge: true });
   } catch (error) {
     console.error("[electionControlService.setResultsPublished] Error setting results status:", error);
     if (error instanceof Error) {
@@ -59,3 +58,23 @@ export async function setResultsPublished(isPublic: boolean): Promise<void> {
   }
 }
 
+// Function to update specific election control settings, including vote instructions
+export async function updateElectionControlSettings(updates: Partial<ElectionControlSettings>): Promise<void> {
+  try {
+    const docRef = doc(db, ELECTION_CONTROL_COLLECTION, MAIN_ELECTION_DOC_ID);
+    const dataToUpdate = {
+      ...updates,
+      lastUpdated: serverTimestamp(),
+    };
+    await setDoc(docRef, dataToUpdate, { merge: true });
+  } catch (error) {
+    console.error("[electionControlService.updateElectionControlSettings] Error updating settings:", error);
+    if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
+        throw new Error(`Failed to update election control settings: Firestore permission denied. Ensure admin user has write access to '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}'.`);
+      }
+      throw new Error(`Failed to update election control settings: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while updating election control settings.');
+  }
+}

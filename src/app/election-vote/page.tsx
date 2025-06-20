@@ -1,4 +1,3 @@
-
 // src/app/election-vote/page.tsx
 "use client";
 
@@ -10,16 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; // For results display
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // For results display
-import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX, AlertTriangle, CheckIcon, BarChart3 } from "lucide-react"; // Added BarChart3
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; 
+import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX, AlertTriangle, CheckIcon, BarChart3, BookOpenCheck } from "lucide-react"; 
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getCandidatesByPosition, recordVote, getUserVotes, type ElectionCandidateData, type CandidatePosition, type UserVoteData } from "@/services/electionCandidateService";
-import { getElectionControlSettings, type ElectionControlSettings } from "@/services/electionControlService"; // Import election control
+import { getElectionControlSettings, type ElectionControlSettings } from "@/services/electionControlService"; 
 
-// Helper function moved to module scope
 const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
 
 interface CandidateCardProps {
@@ -33,8 +31,7 @@ interface CandidateCardProps {
 }
 
 const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVotedForThisCandidate, canVoteForPosition, isVoting, isLoggedIn, votingClosed }) => {
-  // getInitials is now accessible from module scope, no need to redefine here.
-
+  
   return (
     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow flex flex-col", isVotedForThisCandidate && "border-2 border-green-500 ring-2 ring-green-500/50")}>
       <CardHeader className="items-center text-center">
@@ -86,7 +83,7 @@ const CandidateCardSkeleton = () => (
   </Card>
 );
 
-interface CandidateResult extends ElectionCandidateData { // For results display
+interface CandidateResult extends ElectionCandidateData { 
   percentageOfTotalVotes?: number;
 }
 
@@ -106,10 +103,9 @@ export default function ElectionVotePage() {
 
   const [isVotingState, setIsVotingState] = React.useState<{ [candidateId: string]: boolean }>({});
 
-  const [electionSettings, setElectionSettings] = React.useState<ElectionControlSettings>({ resultsPublished: false, votingClosed: false });
+  const [electionSettings, setElectionSettings] = React.useState<ElectionControlSettings>({ resultsPublished: false, votingClosed: false, voteInstructions: null });
   const [loadingElectionSettings, setLoadingElectionSettings] = React.useState(true);
 
-  // States for displaying public results
   const [publicPresidentResults, setPublicPresidentResults] = React.useState<CandidateResult[]>([]);
   const [publicSecretaryResults, setPublicSecretaryResults] = React.useState<CandidateResult[]>([]);
 
@@ -130,7 +126,6 @@ export default function ElectionVotePage() {
         setElectionSettings(settings);
 
         if (settings.resultsPublished) {
-          // Process and set results for public display
           const processResults = (candidates: ElectionCandidateData[]): CandidateResult[] => {
             const totalVotes = candidates.reduce((sum, c) => sum + (c.voteCount || 0), 0);
             return candidates
@@ -228,7 +223,8 @@ export default function ElectionVotePage() {
     title: string,
     candidates: ElectionCandidateData[],
     position: CandidatePosition,
-    icon: React.ElementType
+    icon: React.ElementType,
+    instructions?: string | null
   ) => {
     const IconComponent = icon;
     const votedCandidateIdInPosition = position === 'President' ? userVotes?.presidentCandidateId : userVotes?.generalSecretaryCandidateId;
@@ -240,6 +236,19 @@ export default function ElectionVotePage() {
           <IconComponent className="h-7 w-7 text-green-600" />
           <h2 className="text-xl font-headline font-semibold text-foreground">{title}</h2>
         </div>
+        {instructions && (
+          <Card className="mb-6 bg-blue-500/10 border-blue-500/30 shadow-sm">
+            <CardHeader className="pb-3 pt-4">
+              <div className="flex items-center gap-2">
+                <BookOpenCheck className="h-5 w-5 text-blue-600" />
+                <CardTitle className="text-base font-semibold text-blue-700 dark:text-blue-400">Voting Instructions</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="text-sm text-blue-700 dark:text-blue-300 pb-4">
+              <div dangerouslySetInnerHTML={{ __html: instructions.replace(/\n/g, '<br />') }} />
+            </CardContent>
+          </Card>
+        )}
         {loadingCandidates ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(2)].map((_, i) => <CandidateCardSkeleton key={`${title}-skeleton-${i}`} />)}
@@ -257,7 +266,7 @@ export default function ElectionVotePage() {
                 canVoteForPosition={canVoteForPosition}
                 isVoting={isVotingState[candidate.id] || false}
                 isLoggedIn={!!user}
-                votingClosed={electionSettings.votingClosed} // Pass votingClosed status
+                votingClosed={electionSettings.votingClosed} 
               />
             ))}
           </div>
@@ -373,7 +382,7 @@ export default function ElectionVotePage() {
 
         {!electionSettings.votingClosed && (
              <section className="space-y-8 mt-8">
-                {renderCandidateSection("President Candidate Nominations", presidentCandidates, "President", Shield)}
+                {renderCandidateSection("President Candidate Nominations", presidentCandidates, "President", Shield, electionSettings.voteInstructions)}
                 {renderCandidateSection("General Secretary Candidate Nominations", secretaryCandidates, "GeneralSecretary", Award)}
             </section>
         )}
@@ -389,6 +398,19 @@ export default function ElectionVotePage() {
                 </p>
               </div>
             </div>
+             {electionSettings.voteInstructions && (
+              <Card className="mb-8 bg-blue-500/10 border-blue-500/30 shadow-sm">
+                <CardHeader className="pb-3 pt-4">
+                  <div className="flex items-center gap-2">
+                    <BookOpenCheck className="h-5 w-5 text-blue-600" />
+                    <CardTitle className="text-base font-semibold text-blue-700 dark:text-blue-400">Voting Instructions</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-sm text-blue-700 dark:text-blue-300 pb-4">
+                  <div dangerouslySetInnerHTML={{ __html: electionSettings.voteInstructions.replace(/\n/g, '<br />') }} />
+                </CardContent>
+              </Card>
+            )}
             <div className="space-y-8">
               <PublicResultTable title="President" results={publicPresidentResults} icon={Shield} />
               <PublicResultTable title="General Secretary" results={publicSecretaryResults} icon={Award} />
@@ -400,4 +422,3 @@ export default function ElectionVotePage() {
     </AppShell>
   );
 }
-
