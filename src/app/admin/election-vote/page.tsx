@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation"; // Added useRouter
+import { useRouter } from "next/navigation"; 
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { Gavel, PlusCircle, Settings, ListChecks, Info, Users } from "lucide-react";
 
 export default function ManageElectionVotePage() {
-  const router = useRouter(); // Initialize router
+  const router = useRouter(); 
 
   return (
     <AppShell>
@@ -31,24 +31,7 @@ export default function ManageElectionVotePage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="shadow-md">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-lg">Election Configuration</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Set up election periods, define positions, and manage voting rules.
-              </CardDescription>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => alert("Configure election settings (to be implemented)")}>
-                Configure Settings
-              </Button>
-            </CardContent>
-          </Card>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="shadow-md">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -77,22 +60,12 @@ export default function ManageElectionVotePage() {
               <CardDescription>
                 Monitor voting progress and view final election results.
               </CardDescription>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => alert("View results (to be implemented)")}>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push("/admin/election-vote/results")}>
                 View Results
               </Button>
             </CardContent>
           </Card>
         </div>
-
-        <Alert className="mt-8">
-            <Info className="h-4 w-4" />
-            <ShadCNAlertTitle>Feature Under Development</ShadCNAlertTitle>
-            <AlertDescription>
-                The election and voting management module is currently under development.
-                Full functionality for creating elections, managing candidates, and tallying votes will be available soon.
-            </AlertDescription>
-        </Alert>
-
       </main>
     </AppShell>
   );
