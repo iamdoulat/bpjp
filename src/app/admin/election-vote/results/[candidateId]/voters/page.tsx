@@ -13,14 +13,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { getCandidateById, getVotersForCandidate, type ElectionCandidateData, type VoterInfo } from "@/services/electionCandidateService";
-import { ArrowLeft, Users, Info, ServerCrash, Clock, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Users, Info, ServerCrash, Clock, Loader2, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const ITEMS_PER_PAGE = 20;
 
-function formatDisplayDateTime(timestamp?: Timestamp): string {
+function formatDisplayDateTime(timestamp?: Timestamp, forPDF: boolean = false): string {
   if (!timestamp) return "N/A";
+  const jsDate = timestamp.toDate();
+  if (forPDF) {
+    return new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(jsDate);
+  }
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "long",
@@ -28,7 +40,7 @@ function formatDisplayDateTime(timestamp?: Timestamp): string {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  }).format(timestamp.toDate());
+  }).format(jsDate);
 }
 
 const getInitials = (name?: string | null): string => {
@@ -50,6 +62,7 @@ export default function CandidateVotersListPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [isDownloadingPdf, setIsDownloadingPdf] = React.useState(false);
 
   React.useEffect(() => {
     if (candidateId) {
@@ -84,6 +97,53 @@ export default function CandidateVotersListPage() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  const handleDownloadPdf = async () => {
+    if (!candidate || voters.length === 0) return;
+    setIsDownloadingPdf(true);
+
+    const doc = new jsPDF();
+    const tableColumn = ["#", "Voter Name", "Mobile No.", "Ward No.", "Vote Time"];
+    const tableRows: (string | null | undefined)[][] = [];
+
+    voters.forEach((voter, index) => {
+      const rowData = [
+        (index + 1).toString(),
+        voter.userName || "N/A",
+        voter.userMobileNumber || "N/A",
+        voter.userWardNo || "N/A",
+        formatDisplayDateTime(voter.votedAt, true),
+      ];
+      tableRows.push(rowData);
+    });
+
+    doc.setFontSize(18);
+    doc.text(`Voters for: ${candidate.name} (Symbol: ${candidate.electionSymbol})`, 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Total Votes: ${candidate.voteCount}`, 14, 30);
+
+
+    (doc as any).autoTable({
+      startY: 35,
+      head: [tableColumn],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: { fillColor: [22, 160, 133] }, // Example primary color
+      styles: { fontSize: 8 },
+    });
+    
+    doc.setFontSize(10);
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 10);
+    }
+
+    doc.save(`voters_list_${candidate.name.replace(/\s+/g, '_')}_${candidateId}.pdf`);
+    setIsDownloadingPdf(false);
+  };
+
 
   if (loading) {
     return (
@@ -142,7 +202,7 @@ export default function CandidateVotersListPage() {
         </Button>
 
         <Card className="shadow-lg">
-          <CardHeader className="bg-muted/30 p-4 md:p-6 border-b">
+          <CardHeader className="bg-muted/30 p-4 md:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12 border">
                     <AvatarImage src={candidate.imageUrl || `https://placehold.co/60x60.png?text=${getInitials(candidate.name)}`} alt={candidate.name} data-ai-hint="person portrait"/>
@@ -157,6 +217,15 @@ export default function CandidateVotersListPage() {
                     </CardDescription>
                 </div>
             </div>
+            <Button 
+              onClick={handleDownloadPdf} 
+              disabled={isDownloadingPdf || voters.length === 0}
+              className="bg-green-600 hover:bg-green-700 text-white mt-3 sm:mt-0"
+              size="sm"
+            >
+              {isDownloadingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Download PDF
+            </Button>
           </CardHeader>
           <CardContent className="p-0">
             {voters.length === 0 ? (
