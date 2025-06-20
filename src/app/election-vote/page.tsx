@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX, AlertTriangle, CheckIcon } from "lucide-react"; // Added CheckIcon
+import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX, AlertTriangle, CheckIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -19,9 +19,9 @@ import { getCandidatesByPosition, recordVote, getUserVotes, type ElectionCandida
 interface CandidateCardProps {
   candidate: ElectionCandidateData;
   onVote: (candidateId: string, candidateName: string, position: CandidatePosition) => void;
-  isVotedForThisCandidate: boolean; // True if this specific candidate is voted for by the user in this position
-  canVoteForPosition: boolean; // True if user can still vote in this position (hasn't voted for anyone in this position yet)
-  isVoting: boolean; // True if a vote for THIS candidate is currently in progress
+  isVotedForThisCandidate: boolean;
+  canVoteForPosition: boolean;
+  isVoting: boolean;
   isLoggedIn: boolean;
 }
 
@@ -45,7 +45,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVote
         {isVotedForThisCandidate && (
           <div className="flex items-center justify-center text-sm text-green-600 mt-1">
             <CheckIcon className="h-4 w-4 mr-1" />
-            Your Vote Recorded
+            Your vote has been Recorded
           </div>
         )}
       </CardHeader>
@@ -127,6 +127,9 @@ export default function ElectionVotePage() {
           let detailedErrorMessage = "An unknown error occurred while fetching your vote status.";
           if (err instanceof Error) {
             detailedErrorMessage = err.message;
+             if (err.message.includes("permission denied")) {
+                detailedErrorMessage = `Failed to fetch user votes: Firestore permission denied for 'electionVotes/${user.uid}'. Please check security rules.`;
+            }
           }
           setUserVotesError(detailedErrorMessage);
         })
@@ -157,7 +160,6 @@ export default function ElectionVotePage() {
         [position === 'President' ? 'presidentCandidateId' : 'generalSecretaryCandidateId']: candidateId,
       }));
 
-      // Optimistically update candidate vote counts locally, or refetch
        const updateLocalCandidates = (prevCandidates: ElectionCandidateData[]) =>
          prevCandidates.map(c => c.id === candidateId ? { ...c, voteCount: (c.voteCount || 0) + 1 } : c);
 
@@ -249,11 +251,6 @@ export default function ElectionVotePage() {
             <ShadCNAlertTitle>Error Loading Your Vote Status</ShadCNAlertTitle>
             <AlertDescription>
               {userVotesError}
-              {(userVotesError.includes("permission denied") || userVotesError.includes("PERMISSION_DENIED")) && (
-                <p className="mt-2 text-xs font-medium">
-                  This might be due to a permission issue. Please ensure your Firestore security rules allow you to read your own vote document from the &apos;electionVotes&apos; collection (e.g., `match /electionVotes/{'{userId}'} {'{ allow read: if request.auth.uid == userId; }'}`).
-                </p>
-              )}
             </AlertDescription>
           </Alert>
         )}
@@ -276,3 +273,4 @@ export default function ElectionVotePage() {
     </AppShell>
   );
 }
+
