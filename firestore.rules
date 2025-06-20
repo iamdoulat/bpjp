@@ -16,6 +16,15 @@ service cloud.firestore {
       allow update: if request.auth.uid == userId || isAdmin(request.auth.uid); // User can update their own, admin can update any
       allow delete: if isAdmin(request.auth.uid); // Only admin can delete
     }
+    
+    match /databases/{database}/documents {
+  // ... other rules
+  match /userProfiles/{userId} {
+    allow read: if request.auth != null && request.auth.uid == userId; // User can read their own profile
+    // ... other rules for userProfiles ...
+  }
+}
+    
 
     // Campaigns
     match /campaigns/{campaignId} {
@@ -69,6 +78,16 @@ service cloud.firestore {
       allow list: if true; 
       allow create, update, delete: if request.auth != null && isAdmin(request.auth.uid); // Admin only CUD
     }
+    
+  	match /siteContent/organizationDetails/advisoryBoardMembers/{memberId} {
+    	allow read, list: if true; // Or more specific if needed, e.g., if request.auth != null;
+     	allow create, update, delete: if request.auth != null && isAdmin(request.auth.uid); // Admin only CUD
+  	}
+
+		match /electionCandidates/{candidateId} {
+  	allow read: if true; // Or if request.auth != null; for authenticated read
+  	allow create, update, delete: if request.auth != null && isAdmin(request.auth.uid); // Admin only CUD
+}
 
     // Payment Transactions
     match /paymentTransactions/{transactionId} {

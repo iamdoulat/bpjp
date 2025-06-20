@@ -1,70 +1,77 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to check if a user is an admin by looking up their profile in Firestore
-    // This requires your Firestore rules to allow admins to read userProfiles
-    function isAdmin() {
-      return request.auth != null && get(/databases/(default)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
-    }
-
     // Profile Images:
-    // Users can read anyone's profile image (if public).
-    // Users can only write (upload/update/delete) their own profile image.
-    match /profile-images/{userId}/{allPaths=*} {
-      allow read: if true; // Or restrict to authenticated users: if request.auth != null;
+    // Allow anyone to read (public profile pictures).
+    // Allow authenticated users to write only to their own profile image path.
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Campaign Images:
-    // Publicly readable.
-    // Writable by authenticated users (e.g., admins or users creating campaigns).
-    // Adjust write rule based on who can create/edit campaigns.
-    match /campaign_images/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null && isAdmin(); // Only admins can upload/modify campaign images
-    }
+		// In your Firebase Storage Rules
+		match /campaign_images/{allPaths=**} {
+ 		allow read: if true; // Or your specific read rule
+  	allow write: if true; // Temporary 
+    //allow write: if request.auth != null &&
+                  //get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+		}
 
     // Event Attachments:
-    // Publicly readable.
-    // Writable by admin users.
+    // Allow anyone to read.
+    // Allow write only by admins (assuming events are admin-managed).
     match /event_attachments/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null && isAdmin();
-    }
+  		allow write: if true; // Temporary 
+    //allow write: if request.auth != null &&
+                  //get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+		}
 
     // Expense Attachments:
-    // Readable by admin users (or potentially by the user who created the expense if needed).
-    // Writable by admin users.
+    // Allow anyone to read.
+    // Allow write only by admins (assuming expenses are created/managed by admins).
     match /expense_attachments/{allPaths=**} {
-      allow read: if request.auth != null && isAdmin(); // Or more specific if users need to see their own.
-      allow write: if request.auth != null && isAdmin();
-    }
+      allow read: if true;
+  		allow write: if true; // Temporary 
+    //allow write: if request.auth != null &&
+                  //get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+		}
 
-    // Organization Setting Images (e.g., president, secretary, cover images for About Us)
-    // Path: organization/organizationDetails/{image_type_filename}
-    match /organization/organizationDetails/{fileName} {
-      allow read: if true; // Publicly readable
-      allow write: if request.auth != null && isAdmin(); // Only admins can write/update these images
-    }
+    // Organization Settings Images (e.g., president, secretary, cover photos):
+    // Allow anyone to read.
+    // Allow write only by admins.
+    match /organization/{allPaths=**} {
+      allow read: if true;
+  		allow write: if true; // Temporary 
+    //allow write: if request.auth != null &&
+                  //get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+		}
 
     // Advisory Board Images:
-    // Allow authenticated users (ideally admins) to upload.
     // Allow anyone to read.
-    match /advisory_board_images/{memberImage=**} {
-      allow read;
-      allow write: if request.auth != null; // For development
-      // For production, restrict to admins:
-      allow write: if request.auth != null && isAdmin(); // Only admins can write/update these images
-    }
+    // Allow write only by admins.
+    match /advisory_board_images/{allPaths=**} {
+      allow read: if true;
+  		allow write: if true; // Temporary 
+    //allow write: if request.auth != null &&
+                  //get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+		}
+    
+    match /election_candidates/{position}/{imageId} {
+  	allow read; // Or more restrictive if needed
+    allow write: if true; // Temporary 
+  	//allow write: if request.auth != null && 
+    //              get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+	}
 
-    // Default deny all other paths if not explicitly matched
-    // match /{allPaths=**} {
-    //   allow read, write: if false;
-    // }
+    // Default Fallback Rule:
+    // Deny all reads and writes to any other paths not explicitly matched above.
+    // This is a security best practice. If you have other paths you need to access,
+    // you'll need to add specific rules for them.
+    //match /{allPaths=**} {
+      //allow read, write: if false;
+    //}
   }
 }
-
-    

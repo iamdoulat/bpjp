@@ -60,6 +60,19 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVote
   );
 };
 
+const CandidateCardSkeleton = () => (
+  <Card className="shadow-lg flex flex-col">
+    <CardHeader className="items-center text-center">
+      <Skeleton className="w-24 h-24 rounded-full mb-3" />
+      <Skeleton className="h-5 w-3/4 mb-1" />
+      <Skeleton className="h-4 w-1/2 mb-1" />
+      <Skeleton className="h-3 w-1/4" />
+    </CardHeader>
+    <CardContent className="flex-grow flex items-end justify-center p-4">
+      <Skeleton className="h-10 w-full" />
+    </CardContent>
+  </Card>
+);
 
 export default function ElectionVotePage() {
   const router = useRouter();
@@ -101,7 +114,7 @@ export default function ElectionVotePage() {
   React.useEffect(() => {
     if (user && !authLoading) {
       setLoadingUserVotes(true);
-      setUserVotesError(null);
+      setUserVotesError(null); // Reset error before fetching
       getUserVotes(user.uid)
         .then(votes => setUserVotes(votes))
         .catch(err => {
@@ -157,20 +170,6 @@ export default function ElectionVotePage() {
   };
 
   const isLoadingPage = loadingCandidates || authLoading || loadingUserVotes;
-
-  const CandidateCardSkeleton = () => (
-    <Card className="shadow-lg flex flex-col">
-      <CardHeader className="items-center text-center">
-        <Skeleton className="w-24 h-24 rounded-full mb-3" />
-        <Skeleton className="h-5 w-3/4 mb-1" />
-        <Skeleton className="h-4 w-1/2 mb-1" />
-        <Skeleton className="h-3 w-1/4" />
-      </CardHeader>
-      <CardContent className="flex-grow flex items-end justify-center p-4">
-        <Skeleton className="h-10 w-full" />
-      </CardContent>
-    </Card>
-  );
 
   const renderCandidateSection = (
     title: string,
@@ -242,7 +241,7 @@ export default function ElectionVotePage() {
               {userVotesError}
               {userVotesError.includes("permission denied") && (
                 <p className="mt-2 text-xs font-medium">
-                  This might be due to a permission issue. Please ensure your Firestore security rules allow you to read your own vote document from the 'electionVotes' collection (e.g., `match /electionVotes/{'{userId}'} {'{ allow read: if request.auth.uid == userId; }'}`).
+                  This might be due to a permission issue. Please ensure your Firestore security rules allow you to read your own vote document from the &apos;electionVotes&apos; collection (e.g., `match /electionVotes/{'{userId}'} {'{ allow read: if request.auth.uid == userId; }'}`).
                 </p>
               )}
             </AlertDescription>
