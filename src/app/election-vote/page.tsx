@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX, AlertTriangle } from "lucide-react";
+import { Gavel, ListChecks, Info, Shield, Award, Vote as VoteIcon, CheckCircle2, Loader2, UserX, AlertTriangle, CheckIcon } from "lucide-react"; // Added CheckIcon
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -19,17 +19,17 @@ import { getCandidatesByPosition, recordVote, getUserVotes, type ElectionCandida
 interface CandidateCardProps {
   candidate: ElectionCandidateData;
   onVote: (candidateId: string, candidateName: string, position: CandidatePosition) => void;
-  isVotedFor: boolean;
-  canVote: boolean;
-  isVoting: boolean;
+  isVotedForThisCandidate: boolean; // True if this specific candidate is voted for by the user in this position
+  canVoteForPosition: boolean; // True if user can still vote in this position (hasn't voted for anyone in this position yet)
+  isVoting: boolean; // True if a vote for THIS candidate is currently in progress
   isLoggedIn: boolean;
 }
 
-const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVotedFor, canVote, isVoting, isLoggedIn }) => {
+const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVotedForThisCandidate, canVoteForPosition, isVoting, isLoggedIn }) => {
   const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
 
   return (
-    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow flex flex-col", isVotedFor && "border-2 border-green-500 ring-2 ring-green-500/50")}>
+    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow flex flex-col", isVotedForThisCandidate && "border-2 border-green-500 ring-2 ring-green-500/50")}>
       <CardHeader className="items-center text-center">
         <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50 mb-3 shadow-md">
           <Image
@@ -42,19 +42,24 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVote
         </div>
         <CardTitle className="text-lg">{candidate.name}</CardTitle>
         <CardDescription>Symbol: {candidate.electionSymbol}</CardDescription>
-        <CardDescription className="text-xs">Votes: {candidate.voteCount || 0}</CardDescription>
+        {isVotedForThisCandidate && (
+          <div className="flex items-center justify-center text-sm text-green-600 mt-1">
+            <CheckIcon className="h-4 w-4 mr-1" />
+            Your Vote Recorded
+          </div>
+        )}
       </CardHeader>
       <CardContent className="flex-grow flex items-end justify-center p-4">
         <Button
           className={cn(
             "w-full font-bold text-base py-3",
-            isVotedFor ? "bg-green-600 hover:bg-green-700 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
+            isVotedForThisCandidate ? "bg-green-600 hover:bg-green-700 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
           )}
           onClick={() => onVote(candidate.id, candidate.name, candidate.position)}
-          disabled={!isLoggedIn || isVotedFor || !canVote || isVoting}
+          disabled={!isLoggedIn || isVotedForThisCandidate || !canVoteForPosition || isVoting}
         >
-          {isVoting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isVotedFor ? <CheckCircle2 className="mr-2 h-5 w-5" /> : <VoteIcon className="mr-2 h-5 w-5" />}
-          {isVoting ? "Voting..." : isVotedFor ? "Voted" : "Vote"}
+          {isVoting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isVotedForThisCandidate ? <CheckCircle2 className="mr-2 h-5 w-5" /> : <VoteIcon className="mr-2 h-5 w-5" />}
+          {isVoting ? "Voting..." : isVotedForThisCandidate ? "Voted" : "Vote"}
         </Button>
       </CardContent>
     </Card>
@@ -67,7 +72,6 @@ const CandidateCardSkeleton = () => (
       <Skeleton className="w-24 h-24 rounded-full mb-3" />
       <Skeleton className="h-5 w-3/4 mb-1" />
       <Skeleton className="h-4 w-1/2 mb-1" />
-      <Skeleton className="h-3 w-1/4" />
     </CardHeader>
     <CardContent className="flex-grow flex items-end justify-center p-4">
       <Skeleton className="h-10 w-full" />
@@ -122,7 +126,7 @@ export default function ElectionVotePage() {
           console.error("Error fetching user votes:", err);
           let detailedErrorMessage = "An unknown error occurred while fetching your vote status.";
           if (err instanceof Error) {
-            detailedErrorMessage = err.message; 
+            detailedErrorMessage = err.message;
           }
           setUserVotesError(detailedErrorMessage);
         })
@@ -153,18 +157,23 @@ export default function ElectionVotePage() {
         [position === 'President' ? 'presidentCandidateId' : 'generalSecretaryCandidateId']: candidateId,
       }));
 
-      const updateLocalCandidates = (prevCandidates: ElectionCandidateData[]) =>
-        prevCandidates.map(c => c.id === candidateId ? { ...c, voteCount: (c.voteCount || 0) + 1 } : c);
+      // Optimistically update candidate vote counts locally, or refetch
+       const updateLocalCandidates = (prevCandidates: ElectionCandidateData[]) =>
+         prevCandidates.map(c => c.id === candidateId ? { ...c, voteCount: (c.voteCount || 0) + 1 } : c);
 
-      if (position === 'President') {
-        setPresidentCandidates(updateLocalCandidates);
-      } else {
-        setSecretaryCandidates(updateLocalCandidates);
-      }
+       if (position === 'President') {
+         setPresidentCandidates(updateLocalCandidates);
+       } else {
+         setSecretaryCandidates(updateLocalCandidates);
+       }
 
     } catch (e) {
       console.error("Voting failed:", e);
-      toast({ title: "Voting Failed", description: (e as Error).message, variant: "destructive" });
+      let voteErrorMessage = "Could not record your vote.";
+      if (e instanceof Error) {
+        voteErrorMessage = e.message;
+      }
+      toast({ title: "Voting Failed", description: voteErrorMessage, variant: "destructive" });
     } finally {
       setIsVotingState(prev => ({ ...prev, [candidateId]: false }));
     }
@@ -179,8 +188,8 @@ export default function ElectionVotePage() {
     icon: React.ElementType
   ) => {
     const IconComponent = icon;
-    const votedCandidateId = position === 'President' ? userVotes?.presidentCandidateId : userVotes?.generalSecretaryCandidateId;
-    const canVoteForPosition = !votedCandidateId;
+    const votedCandidateIdInPosition = position === 'President' ? userVotes?.presidentCandidateId : userVotes?.generalSecretaryCandidateId;
+    const canVoteForPosition = !votedCandidateIdInPosition;
 
     return (
       <div>
@@ -201,8 +210,8 @@ export default function ElectionVotePage() {
                 key={candidate.id}
                 candidate={candidate}
                 onVote={handleVote}
-                isVotedFor={candidate.id === votedCandidateId}
-                canVote={canVoteForPosition}
+                isVotedForThisCandidate={candidate.id === votedCandidateIdInPosition}
+                canVoteForPosition={canVoteForPosition}
                 isVoting={isVotingState[candidate.id] || false}
                 isLoggedIn={!!user}
               />
@@ -248,7 +257,7 @@ export default function ElectionVotePage() {
             </AlertDescription>
           </Alert>
         )}
-
+        
         {!user && !isLoadingPage && (
           <Alert variant="default" className="mt-6">
              <UserX className="h-4 w-4"/>
