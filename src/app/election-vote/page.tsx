@@ -1,3 +1,4 @@
+
 // src/app/election-vote/page.tsx
 "use client";
 
@@ -239,7 +240,7 @@ export default function ElectionVotePage() {
             <ShadCNAlertTitle>Error Loading Your Vote Status</ShadCNAlertTitle>
             <AlertDescription>
               {userVotesError}
-              {userVotesError.includes("permission denied") && (
+              {(userVotesError.includes("permission denied") || userVotesError.includes("PERMISSION_DENIED")) && (
                 <p className="mt-2 text-xs font-medium">
                   This might be due to a permission issue. Please ensure your Firestore security rules allow you to read your own vote document from the &apos;electionVotes&apos; collection (e.g., `match /electionVotes/{'{userId}'} {'{ allow read: if request.auth.uid == userId; }'}`).
                 </p>

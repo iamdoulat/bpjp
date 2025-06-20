@@ -1,3 +1,4 @@
+
 // src/services/electionCandidateService.ts
 import { db, storage, auth } from '@/lib/firebase';
 import {
@@ -187,7 +188,7 @@ export async function getUserVotes(userId: string): Promise<UserVoteData | null>
   } catch (error) {
     console.error(`[electionCandidateService.getUserVotes] Error fetching votes for user ${userId}:`, error);
     if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
-        throw new Error(`Failed to fetch user votes: Firestore permission denied for 'electionVotes/${userId}'.`);
+        throw new Error(`Failed to fetch user votes: Firestore permission denied for '${ELECTION_VOTES_COLLECTION}/${userId}'.`);
     }
     throw error;
   }
