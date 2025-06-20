@@ -26,13 +26,14 @@ export async function getElectionControlSettings(): Promise<ElectionControlSetti
       };
     }
     // Default settings if document doesn't exist
+    console.warn(`[electionControlService.getElectionControlSettings] Document '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}' not found. Returning default settings. Ensure this document is initialized if needed.`);
     return { resultsPublished: false, votingClosed: false };
   } catch (error) {
     console.error("[electionControlService.getElectionControlSettings] Error fetching settings:", error);
     if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
-        throw new Error(`Failed to fetch election settings: Firestore permission denied for '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}'. Ensure public read access or appropriate admin rules.`);
+        throw new Error(`Failed to fetch election settings: Firestore permission denied for '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}'. Please check your Firestore security rules to allow read access.`);
     }
-    // Fallback to default on other errors to prevent page crashes
+    // Fallback to default on other errors to prevent page crashes, but log the error.
     return { resultsPublished: false, votingClosed: false };
   }
 }
@@ -57,3 +58,4 @@ export async function setResultsPublished(isPublic: boolean): Promise<void> {
     throw new Error('An unknown error occurred while updating election settings.');
   }
 }
+
