@@ -1,3 +1,4 @@
+
 // src/app/election-vote/page.tsx
 "use client";
 
@@ -18,7 +19,14 @@ import { useToast } from "@/hooks/use-toast";
 import { getCandidatesByPosition, recordVote, getUserVotes, type ElectionCandidateData, type CandidatePosition, type UserVoteData } from "@/services/electionCandidateService";
 import { getElectionControlSettings, type ElectionControlSettings } from "@/services/electionControlService"; 
 
-const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
+const getInitials = (name?: string) => {
+  if (!name) return "C";
+  const parts = name.split(" ");
+  if (parts.length > 1 && parts[0] && parts[parts.length - 1]) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
 
 interface CandidateCardProps {
   candidate: ElectionCandidateData;
@@ -232,10 +240,6 @@ export default function ElectionVotePage() {
 
     return (
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <IconComponent className="h-7 w-7 text-green-600" />
-          <h2 className="text-xl font-headline font-semibold text-foreground">{title}</h2>
-        </div>
         {instructions && (
           <Card className="mb-6 bg-blue-500/10 border-blue-500/30 shadow-sm">
             <CardHeader className="pb-3 pt-4">
@@ -249,6 +253,10 @@ export default function ElectionVotePage() {
             </CardContent>
           </Card>
         )}
+        <div className="flex items-center gap-2 mb-4">
+          <IconComponent className="h-7 w-7 text-green-600" />
+          <h2 className="text-xl font-headline font-semibold text-foreground">{title}</h2>
+        </div>
         {loadingCandidates ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(2)].map((_, i) => <CandidateCardSkeleton key={`${title}-skeleton-${i}`} />)}
