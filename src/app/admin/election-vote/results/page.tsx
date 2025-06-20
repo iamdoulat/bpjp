@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BarChart3, Shield, Award, Loader2, ServerCrash, ArrowLeft, Users, CheckboxIcon, Settings, EyeSlash, EyeIcon } from "lucide-react"; // Added CheckboxIcon, Settings, EyeSlash, EyeIcon
+import { BarChart3, Shield, Award, Loader2, ServerCrash, ArrowLeft, Users, CheckIcon, Settings, EyeOff, EyeIcon } from "lucide-react"; // Changed EyeSlash to EyeOff
 import { getCandidatesByPosition, type ElectionCandidateData, type CandidatePosition } from "@/services/electionCandidateService";
 import { getElectionControlSettings, setResultsPublished, type ElectionControlSettings } from "@/services/electionControlService"; // Import election control
 import { cn } from "@/lib/utils";
@@ -269,13 +269,13 @@ export default function ElectionResultsPage() {
               If unchecked, results are private, and voting remains open (unless manually closed elsewhere).
             </p>
             <div className="mt-3 flex items-center text-sm">
-                {electionSettings.resultsPublished ? <EyeIcon className="h-4 w-4 mr-1.5 text-green-600"/> : <EyeSlash className="h-4 w-4 mr-1.5 text-orange-500"/>}
+                {electionSettings.resultsPublished ? <EyeIcon className="h-4 w-4 mr-1.5 text-green-600"/> : <EyeOff className="h-4 w-4 mr-1.5 text-orange-500"/>}
                 Results are currently: <strong className={cn(electionSettings.resultsPublished ? "text-green-600" : "text-orange-500")}>
                     {electionSettings.resultsPublished ? "Public" : "Private"}
                 </strong>
             </div>
              <div className="mt-1 flex items-center text-sm">
-                {electionSettings.votingClosed ? <CheckboxIcon className="h-4 w-4 mr-1.5 text-red-500"/> : <CheckboxIcon className="h-4 w-4 mr-1.5 text-green-600"/>}
+                {electionSettings.votingClosed ? <CheckIcon className="h-4 w-4 mr-1.5 text-red-500"/> : <CheckIcon className="h-4 w-4 mr-1.5 text-green-600"/>}
                 Voting is currently: <strong className={cn(electionSettings.votingClosed ? "text-red-500" : "text-green-600")}>
                     {electionSettings.votingClosed ? "Closed" : "Open"}
                 </strong>
@@ -287,3 +287,4 @@ export default function ElectionResultsPage() {
     </AppShell>
   );
 }
+
