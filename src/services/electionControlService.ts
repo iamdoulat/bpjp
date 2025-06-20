@@ -31,7 +31,7 @@ export async function getElectionControlSettings(): Promise<ElectionControlSetti
   } catch (error) {
     console.error("[electionControlService.getElectionControlSettings] Error fetching settings:", error);
     if (error instanceof Error && (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied")) {
-        throw new Error(`Failed to fetch election settings: Firestore permission denied for '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}'. Please check your Firestore security rules to allow read access.`);
+        throw new Error(`Failed to fetch election settings: Firestore permission denied for '${ELECTION_CONTROL_COLLECTION}/${MAIN_ELECTION_DOC_ID}'. Ensure this document is readable by users (e.g., via 'allow read: if true;' or 'allow read: if request.auth != null;').`);
     }
     // Fallback to default on other errors to prevent page crashes, but log the error.
     return { resultsPublished: false, votingClosed: false };
