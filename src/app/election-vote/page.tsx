@@ -19,6 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { getCandidatesByPosition, recordVote, getUserVotes, type ElectionCandidateData, type CandidatePosition, type UserVoteData } from "@/services/electionCandidateService";
 import { getElectionControlSettings, type ElectionControlSettings } from "@/services/electionControlService"; // Import election control
 
+// Helper function moved to module scope
+const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
+
 interface CandidateCardProps {
   candidate: ElectionCandidateData;
   onVote: (candidateId: string, candidateName: string, position: CandidatePosition) => void;
@@ -26,11 +29,11 @@ interface CandidateCardProps {
   canVoteForPosition: boolean;
   isVoting: boolean;
   isLoggedIn: boolean;
-  votingClosed: boolean; // New prop
+  votingClosed: boolean;
 }
 
 const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onVote, isVotedForThisCandidate, canVoteForPosition, isVoting, isLoggedIn, votingClosed }) => {
-  const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
+  // getInitials is now accessible from module scope, no need to redefine here.
 
   return (
     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow flex flex-col", isVotedForThisCandidate && "border-2 border-green-500 ring-2 ring-green-500/50")}>
@@ -397,3 +400,4 @@ export default function ElectionVotePage() {
     </AppShell>
   );
 }
+
