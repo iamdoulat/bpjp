@@ -1,3 +1,4 @@
+
 // src/app/admin/election-vote/results/page.tsx
 "use client";
 
@@ -11,9 +12,13 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BarChart3, Shield, Award, Loader2, ServerCrash, ArrowLeft, Users } from "lucide-react";
+import { BarChart3, Shield, Award, Loader2, ServerCrash, ArrowLeft, Users, CheckboxIcon, Settings, EyeSlash, EyeIcon } from "lucide-react"; // Added CheckboxIcon, Settings, EyeSlash, EyeIcon
 import { getCandidatesByPosition, type ElectionCandidateData, type CandidatePosition } from "@/services/electionCandidateService";
+import { getElectionControlSettings, setResultsPublished, type ElectionControlSettings } from "@/services/electionControlService"; // Import election control
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
+import { Label } from "@/components/ui/label"; // Import Label
+import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 interface CandidateResult extends ElectionCandidateData {
   percentageOfTotalVotes?: number;
@@ -21,10 +26,16 @@ interface CandidateResult extends ElectionCandidateData {
 
 export default function ElectionResultsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [presidentResults, setPresidentResults] = React.useState<CandidateResult[]>([]);
   const [secretaryResults, setSecretaryResults] = React.useState<CandidateResult[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
+  const [electionSettings, setElectionSettings] = React.useState<ElectionControlSettings>({ resultsPublished: false, votingClosed: false });
+  const [loadingSettings, setLoadingSettings] = React.useState(true);
+  const [isUpdatingSettings, setIsUpdatingSettings] = React.useState(false);
+
 
   const fetchAndProcessResults = React.useCallback(async (position: CandidatePosition, setter: React.Dispatch<React.SetStateAction<CandidateResult[]>>) => {
     try {
@@ -36,32 +47,64 @@ export default function ElectionResultsPage() {
           ...candidate,
           percentageOfTotalVotes: totalVotesForPosition > 0 ? ((candidate.voteCount || 0) / totalVotesForPosition) * 100 : 0,
         }))
-        .sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0)); // Sort by vote count descending
+        .sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0));
       
       setter(resultsWithPercentage);
     } catch (e) {
       console.error(`Error fetching results for ${position}:`, e);
-      throw e; // Re-throw to be caught by the main try-catch
+      throw e; 
     }
   }, []);
 
+  const fetchElectionSettings = React.useCallback(async () => {
+    setLoadingSettings(true);
+    try {
+      const settings = await getElectionControlSettings();
+      setElectionSettings(settings);
+    } catch (e) {
+      toast({ title: "Error Loading Settings", description: (e as Error).message, variant: "destructive"});
+      // Keep default settings on error
+      setElectionSettings({ resultsPublished: false, votingClosed: false });
+    } finally {
+      setLoadingSettings(false);
+    }
+  }, [toast]);
+
+
   React.useEffect(() => {
-    async function loadAllResults() {
+    async function loadAllData() {
       setLoading(true);
       setError(null);
       try {
         await Promise.all([
           fetchAndProcessResults("President", setPresidentResults),
-          fetchAndProcessResults("GeneralSecretary", setSecretaryResults)
+          fetchAndProcessResults("GeneralSecretary", setSecretaryResults),
+          fetchElectionSettings()
         ]);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "An unknown error occurred while loading election results.");
+        setError(e instanceof Error ? e.message : "An unknown error occurred while loading election results or settings.");
       } finally {
         setLoading(false);
       }
     }
-    loadAllResults();
-  }, [fetchAndProcessResults]);
+    loadAllData();
+  }, [fetchAndProcessResults, fetchElectionSettings]);
+
+  const handlePublishChange = async (isPublic: boolean) => {
+    setIsUpdatingSettings(true);
+    try {
+      await setResultsPublished(isPublic);
+      setElectionSettings({ resultsPublished: isPublic, votingClosed: isPublic }); // Update local state
+      toast({
+        title: "Settings Updated",
+        description: `Election results are now ${isPublic ? 'publicly visible and voting is closed' : 'private and voting may be open'}.`,
+      });
+    } catch (e) {
+      toast({ title: "Error Updating Settings", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
 
   const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
 
@@ -135,6 +178,7 @@ export default function ElectionResultsPage() {
                 </CardContent>
               </Card>
             ))}
+            <Skeleton className="h-12 w-full rounded-md mt-6"/>
           </div>
         </main>
       </AppShell>
@@ -194,6 +238,50 @@ export default function ElectionResultsPage() {
                 </AlertDescription>
             </Alert>
         )}
+
+        <Card className="mt-8 shadow-md">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+                <Settings className="h-6 w-6 text-primary" />
+                <CardTitle className="text-xl">Election Control</CardTitle>
+            </div>
+            <CardDescription>Manage the visibility of results and voting status.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingSettings ? (
+              <Skeleton className="h-10 w-1/2" />
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="publish-results"
+                  checked={electionSettings.resultsPublished}
+                  onCheckedChange={(checked) => handlePublishChange(checked as boolean)}
+                  disabled={isUpdatingSettings}
+                />
+                <Label htmlFor="publish-results" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Publish Results Publicly &amp; Close Voting
+                </Label>
+                {isUpdatingSettings && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-2">
+              If checked, results will be shown on the public voting page, and all voting will be closed.
+              If unchecked, results are private, and voting remains open (unless manually closed elsewhere).
+            </p>
+            <div className="mt-3 flex items-center text-sm">
+                {electionSettings.resultsPublished ? <EyeIcon className="h-4 w-4 mr-1.5 text-green-600"/> : <EyeSlash className="h-4 w-4 mr-1.5 text-orange-500"/>}
+                Results are currently: <strong className={cn(electionSettings.resultsPublished ? "text-green-600" : "text-orange-500")}>
+                    {electionSettings.resultsPublished ? "Public" : "Private"}
+                </strong>
+            </div>
+             <div className="mt-1 flex items-center text-sm">
+                {electionSettings.votingClosed ? <CheckboxIcon className="h-4 w-4 mr-1.5 text-red-500"/> : <CheckboxIcon className="h-4 w-4 mr-1.5 text-green-600"/>}
+                Voting is currently: <strong className={cn(electionSettings.votingClosed ? "text-red-500" : "text-green-600")}>
+                    {electionSettings.votingClosed ? "Closed" : "Open"}
+                </strong>
+            </div>
+          </CardContent>
+        </Card>
 
       </main>
     </AppShell>
