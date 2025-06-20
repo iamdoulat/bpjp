@@ -13,15 +13,15 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BarChart3, Shield, Award, Loader2, ServerCrash, ArrowLeft, Users, CheckIcon, Settings, EyeOff, EyeIcon } from "lucide-react";
+import { BarChart3, Shield, Award, Loader2, ServerCrash, ArrowLeft, Users, CheckIcon, Settings, EyeOff, EyeIcon } from "lucide-react"; // Changed CheckboxIcon to CheckIcon
 import { getCandidatesByPosition, type ElectionCandidateData, type CandidatePosition } from "@/services/electionCandidateService";
-import { getElectionControlSettings, setResultsPublished, type ElectionControlSettings } from "@/services/electionControlService";
+import { getElectionControlSettings, setResultsPublished, type ElectionControlSettings } from "@/services/electionControlService"; // Import election control
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
-interface CandidateResult extends ElectionCandidateData {
+interface CandidateResult extends ElectionCandidateData { // For results display
   percentageOfTotalVotes?: number;
 }
 
@@ -56,7 +56,7 @@ export default function ElectionResultsPage() {
       setter(resultsWithPercentage);
     } catch (e) {
       console.error(`Error fetching results for ${position}:`, e);
-      throw e;
+      throw e; // Re-throw to be caught by loadAllData
     }
   }, []);
 
@@ -67,6 +67,7 @@ export default function ElectionResultsPage() {
       setElectionSettings(settings);
     } catch (e) {
       toast({ title: "Error Loading Settings", description: (e as Error).message, variant: "destructive"});
+      // Set default values if settings fetch fails to avoid undefined errors
       setElectionSettings({ resultsPublished: false, votingClosed: false });
     } finally {
       setLoadingSettings(false);
@@ -119,7 +120,7 @@ export default function ElectionResultsPage() {
         </div>
       </CardHeader>
       <CardContent>
-        {results.length === 0 && !loading && (
+        {results.length === 0 && !loading && ( // Check loading state here too
           <Alert>
             <ShadCNAlertTitle>No Results Available</ShadCNAlertTitle>
             <AlertDescription>No candidates or votes recorded for this position yet.</AlertDescription>
@@ -155,7 +156,11 @@ export default function ElectionResultsPage() {
                   <TableCell className="text-center text-muted-foreground">{candidate.electionSymbol}</TableCell>
                   <TableCell className="text-right font-semibold">
                     {(candidate.voteCount || 0) > 0 ? (
-                       <Button variant="link" asChild className="p-0 h-auto text-base">
+                       <Button 
+                        asChild 
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-primary-foreground px-2.5 py-1 text-xs h-auto"
+                       >
                         <Link href={`/admin/election-vote/results/${candidate.id}/voters`}>
                           {candidate.voteCount || 0}
                         </Link>
