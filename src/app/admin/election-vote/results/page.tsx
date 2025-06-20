@@ -4,6 +4,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import Link from "next/link"; // Import Link
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -12,17 +13,20 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BarChart3, Shield, Award, Loader2, ServerCrash, ArrowLeft, Users, CheckIcon, Settings, EyeOff, EyeIcon } from "lucide-react"; // Changed EyeSlash to EyeOff
+import { BarChart3, Shield, Award, Loader2, ServerCrash, ArrowLeft, Users, CheckIcon, Settings, EyeOff, EyeIcon } from "lucide-react";
 import { getCandidatesByPosition, type ElectionCandidateData, type CandidatePosition } from "@/services/electionCandidateService";
-import { getElectionControlSettings, setResultsPublished, type ElectionControlSettings } from "@/services/electionControlService"; // Import election control
+import { getElectionControlSettings, setResultsPublished, type ElectionControlSettings } from "@/services/electionControlService";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
-import { Label } from "@/components/ui/label"; // Import Label
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 interface CandidateResult extends ElectionCandidateData {
   percentageOfTotalVotes?: number;
 }
+
+const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
+
 
 export default function ElectionResultsPage() {
   const router = useRouter();
@@ -41,18 +45,18 @@ export default function ElectionResultsPage() {
     try {
       const candidates = await getCandidatesByPosition(position);
       const totalVotesForPosition = candidates.reduce((sum, candidate) => sum + (candidate.voteCount || 0), 0);
-      
+
       const resultsWithPercentage = candidates
         .map(candidate => ({
           ...candidate,
           percentageOfTotalVotes: totalVotesForPosition > 0 ? ((candidate.voteCount || 0) / totalVotesForPosition) * 100 : 0,
         }))
         .sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0));
-      
+
       setter(resultsWithPercentage);
     } catch (e) {
       console.error(`Error fetching results for ${position}:`, e);
-      throw e; 
+      throw e;
     }
   }, []);
 
@@ -63,7 +67,6 @@ export default function ElectionResultsPage() {
       setElectionSettings(settings);
     } catch (e) {
       toast({ title: "Error Loading Settings", description: (e as Error).message, variant: "destructive"});
-      // Keep default settings on error
       setElectionSettings({ resultsPublished: false, votingClosed: false });
     } finally {
       setLoadingSettings(false);
@@ -94,7 +97,7 @@ export default function ElectionResultsPage() {
     setIsUpdatingSettings(true);
     try {
       await setResultsPublished(isPublic);
-      setElectionSettings({ resultsPublished: isPublic, votingClosed: isPublic }); // Update local state
+      setElectionSettings(prev => ({ ...prev, resultsPublished: isPublic, votingClosed: isPublic })); // Update local state
       toast({
         title: "Settings Updated",
         description: `Election results are now ${isPublic ? 'publicly visible and voting is closed' : 'private and voting may be open'}.`,
@@ -106,7 +109,6 @@ export default function ElectionResultsPage() {
     }
   };
 
-  const getInitials = (name?: string) => name ? name.substring(0, 2).toUpperCase() : "C";
 
   const ResultTable = ({ title, results, icon: Icon }: { title: string; results: CandidateResult[]; icon: React.ElementType }) => (
     <Card className="shadow-md">
@@ -151,7 +153,17 @@ export default function ElectionResultsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center text-muted-foreground">{candidate.electionSymbol}</TableCell>
-                  <TableCell className="text-right font-semibold">{candidate.voteCount || 0}</TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {(candidate.voteCount || 0) > 0 ? (
+                       <Button variant="link" asChild className="p-0 h-auto text-base">
+                        <Link href={`/admin/election-vote/results/${candidate.id}/voters`}>
+                          {candidate.voteCount || 0}
+                        </Link>
+                      </Button>
+                    ) : (
+                      candidate.voteCount || 0
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">{candidate.percentageOfTotalVotes?.toFixed(1) || "0.0"}%</TableCell>
                 </TableRow>
               ))}
@@ -228,7 +240,7 @@ export default function ElectionResultsPage() {
           <ResultTable title="President" results={presidentResults} icon={Shield} />
           <ResultTable title="General Secretary" results={secretaryResults} icon={Award} />
         </div>
-        
+
         {presidentResults.length === 0 && secretaryResults.length === 0 && !loading && (
              <Alert className="mt-8">
                 <Users className="h-4 w-4"/>
@@ -266,7 +278,7 @@ export default function ElectionResultsPage() {
             )}
             <p className="text-xs text-muted-foreground mt-2">
               If checked, results will be shown on the public voting page, and all voting will be closed.
-              If unchecked, results are private, and voting remains open (unless manually closed elsewhere).
+              If unchecked, results are private, and voting may remain open (unless manually closed elsewhere).
             </p>
             <div className="mt-3 flex items-center text-sm">
                 {electionSettings.resultsPublished ? <EyeIcon className="h-4 w-4 mr-1.5 text-green-600"/> : <EyeOff className="h-4 w-4 mr-1.5 text-orange-500"/>}

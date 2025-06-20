@@ -21,6 +21,7 @@ import {
   type QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getUserProfile, type UserProfileData } from './userService'; // Import getUserProfile
 
 export type CandidatePosition = 'President' | 'GeneralSecretary';
 
@@ -32,7 +33,7 @@ export interface ElectionCandidateData {
   imageUrl?: string | null;
   imagePath?: string | null; // For Firebase Storage path
   createdAt: Timestamp;
-  lastUpdated?: Timestamp; 
+  lastUpdated?: Timestamp;
   voteCount: number;
 }
 
@@ -46,6 +47,18 @@ export interface NewCandidateInput {
 export interface UpdateCandidateInput {
   name?: string;
   electionSymbol?: string;
+}
+
+// New interface for voter details
+export interface VoterInfo {
+  userId: string;
+  votedAt: Timestamp;
+  // Enriched data:
+  userName?: string | null;
+  userEmail?: string | null;
+  userAvatarUrl?: string | null;
+  userMobileNumber?: string | null;
+  userWardNo?: string | null;
 }
 
 
@@ -169,6 +182,43 @@ export async function getCandidatesByPosition(position: CandidatePosition): Prom
   }
 }
 
+export async function getCandidateById(candidateId: string): Promise<ElectionCandidateData | null> {
+  if (!candidateId) {
+    console.warn("[electionCandidateService.getCandidateById] Candidate ID is missing.");
+    return null;
+  }
+  try {
+    const candidateDocRef = doc(db, ELECTION_CANDIDATES_COLLECTION, candidateId);
+    const docSnap = await getDoc(candidateDocRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        name: data.name,
+        electionSymbol: data.electionSymbol,
+        position: data.position as CandidatePosition,
+        imageUrl: data.imageUrl || null,
+        imagePath: data.imagePath || null,
+        createdAt: data.createdAt as Timestamp,
+        lastUpdated: data.lastUpdated as Timestamp,
+        voteCount: data.voteCount || 0,
+      };
+    }
+    console.warn(`[electionCandidateService.getCandidateById] Candidate with ID ${candidateId} not found.`);
+    return null;
+  } catch (error) {
+    console.error(`[electionCandidateService.getCandidateById] Error fetching candidate ${candidateId}:`, error);
+    if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+        throw new Error(`Failed to fetch candidate ${candidateId}: Firestore permission denied.`);
+      }
+      throw new Error(`Failed to fetch candidate ${candidateId}: ${error.message}`);
+    }
+    throw new Error(`An unknown error occurred while fetching candidate ${candidateId}.`);
+  }
+}
+
+
 export interface UserVoteData {
   userId: string;
   presidentCandidateId?: string | null;
@@ -188,7 +238,7 @@ export async function getUserVotes(userId: string): Promise<UserVoteData | null>
   } catch (error) {
     console.error(`[electionCandidateService.getUserVotes] Error fetching votes for user ${userId}:`, error);
     if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
-        throw new Error(`Failed to fetch user votes: Firestore permission denied for '${ELECTION_VOTES_COLLECTION}/${userId}'.`);
+        throw new Error(`Failed to fetch user votes: Firestore permission denied for '${ELECTION_VOTES_COLLECTION}/${userId}'. Ensure user can read their own vote document.`);
     }
     throw error;
   }
@@ -221,7 +271,7 @@ export async function recordVote(
       }
 
       const userVoteData = userVoteSnap.exists() ? userVoteSnap.data() as UserVoteData : { userId };
-      
+
       const voteField = position === 'President' ? 'presidentCandidateId' : 'generalSecretaryCandidateId';
 
       if (userVoteData[voteField]) {
@@ -272,13 +322,13 @@ export async function updateCandidate(
     }
     const currentCandidateData = currentCandidateSnap.data() as ElectionCandidateData;
 
-    if (newImageFile === null) { 
+    if (newImageFile === null) {
       if (currentCandidateData.imagePath) {
         await deleteCandidateImage(currentCandidateData.imagePath);
       }
       dataToUpdate.imageUrl = null;
       dataToUpdate.imagePath = null;
-    } else if (newImageFile instanceof File) { 
+    } else if (newImageFile instanceof File) {
       if (currentCandidateData.imagePath) {
         await deleteCandidateImage(currentCandidateData.imagePath);
       }
@@ -294,7 +344,7 @@ export async function updateCandidate(
       if (error.message.includes("Missing or insufficient permissions")) {
         throw new Error(`Failed to update candidate: Firestore/Storage permission denied for candidate '${candidateId}'.`);
       }
-      if (error.message.startsWith("Failed to upload candidate image:")) { 
+      if (error.message.startsWith("Failed to upload candidate image:")) {
         throw error;
       }
       throw new Error(`Failed to update candidate: ${error.message}`);
@@ -328,5 +378,63 @@ export async function deleteCandidate(candidateId: string): Promise<void> {
       throw new Error(`Failed to delete candidate: ${error.message}`);
     }
     throw new Error('An unknown error occurred while deleting the candidate.');
+  }
+}
+
+export async function getVotersForCandidate(candidateId: string): Promise<VoterInfo[]> {
+  if (!candidateId) {
+    console.warn("[electionCandidateService.getVotersForCandidate] Candidate ID is missing.");
+    return [];
+  }
+  try {
+    const votesCollectionRef = collection(db, ELECTION_VOTES_COLLECTION);
+    // We need to fetch all votes and filter client-side or use two queries because Firestore
+    // doesn't support OR queries on different fields easily.
+    // This assumes the number of total voters isn't astronomically large.
+    const qPresident = query(votesCollectionRef, where("presidentCandidateId", "==", candidateId));
+    const qSecretary = query(votesCollectionRef, where("generalSecretaryCandidateId", "==", candidateId));
+
+    const [presidentVotesSnap, secretaryVotesSnap] = await Promise.all([
+      getDocs(qPresident),
+      getDocs(qSecretary)
+    ]);
+
+    const votersMap = new Map<string, VoterInfo>();
+
+    const processSnapshot = async (snapshot: QueryDocumentSnapshot<DocumentData>[]) => {
+      for (const voteDoc of snapshot) {
+        const voteData = voteDoc.data() as UserVoteData;
+        if (!votersMap.has(voteData.userId)) { // Avoid processing the same user twice if they somehow appear in both queries (shouldn't happen with current logic)
+          const userProfile = await getUserProfile(voteData.userId);
+          votersMap.set(voteData.userId, {
+            userId: voteData.userId,
+            votedAt: voteData.lastVotedAt || Timestamp.now(), // Fallback if lastVotedAt is missing
+            userName: userProfile?.displayName || voteData.userId,
+            userEmail: userProfile?.email || "N/A",
+            userAvatarUrl: userProfile?.photoURL || null,
+            userMobileNumber: userProfile?.mobileNumber || "N/A",
+            userWardNo: userProfile?.wardNo || "N/A",
+          });
+        }
+      }
+    };
+
+    await processSnapshot(presidentVotesSnap.docs as QueryDocumentSnapshot<DocumentData>[]);
+    await processSnapshot(secretaryVotesSnap.docs as QueryDocumentSnapshot<DocumentData>[]);
+
+    return Array.from(votersMap.values()).sort((a,b) => b.votedAt.toMillis() - a.votedAt.toMillis()); // Sort by most recent vote
+
+  } catch (error) {
+    console.error(`[electionCandidateService.getVotersForCandidate] Error fetching voters for candidate ${candidateId}:`, error);
+    if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+        throw new Error(`Failed to fetch voters for candidate ${candidateId}: Firestore permission denied. Check rules for '${ELECTION_VOTES_COLLECTION}'.`);
+      }
+      if (error.message.toLowerCase().includes("query requires an index")) {
+         throw new Error(`Failed to fetch voters for candidate ${candidateId}: Firestore query requires an index. Please check Firebase console for index creation link for 'electionVotes' collection on 'presidentCandidateId' and 'generalSecretaryCandidateId'.`);
+      }
+      throw new Error(`Failed to fetch voters for candidate ${candidateId}: ${error.message}`);
+    }
+    throw new Error(`An unknown error occurred while fetching voters for candidate ${candidateId}.`);
   }
 }
