@@ -1,4 +1,3 @@
-
 // src/services/paymentService.ts
 import { db, auth } from '@/lib/firebase';
 import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer, runTransaction, type DocumentSnapshot } from 'firebase/firestore';
@@ -43,6 +42,7 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
   const userProfileDocRef = doc(db, USER_PROFILES_COLLECTION, transactionInput.userId);
 
   try {
+    let initialStatus: "Succeeded" | "Pending" = "Pending";
     await runTransaction(db, async (transaction) => {
       let readCampaignRaisedAmount: number;
       let readUserProfileWalletBalance: number | undefined;
@@ -63,7 +63,6 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
         readUserProfileWalletBalance = userProfileData.walletBalance || 0;
       }
 
-      let initialStatus: "Succeeded" | "Pending";
       let newWalletBalance: number | undefined = undefined;
 
       if (transactionInput.paymentMethod === "Wallet") {
@@ -114,7 +113,15 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
     try {
         const userProfile = await getUserProfile(transactionInput.userId);
         if (userProfile && userProfile.mobileNumber) {
-            await sendWhatsAppConfirmation(userProfile.mobileNumber, userProfile.displayName || 'Valued Donor');
+            const paymentDetailsForMsg = {
+                amount: transactionInput.amount,
+                campaignName: transactionInput.campaignName,
+                date: new Date(), // Use current date for notification
+                method: transactionInput.paymentMethod,
+                lastFourDigits: transactionInput.lastFourDigits, // Pass this along
+                status: initialStatus,
+            };
+            await sendWhatsAppConfirmation(userProfile.mobileNumber, userProfile.displayName || 'Valued Donor', paymentDetailsForMsg);
         } else {
             console.warn(`[paymentService.addPaymentTransaction] Could not send WhatsApp notification for user ${transactionInput.userId}: mobile number not found.`);
         }
@@ -177,7 +184,7 @@ export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
     console.error("[paymentService.getPaymentTransactions] Error fetching payment transactions from Firestore: ", error);
     if (error instanceof Error) {
       if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
-        console.error(`[paymentService.getPaymentTransactions] FIREBASE PERMISSION_DENIED: Firestore security rules for collection '${PAYMENT_TRANSACTIONS_COLLECTION}' do not allow read access for the current user (${auth.currentUser?.email || 'unauthenticated'}). Please check your Firebase console.`);
+        console.error(`[paymentService.getPaymentTransactions] FIREBASE PERMISSION_DENIED: Firestore security rules for collection '${PAYMENT_TRANSACTIONS_COLlection}' do not allow read access for the current user (${auth.currentUser?.email || 'unauthenticated'}). Please check your Firebase console.`);
       }
       throw new Error(`Failed to fetch payment transactions: ${error.message}`);
     }
@@ -519,4 +526,3 @@ export async function debitWallet(userId: string, amount: number): Promise<void>
     throw new Error('An unknown error occurred while debiting wallet.');
   }
 }
-
