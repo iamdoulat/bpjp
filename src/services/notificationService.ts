@@ -1,6 +1,8 @@
 // src/services/notificationService.ts
 'use server';
 
+import type { Timestamp } from 'firebase/firestore';
+
 /**
  * Generic function to send a WhatsApp message using the BIPSMS API.
  * This is a fire-and-forget function; it logs errors but does not throw them,
@@ -137,6 +139,40 @@ export async function sendWhatsAppStatusUpdate(
 *Current Status:* ${paymentDetails.status},
 
 দান করার জন্য আপনাকে ধন্যবাদ`;
+
+  await sendWhatsAppMessage(recipientNumber, message);
+}
+
+/**
+ * Sends a WhatsApp confirmation for a successful event registration.
+ * This is a fire-and-forget function.
+ *
+ * @param recipientNumber The phone number of the registered user.
+ * @param userName The name of the user.
+ * @param wardNo The user's ward number.
+ * @param eventDate The date and time of the event.
+ */
+export async function sendWhatsAppEventRegistrationConfirmation(
+  recipientNumber: string,
+  userName: string,
+  wardNo: string,
+  eventDate: Date | Timestamp
+): Promise<void> {
+  const jsDate = eventDate instanceof Timestamp ? eventDate.toDate() : eventDate;
+
+  const formattedDate = new Intl.DateTimeFormat("en-US", {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true
+  }).format(jsDate);
+
+  const message = `প্রিয় ${userName}, ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ থেকে আপনাকে স্বাগতম।
+
+*নাম:* ${userName},
+*ওয়ার্ড নং:* ${wardNo},
+*ইভেন্ট তারিখ:* ${formattedDate},
+*মোবাইল নং:* ${recipientNumber},
+
+আপনার রেজিষ্টেশন সফল হয়েছে। ইভেন্ট এ রেজিষ্টেশন করার জন্য আপনাকে ধন্যবাদ।`;
 
   await sendWhatsAppMessage(recipientNumber, message);
 }

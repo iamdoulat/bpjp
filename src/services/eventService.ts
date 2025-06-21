@@ -1,9 +1,9 @@
-
 // src/services/eventService.ts
 import { db, storage, auth } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, getDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot, updateDoc, deleteDoc, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { UserProfileData } from './userService'; // For enriching registration data
+import { sendWhatsAppEventRegistrationConfirmation } from './notificationService';
 
 // New interface for token distribution entry
 export interface TokenDistributionEntry {
@@ -327,6 +327,26 @@ export async function registerForEvent(
       transaction.update(eventDocRef, { participantCount: increment(1) });
     });
     console.log(`[eventService.registerForEvent] User ${userId} successfully registered for event ${eventId}.`);
+
+    // --- Start of new notification logic ---
+    try {
+        const eventData = await getEventById(eventId); // Refetch event details to get the date
+        if (eventData && registrationDetails.mobileNumber) {
+            await sendWhatsAppEventRegistrationConfirmation(
+                registrationDetails.mobileNumber,
+                registrationDetails.name,
+                registrationDetails.wardNo,
+                eventData.eventDate // This is a Timestamp
+            );
+        } else {
+             console.warn(`[eventService.registerForEvent] Could not send event registration notification for user ${userId}: mobile number or event data missing.`);
+        }
+    } catch (notificationError) {
+         console.error(`[eventService.registerForEvent] Failed to send WhatsApp notification for event ${eventId} registration:`, notificationError);
+         // Do not throw, as the core registration was successful.
+    }
+    // --- End of new notification logic ---
+
   } catch (error) {
     console.error(`[eventService.registerForEvent] Error registering user ${userId} for event ${eventId}:`, error);
     if (error instanceof Error) {
