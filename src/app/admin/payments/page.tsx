@@ -56,7 +56,8 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getPaymentTransactions, updatePaymentTransactionStatus, deletePaymentTransaction, type PaymentTransaction } from "@/services/paymentService";
-import { getAllUserProfiles, type UserProfileData } from "@/services/userService";
+import { getAllUserProfiles, getUserProfile, type UserProfileData } from "@/services/userService";
+import { sendWhatsAppStatusUpdate } from "@/services/notificationService";
 import { auth } from '@/lib/firebase';
 
 function formatCurrency(amount: number) {
@@ -179,18 +180,45 @@ export default function PaymentTrackingPage() {
   const handleSaveStatusUpdate = async () => {
     if (!paymentToViewOrUpdate || !selectedNewStatusForUpdate) return;
 
+    const oldStatus = paymentToViewOrUpdate.status;
+    const newStatus = selectedNewStatusForUpdate;
+
     setIsSubmittingStatusUpdate(true);
     try {
-      await updatePaymentTransactionStatus(paymentToViewOrUpdate.id, selectedNewStatusForUpdate);
-      setPayments(prevPayments =>
-        prevPayments.map(p =>
-          p.id === paymentToViewOrUpdate.id ? { ...p, status: selectedNewStatusForUpdate } : p
-        )
+      await updatePaymentTransactionStatus(paymentToViewOrUpdate.id, newStatus);
+      
+      const updatedPayments = payments.map(p =>
+        p.id === paymentToViewOrUpdate.id ? { ...p, status: newStatus } : p
       );
+      setPayments(updatedPayments);
+
       toast({
         title: "Status Updated",
-        description: `Payment status for ${paymentToViewOrUpdate.id} changed to ${selectedNewStatusForUpdate}.`,
+        description: `Payment status for ${paymentToViewOrUpdate.id} changed to ${newStatus}.`,
       });
+      
+      if (oldStatus === 'Pending' && ['Succeeded', 'Failed', 'Refunded'].includes(newStatus)) {
+          const userProfile = await getUserProfile(paymentToViewOrUpdate.userId);
+          if (userProfile && userProfile.mobileNumber) {
+              const paymentDetailsForMsg = {
+                  amount: paymentToViewOrUpdate.amount,
+                  campaignName: paymentToViewOrUpdate.campaignName,
+                  date: paymentToViewOrUpdate.date as Date,
+                  method: paymentToViewOrUpdate.method,
+                  lastFourDigits: paymentToViewOrUpdate.lastFourDigits,
+                  status: newStatus,
+              };
+              sendWhatsAppStatusUpdate(userProfile.mobileNumber, userProfile.displayName || 'Donor', paymentDetailsForMsg);
+          } else {
+              console.warn(`Could not send status update notification for user ${paymentToViewOrUpdate.userId}: mobile number not found in profile.`);
+              toast({
+                  title: "Notification Skipped",
+                  description: "Could not send WhatsApp notification. User mobile number is not available.",
+                  variant: "default",
+              });
+          }
+      }
+
       setIsViewDetailsModalOpen(false);
     } catch (e) {
       console.error("Failed to update payment status:", e);
@@ -511,4 +539,3 @@ export default function PaymentTrackingPage() {
     </AppShell>
   );
 }
-
