@@ -294,7 +294,7 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
                   value={donationAmount}
                   onChange={(e) => setDonationAmount(e.target.value)}
                   className="col-span-3"
-                  placeholder="USD"
+                  placeholder="BDT"
                   disabled={isSubmittingDonation}
                 />
               </div>

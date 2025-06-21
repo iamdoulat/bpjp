@@ -4,6 +4,8 @@ import { db, auth } from '@/lib/firebase';
 import { collection, getDocs, Timestamp, type DocumentData, type QueryDocumentSnapshot, orderBy, query, addDoc, doc, updateDoc, where, deleteDoc, getDoc,getCountFromServer, runTransaction, type DocumentSnapshot } from 'firebase/firestore';
 import type { UserProfileData } from './userService';
 import { getApprovedExpensesTotal } from './expenseService'; // Import expense total
+import { sendWhatsAppConfirmation } from './notificationService';
+import { getUserProfile } from './userService';
 
 export interface PaymentTransaction {
   id: string;
@@ -107,6 +109,20 @@ export async function addPaymentTransaction(transactionInput: NewPaymentTransact
     });
 
     console.log('[paymentService.addPaymentTransaction] Transaction saved with ID:', paymentDocRef.id);
+    
+    // Fire-and-forget WhatsApp notification
+    try {
+        const userProfile = await getUserProfile(transactionInput.userId);
+        if (userProfile && userProfile.mobileNumber) {
+            await sendWhatsAppConfirmation(userProfile.mobileNumber, userProfile.displayName || 'Valued Donor');
+        } else {
+            console.warn(`[paymentService.addPaymentTransaction] Could not send WhatsApp notification for user ${transactionInput.userId}: mobile number not found.`);
+        }
+    } catch (notificationError) {
+        console.error(`[paymentService.addPaymentTransaction] Failed to send WhatsApp notification for transaction ${paymentDocRef.id}:`, notificationError);
+        // Do not throw error, as the main transaction was successful.
+    }
+    
     return paymentDocRef.id;
 
   } catch (error) {
