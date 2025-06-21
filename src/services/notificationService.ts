@@ -1,9 +1,6 @@
 // src/services/notificationService.ts
 'use server';
 
-import axios from 'axios';
-import FormData from 'form-data';
-
 /**
  * Generic function to send a WhatsApp message using the BIPSMS API.
  * This is a fire-and-forget function; it logs errors but does not throw them,
@@ -30,30 +27,37 @@ async function sendWhatsAppMessage(
     return;
   }
 
-  const form = new FormData();
-  form.append('secret', apiSecret);
-  form.append('account', accountId);
-  form.append('recipient', recipientNumber);
-  form.append('type', 'text');
-  form.append('message', message);
+  const params = new URLSearchParams();
+  params.append('secret', apiSecret);
+  params.append('account', accountId);
+  params.append('recipient', recipientNumber);
+  params.append('type', 'text');
+  params.append('message', message);
 
   try {
-    const response = await axios.post(url, form, {
-      headers: form.getHeaders(),
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params,
     });
-    console.log(`[notificationService] WhatsApp notification sent successfully to ${recipientNumber}. Response:`, response.data);
-  } catch (error: any) {
-    if (error.response) {
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
       console.error(
-        `[notificationService] Error sending WhatsApp notification to ${recipientNumber}. Status: ${error.response.status}, Data:`,
-        error.response.data
+        `[notificationService] Error sending WhatsApp notification to ${recipientNumber}. Status: ${response.status}, Data:`,
+        responseData
       );
     } else {
-      console.error(
-        `[notificationService] Error sending WhatsApp notification to ${recipientNumber}:`,
-        error.message
-      );
+      console.log(`[notificationService] WhatsApp notification sent successfully to ${recipientNumber}. Response:`, responseData);
     }
+  } catch (error: any) {
+    console.error(
+      `[notificationService] Network or parsing error sending WhatsApp notification to ${recipientNumber}:`,
+      error.message
+    );
     // We don't re-throw the error to prevent it from blocking the main process flow.
   }
 }
