@@ -98,7 +98,7 @@ export async function sendWhatsAppConfirmation(
 *Method:* ${paymentDetails.method},
 *Last 4 Digits:* ${paymentDetails.lastFourDigits || 'N/A'},
 
-*Current Status:* ${paymentDetails.status}`;
+*Current Status:* ${paymentDetails.status},`;
 
   await sendWhatsAppMessage(recipientNumber, message);
 }
@@ -150,27 +150,38 @@ export async function sendWhatsAppStatusUpdate(
  * @param recipientNumber The phone number of the registered user.
  * @param userName The name of the user.
  * @param wardNo The user's ward number.
+ * @param eventTitle The title of the event.
  * @param eventDate The date and time of the event.
+ * @param registrationDate The date and time of the registration.
  */
 export async function sendWhatsAppEventRegistrationConfirmation(
   recipientNumber: string,
   userName: string,
   wardNo: string,
-  eventDate: Date | Timestamp
+  eventTitle: string,
+  eventDate: Date | Timestamp,
+  registrationDate: Date | Timestamp,
 ): Promise<void> {
-  const jsDate = eventDate instanceof Timestamp ? eventDate.toDate() : eventDate;
+  const jsEventDate = eventDate instanceof Timestamp ? eventDate.toDate() : eventDate;
+  const jsRegistrationDate = registrationDate instanceof Timestamp ? registrationDate.toDate() : registrationDate;
 
-  const formattedDate = new Intl.DateTimeFormat("en-US", {
+  const formattedEventDate = new Intl.DateTimeFormat("en-US", {
     year: 'numeric', month: 'long', day: 'numeric',
     hour: 'numeric', minute: '2-digit', hour12: true
-  }).format(jsDate);
+  }).format(jsEventDate);
+
+  const formattedRegistrationDate = new Intl.DateTimeFormat("en-US", {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true
+  }).format(jsRegistrationDate);
 
   const message = `প্রিয় ${userName}, ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ থেকে আপনাকে স্বাগতম।
 
-*নাম:* ${userName},
-*ওয়ার্ড নং:* ${wardNo},
-*ইভেন্ট তারিখ:* ${formattedDate},
-*মোবাইল নং:* ${recipientNumber},
+*Registered Participants for:* ${eventTitle},
+*Ward No.* ${wardNo},
+*Event Date:* ${formattedEventDate},
+*Mobile No.* : ${recipientNumber},
+*Registered At*: ${formattedRegistrationDate},
 
 আপনার রেজিষ্টেশন সফল হয়েছে। ইভেন্ট এ রেজিষ্টেশন করার জন্য আপনাকে ধন্যবাদ।`;
 

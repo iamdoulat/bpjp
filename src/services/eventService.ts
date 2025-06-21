@@ -302,6 +302,8 @@ export async function registerForEvent(
 
   const eventDocRef = doc(db, "events", eventId);
   const registrationDocRef = doc(db, "events", eventId, "registrations", userId);
+  
+  const registrationTimestamp = Timestamp.now(); // Capture timestamp before transaction
 
   try {
     await runTransaction(db, async (transaction) => {
@@ -321,7 +323,7 @@ export async function registerForEvent(
         name: registrationDetails.name,
         mobileNumber: registrationDetails.mobileNumber,
         wardNo: registrationDetails.wardNo,
-        registeredAt: Timestamp.now(),
+        registeredAt: registrationTimestamp,
       };
       transaction.set(registrationDocRef, registrationData);
       transaction.update(eventDocRef, { participantCount: increment(1) });
@@ -336,7 +338,9 @@ export async function registerForEvent(
                 registrationDetails.mobileNumber,
                 registrationDetails.name,
                 registrationDetails.wardNo,
-                eventData.eventDate // This is a Timestamp
+                eventData.title,
+                eventData.eventDate, // This is a Timestamp
+                registrationTimestamp // Pass the captured timestamp
             );
         } else {
              console.warn(`[eventService.registerForEvent] Could not send event registration notification for user ${userId}: mobile number or event data missing.`);
