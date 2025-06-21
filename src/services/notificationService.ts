@@ -1,7 +1,7 @@
 // src/services/notificationService.ts
 'use server';
 
-import type { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 /**
  * Generic function to send a WhatsApp message using the BIPSMS API.
