@@ -165,23 +165,30 @@ export async function sendWhatsAppEventRegistrationConfirmation(
   const jsEventDate = eventDate instanceof Timestamp ? eventDate.toDate() : eventDate;
   const jsRegistrationDate = registrationDate instanceof Timestamp ? registrationDate.toDate() : registrationDate;
 
-  const formattedEventDate = new Intl.DateTimeFormat("en-US", {
-    year: 'numeric', month: 'long', day: 'numeric',
-    hour: 'numeric', minute: '2-digit', hour12: true
-  }).format(jsEventDate);
+  const dateTimeOptions: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  };
 
-  const formattedRegistrationDate = new Intl.DateTimeFormat("en-US", {
-    year: 'numeric', month: 'long', day: 'numeric',
-    hour: 'numeric', minute: '2-digit', hour12: true
-  }).format(jsRegistrationDate);
+  const formattedEventDate = new Intl.DateTimeFormat("en-GB", dateTimeOptions)
+    .format(jsEventDate)
+    .replace(',', ' ');
+
+  const formattedRegistrationDate = new Intl.DateTimeFormat("en-GB", dateTimeOptions)
+    .format(jsRegistrationDate)
+    .replace(',', ' ');
 
   const message = `প্রিয় ${userName}, ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ থেকে আপনাকে স্বাগতম।
 
-*Registered Participants for:* ${eventTitle},
-*Ward No.* ${wardNo},
-*Event Date:* ${formattedEventDate},
-*Mobile No.* : ${recipientNumber},
-*Registered At*: ${formattedRegistrationDate},
+Registered Participants for: '${eventTitle}',
+Ward No. '${wardNo}',
+Mobile No. : '${recipientNumber}',
+Event Date: '${formattedEventDate}',
+Registered At: '${formattedRegistrationDate}'
 
 আপনার রেজিষ্টেশন সফল হয়েছে। ইভেন্ট এ রেজিষ্টেশন করার জন্য আপনাকে ধন্যবাদ।`;
 
