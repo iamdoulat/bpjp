@@ -208,14 +208,17 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 text-sm pt-4">
           <p className="text-center sm:text-left">
             Don&apos;t have an account?{" "}
-            <Button variant="link" asChild className="p-0 h-auto">
+            <Button variant="link" asChild className="p-0 h-auto text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-400">
               <Link href="/signup">Sign Up</Link>
             </Button>
           </p>
           <Button
             type="button"
             variant="link"
-            className="p-0 h-auto text-sm"
+            className={cn(
+              "p-0 h-auto text-sm",
+              "text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-400"
+            )}
             onClick={() => setIsForgotPasswordDialogOpen(true)}
             disabled={isSubmitting || authLoading}
           >
