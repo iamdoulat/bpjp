@@ -221,7 +221,7 @@ export default function SignupPage() {
         <CardFooter className="flex flex-col items-center gap-2 text-sm">
           <p>
             Already have an account?{" "}
-            <Button variant="link" asChild className="p-0 h-auto">
+            <Button variant="link" asChild className="p-0 h-auto text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-400">
               <Link href="/login">Sign In</Link>
             </Button>
           </p>
