@@ -30,7 +30,9 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext";
-import { addPaymentTransaction, type NewPaymentTransactionInput } from "@/services/paymentService";
+import { addPaymentTransaction, type NewPaymentTransactionInput, getDonorsForCampaign, type DonorInfo } from "@/services/paymentService";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", { style: "currency", currency: "BDT" });
@@ -63,6 +65,15 @@ const getStatusBadgeClassName = (status?: CampaignData["initialStatus"]) => {
   return "";
 };
 
+function getInitials(name?: string): string {
+  if (!name) return "D";
+  const parts = name.split(" ");
+  if (parts.length > 1 && parts[0] && parts[parts.length - 1]) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
 
 export default function PublicViewCampaignPage() {
   const params = useParams();
@@ -75,6 +86,9 @@ export default function PublicViewCampaignPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+  const [donors, setDonors] = React.useState<DonorInfo[]>([]);
+  const [isLoadingDonors, setIsLoadingDonors] = React.useState(true);
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [donationAmount, setDonationAmount] = React.useState("");
   const [paymentMethod, setPaymentMethod] = React.useState<"BKash" | "Wallet">("BKash");
@@ -85,11 +99,16 @@ export default function PublicViewCampaignPage() {
 
   React.useEffect(() => {
     if (campaignId) {
-      async function fetchCampaign() {
+      async function fetchCampaignAndDonors() {
         setIsLoading(true);
+        setIsLoadingDonors(true);
         setError(null);
         try {
-          const fetchedCampaign = await getCampaignById(campaignId);
+          const [fetchedCampaign, fetchedDonors] = await Promise.all([
+             getCampaignById(campaignId),
+             getDonorsForCampaign(campaignId)
+          ]);
+
           if (fetchedCampaign && (fetchedCampaign.initialStatus === 'active' || fetchedCampaign.initialStatus === 'upcoming' || fetchedCampaign.initialStatus === 'completed')) {
             setCampaign(fetchedCampaign);
           } else if (fetchedCampaign && fetchedCampaign.initialStatus === 'draft') {
@@ -98,14 +117,18 @@ export default function PublicViewCampaignPage() {
            else {
             setError("Campaign not found or is not available for public view.");
           }
+
+          setDonors(fetchedDonors);
+
         } catch (e) {
-          console.error("Failed to fetch campaign:", e);
+          console.error("Failed to fetch campaign or donor data:", e);
           setError(e instanceof Error ? e.message : "An unknown error occurred while fetching campaign data.");
         } finally {
           setIsLoading(false);
+          setIsLoadingDonors(false);
         }
       }
-      fetchCampaign();
+      fetchCampaignAndDonors();
     }
   }, [campaignId]);
 
@@ -175,6 +198,11 @@ export default function PublicViewCampaignPage() {
           const updatedCampaign = await getCampaignById(campaignId);
           if (updatedCampaign) setCampaign(updatedCampaign);
         }
+        
+        // Refetch donors list to include the new donor immediately
+        const updatedDonors = await getDonorsForCampaign(campaignId);
+        setDonors(updatedDonors);
+
 
     } catch (e) {
         console.error("Failed to submit donation:", e);
@@ -330,6 +358,51 @@ export default function PublicViewCampaignPage() {
                 <p className="text-sm text-muted-foreground mt-2 text-right">{progressValue.toFixed(0)}% of goal raised</p>
               </div>
 
+              <div className="mt-6">
+                <h3 className="text-md font-semibold text-foreground mb-3">
+                  Our Valued Donors
+                </h3>
+                {isLoadingDonors ? (
+                  <div className="flex -space-x-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-10 rounded-full border-2 border-background" />
+                    ))}
+                  </div>
+                ) : donors.length > 0 ? (
+                  <TooltipProvider delayDuration={100}>
+                    <div className="flex -space-x-2 overflow-hidden p-1">
+                      {donors.slice(0, 15).map((donor) => (
+                        <Tooltip key={donor.userId}>
+                          <TooltipTrigger asChild>
+                            <Avatar className="h-10 w-10 border-2 border-background hover:ring-2 hover:ring-primary transition-all cursor-pointer">
+                              <AvatarImage src={donor.avatarUrl || `https://placehold.co/40x40.png?text=${getInitials(donor.name)}`} alt={donor.name} data-ai-hint="profile person"/>
+                              <AvatarFallback>{getInitials(donor.name)}</AvatarFallback>
+                            </Avatar>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{donor.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                      {donors.length > 15 && (
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <Avatar className="h-10 w-10 border-2 border-background">
+                                      <AvatarFallback>+{donors.length - 15}</AvatarFallback>
+                                  </Avatar>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                  <p>and {donors.length - 15} more donors</p>
+                              </TooltipContent>
+                          </Tooltip>
+                      )}
+                    </div>
+                  </TooltipProvider>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Be the first to donate and get featured here!</p>
+                )}
+              </div>
+
             </CardContent>
              <CardFooter className="bg-card p-4 md:p-6 border-t flex justify-center">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -443,4 +516,3 @@ export default function PublicViewCampaignPage() {
     </AppShell>
   )
 }
-
