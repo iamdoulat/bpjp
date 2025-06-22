@@ -148,35 +148,16 @@ export async function sendWhatsAppStatusUpdate(
  *
  * @param recipientNumber The phone number of the registered user.
  * @param userName The name of the user.
- * @param wardNo The user's ward number.
- * @param eventTitle The title of the event.
- * @param registrationDate The date and time of the registration.
  */
 export async function sendWhatsAppEventRegistrationConfirmation(
   recipientNumber: string,
-  userName: string,
-  wardNo: string,
-  eventTitle: string,
-  registrationDate: Date | Timestamp
+  userName: string
 ): Promise<void> {
-  const jsRegistrationDate = registrationDate instanceof Timestamp ? registrationDate.toDate() : registrationDate;
-
-  const formattedRegistrationDate = new Intl.DateTimeFormat("en-US", {
-    dateStyle: 'short',
-    timeStyle: 'short',
-    hour12: true,
-  }).format(jsRegistrationDate);
-
-  const message = `প্রিয় ${userName} 
+  const message = `প্রিয় *${userName}*,
 ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ থেকে আপনাকে স্বাগতম।
 
 আপনার রেজিষ্টেশন সফল হয়েছে।,
-ইভেন্ট এ রেজিষ্টেশন করার জন্য আপনাকে ধন্যবাদ।,
-
-*Date:* ${formattedRegistrationDate},
-*Registered Participants for:* ${eventTitle},
-*Ward No.*- ${wardNo},
-*Mobile No. :* ${recipientNumber},`;
+ইভেন্ট এ রেজিষ্টেশন করার জন্য আপনাকে ধন্যবাদ।,`;
 
   await sendWhatsAppMessage(recipientNumber, message);
 }
