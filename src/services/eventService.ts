@@ -339,7 +339,7 @@ export async function registerForEvent(
                 registrationDetails.name,
                 registrationDetails.wardNo,
                 eventData.title,
-                registrationTimestamp // Pass the captured timestamp
+                registrationTimestamp
             );
         } else {
              console.warn(`[eventService.registerForEvent] Could not send event registration notification for user ${userId}: mobile number or event data missing.`);

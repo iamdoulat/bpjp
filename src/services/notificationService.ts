@@ -97,7 +97,7 @@ export async function sendWhatsAppConfirmation(
 *Date:* ${formattedDate},
 *Method:* ${paymentDetails.method},
 *Last 4 Digits:* ${paymentDetails.lastFourDigits || 'N/A'},
-*Current Status:* ${paymentDetails.status}`;
+*Current Status:* ${paymentDetails.status},`;
 
   await sendWhatsAppMessage(recipientNumber, message);
 }
