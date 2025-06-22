@@ -1,4 +1,3 @@
-
 // src/services/electionCandidateService.ts
 import { db, storage, auth } from '@/lib/firebase';
 import {
@@ -22,6 +21,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { getUserProfile, type UserProfileData } from './userService'; // Import getUserProfile
+import { sendWhatsAppVoteConfirmation } from './notificationService';
 
 export type CandidatePosition = 'President' | 'GeneralSecretary';
 
@@ -256,6 +256,7 @@ export async function recordVote(
 
   const userVoteDocRef = doc(db, ELECTION_VOTES_COLLECTION, userId);
   const candidateDocRef = doc(db, ELECTION_CANDIDATES_COLLECTION, candidateId);
+  let candidateSymbolForNotification = ''; // To capture symbol for notification
 
   try {
     await runTransaction(db, async (transaction) => {
@@ -269,6 +270,7 @@ export async function recordVote(
       if (candidateData.position !== position) {
           throw new Error(`Candidate ${candidateName} is not running for the ${position} position.`);
       }
+      candidateSymbolForNotification = candidateData.electionSymbol; // Capture symbol
 
       const userVoteData = userVoteSnap.exists() ? userVoteSnap.data() as UserVoteData : { userId };
 
@@ -287,6 +289,27 @@ export async function recordVote(
       transaction.update(candidateDocRef, { voteCount: increment(1) });
     });
     console.log(`[electionCandidateService.recordVote] Vote by ${userId} for ${candidateName} (${candidateId}) for ${position} recorded.`);
+    
+    // --- Start of new notification logic ---
+    try {
+        const userProfile = await getUserProfile(userId);
+        if (userProfile && userProfile.mobileNumber && candidateSymbolForNotification) {
+            await sendWhatsAppVoteConfirmation(
+                userProfile.mobileNumber,
+                userProfile.displayName || 'Voter',
+                candidateName,
+                candidateSymbolForNotification,
+                position
+            );
+        } else {
+             console.warn(`[electionCandidateService.recordVote] Could not send vote confirmation notification for user ${userId}: mobile number or candidate symbol missing.`);
+        }
+    } catch (notificationError) {
+         console.error(`[electionCandidateService.recordVote] Failed to send WhatsApp notification for vote:`, notificationError);
+         // Do not throw, as the core vote was successful.
+    }
+    // --- End of new notification logic ---
+
   } catch (error) {
     console.error(`[electionCandidateService.recordVote] Error recording vote:`, error);
     if (error instanceof Error) {

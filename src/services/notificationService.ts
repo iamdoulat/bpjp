@@ -97,7 +97,6 @@ export async function sendWhatsAppConfirmation(
 *Date:* ${formattedDate},
 *Method:* ${paymentDetails.method},
 *Last 4 Digits:* ${paymentDetails.lastFourDigits || 'N/A'},
-
 *Current Status:* ${paymentDetails.status},`;
 
   await sendWhatsAppMessage(recipientNumber, message);
@@ -191,6 +190,47 @@ Event Date: '${formattedEventDate}',
 Registered At: '${formattedRegistrationDate}'
 
 আপনার রেজিষ্টেশন সফল হয়েছে। ইভেন্ট এ রেজিষ্টেশন করার জন্য আপনাকে ধন্যবাদ।`;
+
+  await sendWhatsAppMessage(recipientNumber, message);
+}
+
+/**
+ * Sends a WhatsApp confirmation for a successful vote.
+ * This is a fire-and-forget function.
+ *
+ * @param recipientNumber The phone number of the registered user.
+ * @param userName The name of the user.
+ * @param candidateName The name of the candidate voted for.
+ * @param candidateSymbol The symbol of the candidate.
+ * @param position The position voted for ('President' or 'GeneralSecretary').
+ */
+export async function sendWhatsAppVoteConfirmation(
+  recipientNumber: string,
+  userName: string,
+  candidateName: string,
+  candidateSymbol: string,
+  position: 'President' | 'GeneralSecretary'
+): Promise<void> {
+  const voteDate = new Date();
+  const formattedVoteDate = new Intl.DateTimeFormat("en-US", {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    hour12: true,
+  }).format(voteDate);
+
+  const positionText = position === 'President'
+    ? 'President Candidate Nominations'
+    : 'General Secretary Candidate Nominations';
+
+  const message = `প্রিয় ${userName},
+ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ থেকে আপনাকে স্বাগতম।
+
+আপনি সফলভাবে ভোট প্রদান করেছেন। আপনি ভোট দিয়েছেন-
+
+Date: ${formattedVoteDate}
+Candidate Name: ${candidateName}
+Symbol: ${candidateSymbol}
+${positionText}`;
 
   await sendWhatsAppMessage(recipientNumber, message);
 }
