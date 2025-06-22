@@ -131,7 +131,7 @@ export default function SignupPage() {
                 name="displayName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>Full Name <span className="text-foreground">*</span></FormLabel>
                     <FormControl>
                       <Input placeholder="Your full name" {...field} disabled={isSubmitting || authLoading} />
                     </FormControl>
@@ -144,7 +144,7 @@ export default function SignupPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>Email <span className="text-foreground">*</span></FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="you@example.com" {...field} disabled={isSubmitting || authLoading} />
                     </FormControl>
@@ -157,7 +157,7 @@ export default function SignupPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>Password <span className="text-foreground">*</span></FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting || authLoading} />
                     </FormControl>
@@ -170,7 +170,7 @@ export default function SignupPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>Confirm Password <span className="text-foreground">*</span></FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting || authLoading} />
                     </FormControl>
@@ -196,7 +196,7 @@ export default function SignupPage() {
                 name="wardNo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ward No. <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>Ward No. <span className="text-foreground">*</span></FormLabel>
                     <FormControl>
                       <Input placeholder="Your ward number" {...field} disabled={isSubmitting || authLoading} />
                     </FormControl>
