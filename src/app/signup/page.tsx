@@ -185,7 +185,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Mobile Number</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="Your mobile number" {...field} value={field.value ?? ""} disabled={isSubmitting || authLoading} />
+                      <Input type="tel" placeholder="Your WhatsApp Number" {...field} value={field.value ?? ""} disabled={isSubmitting || authLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
