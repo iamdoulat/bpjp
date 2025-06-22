@@ -339,7 +339,6 @@ export async function registerForEvent(
                 registrationDetails.name,
                 registrationDetails.wardNo,
                 eventData.title,
-                eventData.eventDate, // This is a Timestamp
                 registrationTimestamp // Pass the captured timestamp
             );
         } else {
