@@ -352,55 +352,56 @@ export default function PublicViewCampaignPage() {
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-lg font-medium mb-2">Campaign Progress</h3>
-                <Progress value={progressValue} aria-label={`${progressValue.toFixed(0)}% raised`} className="h-4 rounded-full" />
-                <p className="text-sm text-muted-foreground mt-2 text-right">{progressValue.toFixed(0)}% of goal raised</p>
-              </div>
-
-              <div className="mt-6">
-                <h3 className="text-md font-semibold text-foreground mb-3">
-                  Our Valued Donors
-                </h3>
-                {isLoadingDonors ? (
-                  <div className="flex -space-x-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-10 w-10 rounded-full border-2 border-background" />
-                    ))}
-                  </div>
-                ) : donors.length > 0 ? (
-                  <TooltipProvider delayDuration={100}>
-                    <div className="flex -space-x-2 overflow-hidden p-1">
-                      {donors.slice(0, 15).map((donor) => (
-                        <Tooltip key={donor.userId}>
-                          <TooltipTrigger asChild>
-                            <Avatar className="h-10 w-10 border-2 border-background hover:ring-2 hover:ring-primary transition-all cursor-pointer">
-                              <AvatarImage src={donor.avatarUrl || `https://placehold.co/40x40.png?text=${getInitials(donor.name)}`} alt={donor.name} data-ai-hint="profile person"/>
-                              <AvatarFallback>{getInitials(donor.name)}</AvatarFallback>
-                            </Avatar>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{donor.name}</p>
-                          </TooltipContent>
-                        </Tooltip>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Campaign Progress</h3>
+                  <Progress value={progressValue} aria-label={`${progressValue.toFixed(0)}% raised`} className="h-4 rounded-full" />
+                  <p className="text-sm text-muted-foreground mt-2 text-right">{progressValue.toFixed(0)}% of goal raised</p>
+                </div>
+                <div>
+                  <h3 className="text-md font-semibold text-foreground mb-3">
+                    Our Valued Donors
+                  </h3>
+                  {isLoadingDonors ? (
+                    <div className="flex -space-x-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className="h-10 w-10 rounded-full border-2 border-background" />
                       ))}
-                      {donors.length > 15 && (
-                          <Tooltip>
-                              <TooltipTrigger asChild>
-                                  <Avatar className="h-10 w-10 border-2 border-background">
-                                      <AvatarFallback>+{donors.length - 15}</AvatarFallback>
-                                  </Avatar>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                  <p>and {donors.length - 15} more donors</p>
-                              </TooltipContent>
-                          </Tooltip>
-                      )}
                     </div>
-                  </TooltipProvider>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Be the first to donate and get featured here!</p>
-                )}
+                  ) : donors.length > 0 ? (
+                    <TooltipProvider delayDuration={100}>
+                      <div className="flex -space-x-2 overflow-hidden p-1">
+                        {donors.slice(0, 15).map((donor) => (
+                          <Tooltip key={donor.userId}>
+                            <TooltipTrigger asChild>
+                              <Avatar className="h-10 w-10 border-2 border-background hover:ring-2 hover:ring-primary transition-all cursor-pointer">
+                                <AvatarImage src={donor.avatarUrl || `https://placehold.co/40x40.png?text=${getInitials(donor.name)}`} alt={donor.name} data-ai-hint="profile person"/>
+                                <AvatarFallback>{getInitials(donor.name)}</AvatarFallback>
+                              </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{donor.name}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
+                        {donors.length > 15 && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Avatar className="h-10 w-10 border-2 border-background">
+                                        <AvatarFallback>+{donors.length - 15}</AvatarFallback>
+                                    </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>and {donors.length - 15} more donors</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                      </div>
+                    </TooltipProvider>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Be the first to donate and get featured here!</p>
+                  )}
+                </div>
               </div>
 
             </CardContent>
