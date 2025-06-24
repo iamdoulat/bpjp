@@ -475,7 +475,7 @@ export default function AdminSettingsPage() {
 
         {/* Accordion Section */}
         <Card className="shadow-lg max-w-4xl mx-auto mt-8">
-          <CardHeader>
+          <CardHeader className="text-center">
             <CardTitle>PREVIOUS COMMITTEE</CardTitle>
             <ShadCNCardDescription>
             Period - 2018-2026
@@ -601,5 +601,3 @@ export default function AdminSettingsPage() {
     </AppShell>
   );
 }
-
-    
