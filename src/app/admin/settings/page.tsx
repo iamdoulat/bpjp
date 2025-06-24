@@ -476,9 +476,9 @@ export default function AdminSettingsPage() {
         {/* Accordion Section */}
         <Card className="shadow-lg max-w-4xl mx-auto mt-8">
           <CardHeader>
-            <CardTitle>Additional Information</CardTitle>
+            <CardTitle>PREVIOUS COMMITTEE</CardTitle>
             <ShadCNCardDescription>
-              Frequently asked questions and details about our platform.
+            Period - 2018-2026
             </ShadCNCardDescription>
           </CardHeader>
           <CardContent>
@@ -489,7 +489,7 @@ export default function AdminSettingsPage() {
               defaultValue="item-1"
             >
               <AccordionItem value="item-1">
-                <AccordionTrigger>Product Information</AccordionTrigger>
+                <AccordionTrigger>2025-2026</AccordionTrigger>
                 <AccordionContent className="flex flex-col gap-4 text-balance">
                   <p>
                     Our flagship product combines cutting-edge technology with sleek
@@ -503,7 +503,7 @@ export default function AdminSettingsPage() {
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
-                <AccordionTrigger>Shipping Details</AccordionTrigger>
+                <AccordionTrigger>2023-2024</AccordionTrigger>
                 <AccordionContent className="flex flex-col gap-4 text-balance">
                   <p>
                     We offer worldwide shipping through trusted courier partners.
@@ -517,7 +517,7 @@ export default function AdminSettingsPage() {
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
-                <AccordionTrigger>Return Policy</AccordionTrigger>
+                <AccordionTrigger>2021-2022</AccordionTrigger>
                 <AccordionContent className="flex flex-col gap-4 text-balance">
                   <p>
                     We stand behind our products with a comprehensive 30-day return
@@ -528,6 +528,17 @@ export default function AdminSettingsPage() {
                     Our hassle-free return process includes free return shipping and
                     full refunds processed within 48 hours of receiving the returned
                     item.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-4">
+                <AccordionTrigger>2019-2020</AccordionTrigger>
+                <AccordionContent className="flex flex-col gap-4 text-balance">
+                  <p>
+                    This is placeholder content for the 2019-2020 committee.
+                  </p>
+                  <p>
+                    Details about this committee's achievements and members can be added here.
                   </p>
                 </AccordionContent>
               </AccordionItem>
