@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Settings, AlertCircle, Users, PlusCircle, Edit2, Trash2, UploadCloud } from "lucide-react";
+import { Loader2, Save, Settings, AlertCircle, Users, PlusCircle, Edit2, Trash2, UploadCloud, X } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { getOrganizationSettings, saveOrganizationSettings, type OrganizationSettingsData } from "@/services/organizationSettingsService";
 import { getAdvisoryBoardMembers, addAdvisoryBoardMember, updateAdvisoryBoardMember, deleteAdvisoryBoardMember, type AdvisoryBoardMemberData, type NewAdvisoryBoardMemberInput, type UpdateAdvisoryBoardMemberInput } from "@/services/advisoryBoardService";
@@ -103,6 +103,7 @@ export default function AdminSettingsPage() {
   const [advisoryImageTargetField, setAdvisoryImageTargetField] = React.useState<'add' | 'edit'>('add');
   const [advisoryMemberImagePreview, setAdvisoryMemberImagePreview] = React.useState<string | null>(null);
   const advisoryImageFileInputRef = React.useRef<HTMLInputElement>(null);
+  const editAdvisoryImageFileInputRef = React.useRef<HTMLInputElement>(null);
 
 
   const orgSettingsForm = useForm<OrganizationSettingsFormValues>({
@@ -229,7 +230,12 @@ export default function AdminSettingsPage() {
     setAdvisoryMemberImagePreview(URL.createObjectURL(croppedBlob)); // For immediate UI update in form/dialog
     setIsAdvisoryCropDialogOpen(false);
     setImageToCropSrcAdvisory(null);
-    if (advisoryImageFileInputRef.current) advisoryImageFileInputRef.current.value = "";
+    if (advisoryImageTargetField === 'add' && advisoryImageFileInputRef.current) {
+        advisoryImageFileInputRef.current.value = "";
+    }
+    if (advisoryImageTargetField === 'edit' && editAdvisoryImageFileInputRef.current) {
+        editAdvisoryImageFileInputRef.current.value = "";
+    }
   };
   
   const onAddAdvisoryMemberSubmit = async (data: AdvisoryMemberFormValues) => {
@@ -249,7 +255,7 @@ export default function AdminSettingsPage() {
 
   const openEditAdvisoryMemberDialog = (member: AdvisoryBoardMemberData) => {
     setCurrentAdvisoryMemberToEdit(member);
-    editAdvisoryMemberForm.reset({ name: member.name, title: member.title, imageFile: null });
+    editAdvisoryMemberForm.reset({ name: member.name, title: member.title, imageFile: undefined });
     setAdvisoryMemberImagePreview(member.imageUrl || null);
     setIsEditAdvisoryDialogOpen(true);
   };
@@ -260,10 +266,11 @@ export default function AdminSettingsPage() {
     try {
       await updateAdvisoryBoardMember(currentAdvisoryMemberToEdit.id, 
         { name: data.name, title: data.title }, 
-        data.imageFile // If imageFile is null from form, it means "keep existing" unless explicitly removed
+        data.imageFile // If imageFile is undefined, it means "keep existing". If null, it means "remove".
       );
       toast({ title: "Advisory Member Updated", description: `${data.name}'s details updated.` });
       setIsEditAdvisoryDialogOpen(false);
+      setCurrentAdvisoryMemberToEdit(null);
       fetchAdvisoryBoardData();
     } catch (e) {
       toast({ title: "Error Updating Member", description: (e as Error).message, variant: "destructive" });
@@ -275,7 +282,6 @@ export default function AdminSettingsPage() {
   const handleRemoveAdvisoryImageEdit = () => {
     editAdvisoryMemberForm.setValue("imageFile", null, {shouldDirty: true}); // Signal removal
     setAdvisoryMemberImagePreview(null); // Clear preview
-    // The updateAdvisoryBoardMember service will handle deleting the old image if imageFile is explicitly null
   };
 
 
@@ -418,8 +424,7 @@ export default function AdminSettingsPage() {
             <Card className="p-4 sm:p-6 bg-muted/20 border shadow-sm">
               <h3 className="text-lg font-semibold mb-4 text-foreground flex items-center"><PlusCircle className="mr-2 h-5 w-5 text-primary"/> Add New Advisory Member</h3>
               <Form {...addAdvisoryMemberForm}>
-                {/* Changed to div from form */}
-                <div className="space-y-4"> 
+                <form onSubmit={addAdvisoryMemberForm.handleSubmit(onAddAdvisoryMemberSubmit)} className="space-y-4"> 
                   <FormField control={addAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Member Name</FormLabel><FormControl><Input placeholder="Full name" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={addAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Member Title</FormLabel><FormControl><Input placeholder="e.g., Chief Strategic Advisor" {...field} disabled={isAddingAdvisoryMember} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={addAdvisoryMemberForm.control} name="imageFile" render={() => (
@@ -431,12 +436,11 @@ export default function AdminSettingsPage() {
                       <FormMessage />
                     </FormItem>
                   )}/>
-                   {/* Changed button type and added onClick */}
-                  <Button type="button" onClick={addAdvisoryMemberForm.handleSubmit(onAddAdvisoryMemberSubmit)} disabled={isAddingAdvisoryMember || !addAdvisoryMemberForm.formState.isValid}>
+                  <Button type="submit" disabled={isAddingAdvisoryMember || !addAdvisoryMemberForm.formState.isValid}>
                     {isAddingAdvisoryMember ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                     Add Member
                   </Button>
-                </div>
+                </form>
               </Form>
             </Card>
 
@@ -497,7 +501,7 @@ export default function AdminSettingsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="President 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">President Name (25-26)</h4>
+                      <h4 className="text-lg font-semibold">মোহাম্মদ আবদুল্লাহ বিন হক</h4>
                       <p className="text-muted-foreground">President</p>
                     </div>
                     {/* Secretary Profile */}
@@ -505,7 +509,7 @@ export default function AdminSettingsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="General Secretary 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">Secretary Name (25-26)</h4>
+                      <h4 className="text-lg font-semibold">মোহাম্মদ আবু বকর সিদ্দিক</h4>
                       <p className="text-muted-foreground">General Secretary</p>
                     </div>
                   </div>
@@ -586,30 +590,29 @@ export default function AdminSettingsPage() {
 
         {/* Edit Advisory Member Dialog */}
         {currentAdvisoryMemberToEdit && (
-          <Dialog open={isEditAdvisoryDialogOpen} onOpenChange={(open) => {setIsEditAdvisoryDialogOpen(open); if (!open) { setAdvisoryMemberImagePreview(null); editAdvisoryMemberForm.reset();}}}>
+          <Dialog open={isEditAdvisoryDialogOpen} onOpenChange={(open) => {setIsEditAdvisoryDialogOpen(open); if (!open) { setAdvisoryMemberImagePreview(null); editAdvisoryMemberForm.reset(); setCurrentAdvisoryMemberToEdit(null);}}}>
             <DialogContent>
               <DialogHeader><DialogTitle>Edit Advisory Member: {currentAdvisoryMemberToEdit.name}</DialogTitle></DialogHeader>
               <Form {...editAdvisoryMemberForm}>
-                <div className="space-y-4 py-2 pb-4"> {/* Changed from form to div */}
-                  <FormField control={editAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Member Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                  <FormField control={editAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Member Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <form onSubmit={editAdvisoryMemberForm.handleSubmit(onEditAdvisoryMemberSubmit)} className="space-y-4 py-2 pb-4">
+                  <FormField control={editAdvisoryMemberForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Member Name</FormLabel><FormControl><Input {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={editAdvisoryMemberForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Member Title</FormLabel><FormControl><Input {...field} disabled={isSubmittingOrgSettings} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={editAdvisoryMemberForm.control} name="imageFile" render={() => (
                     <FormItem>
                       <FormLabel htmlFor="advisoryImageFileEdit">Member Picture</FormLabel>
                       {advisoryMemberImagePreview && (<div className="mt-2 mb-2 w-24 h-24 relative rounded-md overflow-hidden border"><Image src={advisoryMemberImagePreview} alt="Member preview" layout="fill" objectFit="cover" data-ai-hint="person portrait"/></div>)}
-                      <FormControl><Input id="advisoryImageFileEdit" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'edit')} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" ref={advisoryImageFileInputRef}/></FormControl>
-                      <FormDescription>Upload new (150x150px) or <Button type="button" variant="link" size="sm" className="p-0 h-auto" onClick={handleRemoveAdvisoryImageEdit}>remove current</Button>.</FormDescription>
+                      <FormControl><Input id="advisoryImageFileEdit" type="file" accept="image/png, image/jpeg, image/gif" onChange={(e) => handleAdvisoryFileChange(e, 'edit')} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" ref={editAdvisoryImageFileInputRef}/></FormControl>
+                      <FormDescription>Upload new (150x150px) or <Button type="button" variant="link" size="sm" className="p-0 h-auto" onClick={handleRemoveAdvisoryImageEdit} disabled={!advisoryMemberImagePreview}>remove current</Button>.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}/>
                   <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                    {/* Changed button type and added onClick */}
-                    <Button type="button" onClick={editAdvisoryMemberForm.handleSubmit(onEditAdvisoryMemberSubmit)} disabled={isSubmittingOrgSettings || !editAdvisoryMemberForm.formState.isDirty || !editAdvisoryMemberForm.formState.isValid}>
+                    <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmittingOrgSettings}>Cancel</Button></DialogClose>
+                    <Button type="submit" disabled={isSubmittingOrgSettings || !editAdvisoryMemberForm.formState.isDirty || !editAdvisoryMemberForm.formState.isValid}>
                       {isSubmittingOrgSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Changes
                     </Button>
                   </DialogFooter>
-                </div>
+                </form>
               </Form>
             </DialogContent>
           </Dialog>
@@ -634,7 +637,7 @@ export default function AdminSettingsPage() {
         {imageToCropSrcPresident && ( <ImageCropDialog isOpen={isPresidentCropDialogOpen} onClose={() => { setIsPresidentCropDialogOpen(false); setImageToCropSrcPresident(null); if (presidentFileInputRef.current) presidentFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcPresident} onCropComplete={handlePresidentCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
         {imageToCropSrcSecretary && ( <ImageCropDialog isOpen={isSecretaryCropDialogOpen} onClose={() => { setIsSecretaryCropDialogOpen(false); setImageToCropSrcSecretary(null); if (secretaryFileInputRef.current) secretaryFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcSecretary} onCropComplete={handleSecretaryCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
         {imageToCropSrcCover && ( <ImageCropDialog isOpen={isCoverCropDialogOpen} onClose={() => { setIsCoverCropDialogOpen(false); setImageToCropSrcCover(null); if (coverFileInputRef.current) coverFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcCover} onCropComplete={handleCoverCropComplete} aspectRatio={1200 / 500} targetWidth={1200} targetHeight={500}/>)}
-        {imageToCropSrcAdvisory && ( <ImageCropDialog isOpen={isAdvisoryCropDialogOpen} onClose={() => { setIsAdvisoryCropDialogOpen(false); setImageToCropSrcAdvisory(null); if (advisoryImageFileInputRef.current) advisoryImageFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcAdvisory} onCropComplete={handleAdvisoryCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
+        {imageToCropSrcAdvisory && ( <ImageCropDialog isOpen={isAdvisoryCropDialogOpen} onClose={() => { setIsAdvisoryCropDialogOpen(false); setImageToCropSrcAdvisory(null); if (advisoryImageFileInputRef.current) advisoryImageFileInputRef.current.value = ""; if (editAdvisoryImageFileInputRef.current) editAdvisoryImageFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcAdvisory} onCropComplete={handleAdvisoryCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
       </main>
     </AppShell>
   );

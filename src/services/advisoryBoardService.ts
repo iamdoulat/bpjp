@@ -212,5 +212,3 @@ export async function deleteAdvisoryBoardMember(memberId: string): Promise<void>
     throw new Error('An unknown error occurred while deleting advisory member.');
   }
 }
-
-    
