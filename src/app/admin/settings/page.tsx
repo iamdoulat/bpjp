@@ -474,7 +474,7 @@ export default function AdminSettingsPage() {
         </Card>
 
         {/* Accordion Section */}
-        <Card className="shadow-lg max-w-4xl mx-auto mt-8">
+        <Card className="shadow-lg max-w-4xl mx-auto mt-8 text-center">
           <CardHeader className="text-center">
             <CardTitle>PREVIOUS COMMITTEE</CardTitle>
             <ShadCNCardDescription>
@@ -490,56 +490,94 @@ export default function AdminSettingsPage() {
             >
               <AccordionItem value="item-1">
                 <AccordionTrigger>2025-2026</AccordionTrigger>
-                <AccordionContent className="flex flex-col gap-4 text-balance">
-                  <p>
-                    Our flagship product combines cutting-edge technology with sleek
-                    design. Built with premium materials, it offers unparalleled
-                    performance and reliability.
-                  </p>
-                  <p>
-                    Key features include advanced processing capabilities, and an
-                    intuitive user interface designed for both beginners and experts.
-                  </p>
+                <AccordionContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    {/* President Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="President 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">President Name (25-26)</h4>
+                      <p className="text-muted-foreground">President</p>
+                    </div>
+                    {/* Secretary Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="General Secretary 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">Secretary Name (25-26)</h4>
+                      <p className="text-muted-foreground">General Secretary</p>
+                    </div>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
                 <AccordionTrigger>2023-2024</AccordionTrigger>
-                <AccordionContent className="flex flex-col gap-4 text-balance">
-                  <p>
-                    We offer worldwide shipping through trusted courier partners.
-                    Standard delivery takes 3-5 business days, while express shipping
-                    ensures delivery within 1-2 business days.
-                  </p>
-                  <p>
-                    All orders are carefully packaged and fully insured. Track your
-                    shipment in real-time through our dedicated tracking portal.
-                  </p>
+                <AccordionContent>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    {/* President Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="President 2023-2024" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">President Name (23-24)</h4>
+                      <p className="text-muted-foreground">President</p>
+                    </div>
+                    {/* Secretary Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="General Secretary 2023-2024" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">Secretary Name (23-24)</h4>
+                      <p className="text-muted-foreground">General Secretary</p>
+                    </div>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
                 <AccordionTrigger>2021-2022</AccordionTrigger>
-                <AccordionContent className="flex flex-col gap-4 text-balance">
-                  <p>
-                    We stand behind our products with a comprehensive 30-day return
-                    policy. If you&apos;re not completely satisfied, simply return the
-                    item in its original condition.
-                  </p>
-                  <p>
-                    Our hassle-free return process includes free return shipping and
-                    full refunds processed within 48 hours of receiving the returned
-                    item.
-                  </p>
+                <AccordionContent>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    {/* President Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="President 2021-2022" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">President Name (21-22)</h4>
+                      <p className="text-muted-foreground">President</p>
+                    </div>
+                    {/* Secretary Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="General Secretary 2021-2022" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">Secretary Name (21-22)</h4>
+                      <p className="text-muted-foreground">General Secretary</p>
+                    </div>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-4">
                 <AccordionTrigger>2019-2020</AccordionTrigger>
-                <AccordionContent className="flex flex-col gap-4 text-balance">
-                  <p>
-                    This is placeholder content for the 2019-2020 committee.
-                  </p>
-                  <p>
-                    Details about this committee's achievements and members can be added here.
-                  </p>
+                <AccordionContent>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    {/* President Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="President 2019-2020" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">President Name (19-20)</h4>
+                      <p className="text-muted-foreground">President</p>
+                    </div>
+                    {/* Secretary Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="General Secretary 2019-2020" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">Secretary Name (19-20)</h4>
+                      <p className="text-muted-foreground">General Secretary</p>
+                    </div>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
