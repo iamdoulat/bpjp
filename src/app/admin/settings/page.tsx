@@ -32,6 +32,12 @@ import ImageCropDialog from "@/components/ui/image-crop-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const organizationSettingsSchema = z.object({
   organizationName: z.string().min(3, { message: "Organization name must be at least 3 characters." }).max(100),
@@ -467,6 +473,67 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Accordion Section */}
+        <Card className="shadow-lg max-w-4xl mx-auto mt-8">
+          <CardHeader>
+            <CardTitle>Additional Information</CardTitle>
+            <ShadCNCardDescription>
+              Frequently asked questions and details about our platform.
+            </ShadCNCardDescription>
+          </CardHeader>
+          <CardContent>
+            <Accordion
+              type="single"
+              collapsible
+              className="w-full"
+              defaultValue="item-1"
+            >
+              <AccordionItem value="item-1">
+                <AccordionTrigger>Product Information</AccordionTrigger>
+                <AccordionContent className="flex flex-col gap-4 text-balance">
+                  <p>
+                    Our flagship product combines cutting-edge technology with sleek
+                    design. Built with premium materials, it offers unparalleled
+                    performance and reliability.
+                  </p>
+                  <p>
+                    Key features include advanced processing capabilities, and an
+                    intuitive user interface designed for both beginners and experts.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-2">
+                <AccordionTrigger>Shipping Details</AccordionTrigger>
+                <AccordionContent className="flex flex-col gap-4 text-balance">
+                  <p>
+                    We offer worldwide shipping through trusted courier partners.
+                    Standard delivery takes 3-5 business days, while express shipping
+                    ensures delivery within 1-2 business days.
+                  </p>
+                  <p>
+                    All orders are carefully packaged and fully insured. Track your
+                    shipment in real-time through our dedicated tracking portal.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-3">
+                <AccordionTrigger>Return Policy</AccordionTrigger>
+                <AccordionContent className="flex flex-col gap-4 text-balance">
+                  <p>
+                    We stand behind our products with a comprehensive 30-day return
+                    policy. If you&apos;re not completely satisfied, simply return the
+                    item in its original condition.
+                  </p>
+                  <p>
+                    Our hassle-free return process includes free return shipping and
+                    full refunds processed within 48 hours of receiving the returned
+                    item.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
 
         {/* Edit Advisory Member Dialog */}
         {currentAdvisoryMemberToEdit && (
