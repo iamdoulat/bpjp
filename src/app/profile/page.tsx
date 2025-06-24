@@ -339,7 +339,7 @@ export default function ProfilePage() {
 
           <CardContent className="mt-6 space-y-6">
             <Form {...form}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md">
                   <Mail className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
                   <div>
@@ -370,7 +370,7 @@ export default function ProfilePage() {
                         <p className="font-semibold">{profileData?.wardNo?.trim() || "Not set"}</p>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md md:col-span-2">
+                    <div className="flex items-start space-x-3 p-3 bg-muted/20 rounded-md col-span-2">
                       <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-muted-foreground">Total Approved Donations</p>
