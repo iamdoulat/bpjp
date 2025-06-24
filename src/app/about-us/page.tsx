@@ -267,7 +267,7 @@ export default function AboutUsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="President 2023-2024" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">President Name (23-24)</h4>
+                      <h4 className="text-lg font-semibold">মোঃ জহির চৌধুরী</h4>
                       <p className="text-muted-foreground">President</p>
                     </div>
                     {/* Secretary Profile */}
@@ -275,7 +275,7 @@ export default function AboutUsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="General Secretary 2023-2024" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">Secretary Name (23-24)</h4>
+                      <h4 className="text-lg font-semibold">নুর ইমরান ইমু তালুকদার</h4>
                       <p className="text-muted-foreground">General Secretary</p>
                     </div>
                   </div>
@@ -290,7 +290,7 @@ export default function AboutUsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="President 2021-2022" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">President Name (21-22)</h4>
+                      <h4 className="text-lg font-semibold">মোঃ জহির চৌধুরী</h4>
                       <p className="text-muted-foreground">President</p>
                     </div>
                     {/* Secretary Profile */}
@@ -298,7 +298,7 @@ export default function AboutUsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="General Secretary 2021-2022" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">Secretary Name (21-22)</h4>
+                      <h4 className="text-lg font-semibold">মোঃ আবু বক্কর</h4>
                       <p className="text-muted-foreground">General Secretary</p>
                     </div>
                   </div>
@@ -313,7 +313,7 @@ export default function AboutUsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="President 2019-2020" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">President Name (19-20)</h4>
+                      <h4 className="text-lg font-semibold">মোঃ লোকমান হোসেন</h4>
                       <p className="text-muted-foreground">President</p>
                     </div>
                     {/* Secretary Profile */}
@@ -321,7 +321,7 @@ export default function AboutUsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="General Secretary 2019-2020" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">Secretary Name (19-20)</h4>
+                      <h4 className="text-lg font-semibold">নুর ইমরান ইমু তালুকদার</h4>
                       <p className="text-muted-foreground">General Secretary</p>
                     </div>
                   </div>
