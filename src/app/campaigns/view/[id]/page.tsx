@@ -321,33 +321,33 @@ export default function PublicViewCampaignPage() {
                 <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{campaign.description}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-x-4 md:gap-x-8 gap-y-6 bg-muted/30 p-4 md:p-6 rounded-lg border">
+              <div className="grid grid-cols-2 gap-x-4 md:gap-x-8 gap-y-6 bg-muted/30 p-4 rounded-lg border">
                 <div className="flex items-center space-x-2 md:space-x-3">
-                  <TargetIcon className="h-5 w-5 md:h-6 md:w-6 text-green-600 flex-shrink-0" />
+                  <TargetIcon className="h-4 w-4 sm:h-6 sm:w-6 text-green-600 flex-shrink-0" />
                   <div>
-                    <p className="text-xs md:text-sm text-muted-foreground">Goal Amount</p>
-                    <p className="text-lg md:text-xl font-semibold">{formatCurrency(campaign.goalAmount)}</p>
+                    <p className="text-[11px] sm:text-sm text-muted-foreground">Goal Amount</p>
+                    <p className="text-base sm:text-xl font-semibold">{formatCurrency(campaign.goalAmount)}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2 md:space-x-3">
-                  <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-green-600 flex-shrink-0" />
+                  <DollarSign className="h-4 w-4 sm:h-6 sm:w-6 text-green-600 flex-shrink-0" />
                   <div>
-                    <p className="text-xs md:text-sm text-muted-foreground">Amount Raised</p>
-                    <p className="text-lg md:text-xl font-semibold">{formatCurrency(campaign.raisedAmount)}</p>
+                    <p className="text-[11px] sm:text-sm text-muted-foreground">Amount Raised</p>
+                    <p className="text-base sm:text-xl font-semibold">{formatCurrency(campaign.raisedAmount)}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2 md:space-x-3">
-                  <CalendarDays className="h-5 w-5 md:h-6 md:w-6 text-green-600 flex-shrink-0" />
+                  <CalendarDays className="h-4 w-4 sm:h-6 sm:w-6 text-green-600 flex-shrink-0" />
                   <div>
-                    <p className="text-xs md:text-sm text-muted-foreground">Start Date</p>
-                    <p className="text-base md:text-lg font-semibold">{formatDisplayDate(new Date(campaign.startDate as Date))}</p>
+                    <p className="text-[11px] sm:text-sm text-muted-foreground">Start Date</p>
+                    <p className="text-sm sm:text-lg font-semibold">{formatDisplayDate(new Date(campaign.startDate as Date))}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2 md:space-x-3">
-                   <CalendarDays className="h-5 w-5 md:h-6 md:w-6 text-green-600 flex-shrink-0" />
+                   <CalendarDays className="h-4 w-4 sm:h-6 sm:w-6 text-green-600 flex-shrink-0" />
                   <div>
-                    <p className="text-xs md:text-sm text-muted-foreground">End Date</p>
-                    <p className="text-base md:text-lg font-semibold">{formatDisplayDate(new Date(campaign.endDate as Date))}</p>
+                    <p className="text-[11px] sm:text-sm text-muted-foreground">End Date</p>
+                    <p className="text-sm sm:text-lg font-semibold">{formatDisplayDate(new Date(campaign.endDate as Date))}</p>
                   </div>
                 </div>
               </div>
@@ -515,4 +515,5 @@ export default function PublicViewCampaignPage() {
           </Card>
       </main>
     </AppShell>
-  )
+  );
+}
