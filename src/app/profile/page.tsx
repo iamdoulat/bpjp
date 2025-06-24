@@ -286,23 +286,25 @@ export default function ProfilePage() {
               />
             </div>
             <div className="relative flex flex-col items-center -mt-16">
-              <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-                <AvatarImage src={currentPhotoURL || `https://placehold.co/128x128.png?text=${getInitials(currentDisplayName)}`} alt={currentDisplayName || "User"} data-ai-hint="profile person" />
-                <AvatarFallback>{getInitials(currentDisplayName)}</AvatarFallback>
-              </Avatar>
-              {!isEditing && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="absolute top-16 right-4 sm:right-6 md:right-8 lg:right-10 xl:right-12 bg-background/70 backdrop-blur-sm p-2"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingCroppedImage || isCropDialogOpen || isSubmitting}
-                    aria-label="Upload profile picture"
-                  >
-                  {isUploadingCroppedImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                </Button>
-              )}
-               <input
+              <div className="relative">
+                <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                  <AvatarImage src={currentPhotoURL || `https://placehold.co/128x128.png?text=${getInitials(currentDisplayName)}`} alt={currentDisplayName || "User"} data-ai-hint="profile person" />
+                  <AvatarFallback>{getInitials(currentDisplayName)}</AvatarFallback>
+                </Avatar>
+                {!isEditing && (
+                  <Button
+                      variant="outline"
+                      size="icon"
+                      className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingCroppedImage || isCropDialogOpen || isSubmitting}
+                      aria-label="Upload profile picture"
+                    >
+                    {isUploadingCroppedImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+                  </Button>
+                )}
+              </div>
+              <input
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileSelectForCrop}
@@ -484,4 +486,3 @@ export default function ProfilePage() {
     </AppShell>
   );
 }
-
