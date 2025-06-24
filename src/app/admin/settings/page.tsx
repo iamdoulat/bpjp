@@ -547,7 +547,7 @@ export default function AdminSettingsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="President 2021-2022" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">মোঃ জহির চৌধুরী</h4>
+                      <h4 className="text-lg font-semibold">মোঃ জহির চৌধুরী </h4>
                       <p className="text-muted-foreground">President</p>
                     </div>
                     {/* Secretary Profile */}
@@ -570,7 +570,7 @@ export default function AdminSettingsPage() {
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
                         <Image src="https://placehold.co/150x150.png" alt="President 2019-2020" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
-                      <h4 className="text-lg font-semibold">লোকমান হোসেন</h4>
+                      <h4 className="text-lg font-semibold">মোঃ লোকমান হোসেন</h4>
                       <p className="text-muted-foreground">President</p>
                     </div>
                     {/* Secretary Profile */}
