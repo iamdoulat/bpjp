@@ -1,4 +1,3 @@
-
 // src/app/about-us/page.tsx
 "use client";
 
@@ -20,6 +19,12 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Alert, AlertTitle as ShadcnAlertTitle, AlertDescription as ShadcnAlertDescription } from "@/components/ui/alert";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function AboutUsPage() {
   const { organizationSettings, isLoadingAppSettings } = useAppContext();
@@ -214,6 +219,117 @@ export default function AboutUsPage() {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Previous Committee Accordion */}
+        <Card className="shadow-lg mt-8 text-center">
+          <CardHeader className="text-center">
+            <CardTitle>PREVIOUS COMMITTEE</CardTitle>
+            <CardDescription>
+            Period - 2018-2026
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Accordion
+              type="single"
+              collapsible
+              className="w-full"
+              defaultValue="item-1"
+            >
+              <AccordionItem value="item-1">
+                <AccordionTrigger>2025-2026</AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    {/* President Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://firebasestorage.googleapis.com/v0/b/impactboard-opo8r.firebasestorage.app/o/organization%2ForganizationDetails%2Fpresident_image.png?alt=media&token=92d6d216-d1c3-44ea-a13c-2d336a74aaed" alt="President 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">মোহাম্মদ আবদুল্লাহ বিন হক</h4>
+                      <p className="text-muted-foreground">President</p>
+                    </div>
+                    {/* Secretary Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://firebasestorage.googleapis.com/v0/b/impactboard-opo8r.firebasestorage.app/o/organization%2ForganizationDetails%2Fsecretary_image.png?alt=media&token=3bc40b95-56c3-4dbe-9907-8d3b6b512c05" alt="General Secretary 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">মোহাম্মদ আবু বকর সিদ্দিক</h4>
+                      <p className="text-muted-foreground">General Secretary</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-2">
+                <AccordionTrigger>2023-2024</AccordionTrigger>
+                <AccordionContent>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    {/* President Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="President 2023-2024" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">President Name (23-24)</h4>
+                      <p className="text-muted-foreground">President</p>
+                    </div>
+                    {/* Secretary Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="General Secretary 2023-2024" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">Secretary Name (23-24)</h4>
+                      <p className="text-muted-foreground">General Secretary</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-3">
+                <AccordionTrigger>2021-2022</AccordionTrigger>
+                <AccordionContent>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    {/* President Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="President 2021-2022" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">President Name (21-22)</h4>
+                      <p className="text-muted-foreground">President</p>
+                    </div>
+                    {/* Secretary Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="General Secretary 2021-2022" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">Secretary Name (21-22)</h4>
+                      <p className="text-muted-foreground">General Secretary</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-4">
+                <AccordionTrigger>2019-2020</AccordionTrigger>
+                <AccordionContent>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    {/* President Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="President 2019-2020" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">President Name (19-20)</h4>
+                      <p className="text-muted-foreground">President</p>
+                    </div>
+                    {/* Secretary Profile */}
+                    <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
+                      <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
+                        <Image src="https://placehold.co/150x150.png" alt="General Secretary 2019-2020" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                      </div>
+                      <h4 className="text-lg font-semibold">Secretary Name (19-20)</h4>
+                      <p className="text-muted-foreground">General Secretary</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
       </main>
     </AppShell>
   );
@@ -224,5 +340,3 @@ const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (<div clas
 
 interface LeadershipProfileProps { name?: string | null; title?: string | null; imageUrl?: string | null; mobileNumber?: string | null; dataAiHint?: string; }
 const LeadershipProfile: React.FC<LeadershipProfileProps> = ({ name, title, imageUrl, mobileNumber, dataAiHint }) => (<div className="flex flex-col items-center text-center p-4 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"><div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg"><Image src={imageUrl || `https://placehold.co/150x150.png?text=${name ? name.charAt(0) : 'L'}`} alt={name || 'Leader'} layout="fill" objectFit="cover" data-ai-hint={dataAiHint || "person portrait"}/></div><h3 className="text-xl font-semibold text-foreground">{name || "Not Provided"}</h3><p className="text-muted-foreground">{title || "N/A"}</p>{mobileNumber && (<div className="flex items-center mt-1.5 text-sm text-muted-foreground"><Phone className="h-4 w-4 mr-1.5 text-green-600/80" />{mobileNumber}</div>)}</div>);
-
-    
