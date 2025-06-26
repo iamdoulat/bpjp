@@ -176,12 +176,66 @@ export default function AdminSettingsPage() {
     loadAllSettings();
   }, [orgSettingsForm, setAppNameState, appName, toast, fetchAdvisoryBoardData]);
 
-  const handlePresidentFileChange = (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ };
-  const handlePresidentCropComplete = (croppedBlob: Blob) => { /* ... */ };
-  const handleSecretaryFileChange = (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ };
-  const handleSecretaryCropComplete = (croppedBlob: Blob) => { /* ... */ };
-  const handleCoverFileChange = (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ };
-  const handleCoverCropComplete = (croppedBlob: Blob) => { /* ... */ };
+  const handlePresidentFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrcPresident(reader.result as string);
+        setIsPresidentCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  const handlePresidentCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "president_image.png", { type: "image/png" });
+    orgSettingsForm.setValue("presidentImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    setPresidentPreview(URL.createObjectURL(croppedBlob));
+    setIsPresidentCropDialogOpen(false);
+    if (presidentFileInputRef.current) {
+      presidentFileInputRef.current.value = "";
+    }
+  };
+  const handleSecretaryFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrcSecretary(reader.result as string);
+        setIsSecretaryCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  const handleSecretaryCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "secretary_image.png", { type: "image/png" });
+    orgSettingsForm.setValue("secretaryImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    setSecretaryPreview(URL.createObjectURL(croppedBlob));
+    setIsSecretaryCropDialogOpen(false);
+    if (secretaryFileInputRef.current) {
+      secretaryFileInputRef.current.value = "";
+    }
+  };
+  const handleCoverFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCropSrcCover(reader.result as string);
+        setIsCoverCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  const handleCoverCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "cover_image.png", { type: "image/png" });
+    orgSettingsForm.setValue("coverImageFile", croppedFile, { shouldValidate: true, shouldDirty: true });
+    setCoverPreview(URL.createObjectURL(croppedBlob));
+    setIsCoverCropDialogOpen(false);
+    if (coverFileInputRef.current) {
+      coverFileInputRef.current.value = "";
+    }
+  };
 
   async function onOrgSettingsSubmit(data: OrganizationSettingsFormValues) {
     setIsSubmittingOrgSettings(true);
