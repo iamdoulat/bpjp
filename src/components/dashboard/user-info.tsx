@@ -1,4 +1,3 @@
-
 // src/components/dashboard/user-info.tsx
 "use client";
 
@@ -41,7 +40,7 @@ export function UserInfo() {
 
   if (loading) {
     return (
-      <div className="w-full p-6 rounded-lg shadow-md bg-card text-card-foreground">
+      <div className="w-full p-4 sm:p-6 rounded-lg shadow-md bg-card text-card-foreground">
         <div className="flex items-center space-x-4 mb-4">
           <Skeleton className="h-16 w-16 rounded-full" />
           <div className="space-y-2">
@@ -73,7 +72,7 @@ export function UserInfo() {
 
 
   return (
-    <div className="w-full p-6 rounded-lg shadow-md bg-card text-card-foreground">
+    <div className="w-full p-4 sm:p-6 rounded-lg shadow-md bg-card text-card-foreground">
       <div className="flex items-center space-x-4 mb-4">
         <Avatar className="h-16 w-16">
           <AvatarImage 

@@ -43,9 +43,7 @@ export function MobileBottomNav() {
   }
 
   const navItems = user ? authenticatedNavItems : unauthenticatedNavItems;
-  // Since both lists have 5 items, we can use a static width class
-  const itemWidthClass = 'w-1/5';
-
+  
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 h-16 border-t bg-background md:hidden">
       <div className="flex h-full items-center justify-around">
@@ -63,13 +61,12 @@ export function MobileBottomNav() {
               key={item.label}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center space-y-1 p-2 text-xs',
-                itemWidthClass,
+                'flex flex-1 flex-col items-center justify-center space-y-1 p-2 text-xs',
                 !isActive && 'text-muted-foreground hover:text-foreground'
               )}
             >
               <item.icon className={cn('h-5 w-5', isActive && 'text-accent')} />
-              <span className={cn(isActive && 'font-bold text-foreground')}>{displayLabel}</span>
+              <span className={cn(isActive ? 'font-bold text-foreground' : '')}>{displayLabel}</span>
             </Link>
           );
         })}
