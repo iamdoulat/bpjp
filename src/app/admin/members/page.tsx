@@ -1,3 +1,4 @@
+
 // src/app/admin/members/page.tsx
 "use client";
 
@@ -206,7 +207,7 @@ export default function ManageMembersPage() {
         <Card className="shadow-lg max-w-4xl mx-auto">
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Committee Members</CardTitle>
+                    <CardTitle>২০২৫-২৭ সেশনে কার্যকরী কমিটি সদস্য</CardTitle>
                     <ShadCNCardDescription>Add, view, edit, or remove committee members.</ShadCNCardDescription>
                 </div>
                 <Button onClick={() => handleOpenMemberDialog(null)}>
