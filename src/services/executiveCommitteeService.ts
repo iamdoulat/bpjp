@@ -1,6 +1,6 @@
 // src/services/executiveCommitteeService.ts
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, setDoc, addDoc, getDocs, updateDoc, deleteDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, addDoc, getDocs, updateDoc, deleteDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot, writeBatch } from 'firebase/firestore';
 
 export interface ExecutiveCommitteeContentData {
   id?: string; // document ID, usually 'mainContent'
@@ -18,6 +18,12 @@ export interface ExecutiveMemberData {
     cellNumber: string;
     committeeType: CommitteeType;
     createdAt: Timestamp;
+}
+
+export interface NewMemberInput {
+    name: string;
+    designation: string;
+    cellNumber: string;
 }
 
 const COMMITTEE_CONTENT_DOC_ID = 'mainContent';
@@ -98,6 +104,31 @@ export async function addExecutiveMember(member: Omit<ExecutiveMemberData, 'id' 
     }
 }
 
+export async function addBulkExecutiveMembers(members: NewMemberInput[], committeeType: CommitteeType): Promise<void> {
+    try {
+        const batch = writeBatch(db);
+        const membersCollectionRef = collection(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION);
+        
+        members.forEach(member => {
+            const docRef = doc(membersCollectionRef); // Create a new doc reference for each member
+            batch.set(docRef, {
+                ...member,
+                committeeType: committeeType,
+                createdAt: serverTimestamp() as Timestamp,
+            });
+        });
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Error adding bulk executive members:", error);
+        if (error instanceof Error && (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions"))) {
+            throw new Error("Failed to add members in bulk: Firestore permission denied. Check security rules.");
+        }
+        throw new Error("An unexpected error occurred while adding members in bulk.");
+    }
+}
+
+
 export async function getExecutiveMembers(): Promise<ExecutiveMemberData[]> {
     try {
         const membersCollectionRef = collection(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION);
@@ -111,7 +142,7 @@ export async function getExecutiveMembers(): Promise<ExecutiveMemberData[]> {
                 name: data.name,
                 designation: data.designation,
                 cellNumber: data.cellNumber,
-                committeeType: data.committeeType || 'কার্যকরী কমিটি', // Default value if not set
+                committeeType: data.committeeType || 'কার্যকরী কমিটি',
                 createdAt: data.createdAt as Timestamp,
             });
         });

@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import * as Papa from "papaparse"; // Import PapaParse
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,16 +28,17 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
+  AlertDialogDescription as ShadCNAlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogTitle as ShadCNAlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
   Select,
@@ -48,20 +49,23 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, AlertCircle, Users, PlusCircle, Trash2, Edit2, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Save, AlertCircle, Users, PlusCircle, Trash2, Edit2, MoreHorizontal, ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import {
   getExecutiveCommitteeData,
   saveExecutiveCommitteeData,
   getExecutiveMembers,
   addExecutiveMember,
+  addBulkExecutiveMembers,
   updateExecutiveMember,
   deleteExecutiveMember,
   type ExecutiveMemberData,
-  type CommitteeType
+  type CommitteeType,
+  type NewMemberInput
 } from "@/services/executiveCommitteeService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Timestamp } from "firebase/firestore";
+import { Label } from "@/components/ui/label";
 
 const committeeFormSchema = z.object({
   content: z.string().min(10, { message: "Content must be at least 10 characters." }).max(20000, { message: "Content must be at most 20,000 characters."}),
@@ -78,6 +82,12 @@ const memberFormSchema = z.object({
     cellNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid cell number format.").optional().or(z.literal('')),
 });
 type MemberFormValues = z.infer<typeof memberFormSchema>;
+
+interface ParsedCsvData {
+    name: string;
+    designation: string;
+    cellNumber: string;
+}
 
 const MEMBERS_PER_PAGE = 20;
 
@@ -217,6 +227,14 @@ export default function ManageMembersPage() {
   const [isSubmittingMember, setIsSubmittingMember] = React.useState(false);
   const [memberToDelete, setMemberToDelete] = React.useState<ExecutiveMemberData | null>(null);
   const [isDeletingMember, setIsDeletingMember] = React.useState(false);
+  
+    // New state for import functionality
+    const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
+    const [csvFile, setCsvFile] = React.useState<File | null>(null);
+    const [parsedCsvData, setParsedCsvData] = React.useState<ParsedCsvData[]>([]);
+    const [csvError, setCsvError] = React.useState<string | null>(null);
+    const [isImporting, setIsImporting] = React.useState(false);
+    const [importCommitteeType, setImportCommitteeType] = React.useState<CommitteeType>('কার্যকরী কমিটি');
 
   const contentForm = useForm<CommitteeFormValues>({
     resolver: zodResolver(committeeFormSchema),
@@ -234,7 +252,6 @@ export default function ManageMembersPage() {
     setMembersError(null);
     try {
         const fetchedMembers = await getExecutiveMembers();
-        // Sort by creation date ascending (oldest first)
         fetchedMembers.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
         setMembers(fetchedMembers);
     } catch (e) {
@@ -328,6 +345,75 @@ export default function ManageMembersPage() {
     }
   }
   
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setCsvFile(null);
+    setParsedCsvData([]);
+    setCsvError(null);
+
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "text/csv") {
+        setCsvError("Invalid file type. Please upload a .csv file.");
+        return;
+    }
+    setCsvFile(file);
+
+    Papa.parse<ParsedCsvData>(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+            const requiredHeaders = ["name", "designation"];
+            const actualHeaders = results.meta.fields || [];
+
+            if (!requiredHeaders.every(h => actualHeaders.includes(h))) {
+                setCsvError(`CSV must contain the following headers: ${requiredHeaders.join(', ')}. Found: ${actualHeaders.join(', ')}`);
+                return;
+            }
+            
+            const validData = results.data.filter(row => row.name && row.designation);
+            setParsedCsvData(validData);
+
+            if(results.errors.length > 0) {
+                 console.warn("CSV Parsing errors:", results.errors);
+                 toast({title: "Parsing Warning", description: "Some rows in the CSV file may have issues.", variant: "default"});
+            }
+        },
+        error: (error) => {
+            setCsvError(`Error parsing CSV file: ${error.message}`);
+        },
+    });
+};
+
+const handleConfirmImport = async () => {
+    if (parsedCsvData.length === 0) {
+        toast({ title: "No Data to Import", description: "The selected CSV file has no valid data to import.", variant: "destructive"});
+        return;
+    }
+    setIsImporting(true);
+    try {
+        const membersToImport: NewMemberInput[] = parsedCsvData.map(row => ({
+            name: row.name,
+            designation: row.designation,
+            cellNumber: row.cellNumber || "",
+        }));
+
+        await addBulkExecutiveMembers(membersToImport, importCommitteeType);
+
+        toast({ title: "Import Successful!", description: `${membersToImport.length} members have been added to ${importCommitteeType}.` });
+        fetchMembers(); // Refresh the list
+        setIsImportDialogOpen(false);
+        setCsvFile(null);
+        setParsedCsvData([]);
+        setCsvError(null);
+
+    } catch (e) {
+        toast({ title: "Import Failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+        setIsImporting(false);
+    }
+};
+
   const karjokoriMembers = members.filter(m => m.committeeType === 'কার্যকরী কমিটি');
   const karjonirbahiMembers = members.filter(m => m.committeeType === 'কার্যনির্বাহী কমিটি');
 
@@ -351,9 +437,14 @@ export default function ManageMembersPage() {
                     <CardTitle>কার্যকরী কমিটি সদস্য</CardTitle>
                     <ShadCNCardDescription>Add, view, edit, or remove committee members.</ShadCNCardDescription>
                 </div>
-                <Button onClick={() => handleOpenMemberDialog(null)}>
-                    <PlusCircle className="mr-2 h-4 w-4"/> Add Member
-                </Button>
+                 <div className="flex items-center gap-2">
+                    <Button onClick={() => setIsImportDialogOpen(true)} variant="outline">
+                        <Upload className="mr-2 h-4 w-4" /> Import Members
+                    </Button>
+                    <Button onClick={() => handleOpenMemberDialog(null)}>
+                        <PlusCircle className="mr-2 h-4 w-4"/> Add Member
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
                 <MemberTable
@@ -545,7 +636,7 @@ export default function ManageMembersPage() {
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>This action cannot be undone. This will permanently delete the member "{memberToDelete?.name}".</AlertDialogDescription>
+                    <ShadCNAlertDialogDescription>This action cannot be undone. This will permanently delete the member "{memberToDelete?.name}".</ShadCNAlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel disabled={isDeletingMember}>Cancel</AlertDialogCancel>
@@ -556,6 +647,87 @@ export default function ManageMembersPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        {/* Import Members Dialog */}
+        <Dialog open={isImportDialogOpen} onOpenChange={(open) => {
+            if (!open) { // Reset state on close
+                setIsImportDialogOpen(false);
+                setCsvFile(null);
+                setParsedCsvData([]);
+                setCsvError(null);
+            } else {
+                setIsImportDialogOpen(true);
+            }
+        }}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Import Members from CSV</DialogTitle>
+                    <DialogDescription>
+                        Upload a .csv file with member data. The file must contain columns with headers: <strong>name, designation, cellNumber</strong> (optional).
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <Label htmlFor="csv-file-input">CSV File</Label>
+                           <Input id="csv-file-input" type="file" accept=".csv" onChange={handleFileImport} disabled={isImporting} />
+                        </div>
+                        <div className="space-y-2">
+                           <Label htmlFor="import-committee-type">Assign to Committee</Label>
+                           <Select value={importCommitteeType} onValueChange={(value: CommitteeType) => setImportCommitteeType(value)} disabled={isImporting}>
+                             <SelectTrigger id="import-committee-type">
+                                <SelectValue placeholder="Select a committee" />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="কার্যকরী কমিটি">কার্যকরী কমিটি</SelectItem>
+                               <SelectItem value="কার্যনির্বাহী কমিটি">কার্যনির্বাহী কমিটি</SelectItem>
+                             </SelectContent>
+                           </Select>
+                        </div>
+                    </div>
+                    {csvError && (
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4"/>
+                            <ShadCNAlertTitle>Import Error</ShadCNAlertTitle>
+                            <AlertDescription>{csvError}</AlertDescription>
+                        </Alert>
+                    )}
+                    {parsedCsvData.length > 0 && (
+                        <div className="mt-4">
+                           <h4 className="font-medium text-sm mb-2">CSV Data Preview ({parsedCsvData.length} rows found)</h4>
+                           <div className="border rounded-md h-64 overflow-y-auto">
+                            <Table>
+                              <TableHeader>
+                                 <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Designation</TableHead>
+                                    <TableHead>Cell Number</TableHead>
+                                 </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {parsedCsvData.slice(0, 100).map((row, index) => ( // Preview max 100 rows
+                                    <TableRow key={index}>
+                                        <TableCell>{row.name}</TableCell>
+                                        <TableCell>{row.designation}</TableCell>
+                                        <TableCell>{row.cellNumber || 'N/A'}</TableCell>
+                                    </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                            {parsedCsvData.length > 100 && <p className="text-center text-xs text-muted-foreground p-2">...and {parsedCsvData.length - 100} more rows.</p>}
+                           </div>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="outline" disabled={isImporting}>Cancel</Button></DialogClose>
+                    <Button type="button" onClick={handleConfirmImport} disabled={isImporting || parsedCsvData.length === 0 || !!csvError}>
+                        {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isImporting ? 'Importing...' : `Import ${parsedCsvData.length} Members`}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
       </main>
     </AppShell>
