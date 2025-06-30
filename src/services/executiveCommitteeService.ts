@@ -1,19 +1,30 @@
 // src/services/executiveCommitteeService.ts
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, addDoc, getDocs, updateDoc, deleteDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
 
-export interface ExecutiveCommitteeData {
+export interface ExecutiveCommitteeContentData {
   id?: string; // document ID, usually 'mainContent'
   content: string; // HTML content or Markdown
   lastUpdated?: Timestamp;
 }
 
-const COMMITTEE_DOC_ID = 'mainContent'; // Storing content under a generic ID
-const SITE_CONTENT_COLLECTION = 'executiveCommittee'; // A dedicated collection for this
+export interface ExecutiveMemberData {
+    id: string;
+    name: string;
+    designation: string;
+    cellNumber: string;
+    createdAt: Timestamp;
+}
 
-export async function getExecutiveCommitteeData(): Promise<ExecutiveCommitteeData | null> {
+const COMMITTEE_CONTENT_DOC_ID = 'mainContent';
+const COMMITTEE_COLLECTION = 'executiveCommittee';
+const MEMBERS_SUBCOLLECTION = 'members';
+
+// --- Functions for Main Page Content ---
+
+export async function getExecutiveCommitteeData(): Promise<ExecutiveCommitteeContentData | null> {
   try {
-    const docRef = doc(db, SITE_CONTENT_COLLECTION, COMMITTEE_DOC_ID);
+    const docRef = doc(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
@@ -21,22 +32,20 @@ export async function getExecutiveCommitteeData(): Promise<ExecutiveCommitteeDat
         id: docSnap.id,
         content: data.content || "",
         lastUpdated: data.lastUpdated as Timestamp,
-      } as ExecutiveCommitteeData;
+      } as ExecutiveCommitteeContentData;
     }
-    // If document doesn't exist, return default structure for initial setup
     return {
-        id: COMMITTEE_DOC_ID,
+        id: COMMITTEE_CONTENT_DOC_ID,
         content: "",
         lastUpdated: undefined,
     };
   } catch (error) {
-    console.error("Error fetching executive committee data:", error);
+    console.error("Error fetching executive committee content:", error);
     if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
-        throw new Error(`Failed to fetch committee data: Firestore permission denied for '${SITE_CONTENT_COLLECTION}/${COMMITTEE_DOC_ID}'.`);
+        throw new Error(`Failed to fetch committee content: Firestore permission denied.`);
     }
-     // Return default structure on error to prevent page crash
      return {
-        id: COMMITTEE_DOC_ID,
+        id: COMMITTEE_CONTENT_DOC_ID,
         content: "Could not load content due to an error.",
         lastUpdated: undefined,
     };
@@ -45,19 +54,90 @@ export async function getExecutiveCommitteeData(): Promise<ExecutiveCommitteeDat
 
 export async function saveExecutiveCommitteeData(content: string): Promise<void> {
   try {
-    const docRef = doc(db, SITE_CONTENT_COLLECTION, COMMITTEE_DOC_ID);
+    const docRef = doc(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID);
     await setDoc(docRef, {
       content,
       lastUpdated: serverTimestamp(),
-    }, { merge: true }); // Use merge to create if not exists, or update if it does
+    }, { merge: true });
   } catch (error) {
-    console.error("Error saving executive committee data:", error);
+    console.error("Error saving executive committee content:", error);
     if (error instanceof Error) {
         if (error.message.includes("Missing or insufficient permissions")) {
-          throw new Error(`Failed to save committee data: Firestore permission denied. Ensure admin has write access to '${SITE_CONTENT_COLLECTION}/${COMMITTEE_DOC_ID}'.`);
+          throw new Error(`Failed to save committee content: Firestore permission denied.`);
         }
-        throw new Error(`Failed to save committee data: ${error.message}`);
+        throw new Error(`Failed to save committee content: ${error.message}`);
     }
-    throw new Error('An unknown error occurred while saving executive committee data.');
+    throw new Error('An unknown error occurred while saving committee content.');
   }
+}
+
+// --- Functions for Managing Members ---
+
+export async function addExecutiveMember(member: Omit<ExecutiveMemberData, 'id' | 'createdAt'>): Promise<string> {
+    try {
+        const membersCollectionRef = collection(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION);
+        const docRef = await addDoc(membersCollectionRef, {
+            ...member,
+            createdAt: serverTimestamp() as Timestamp,
+        });
+        return docRef.id;
+    } catch(error) {
+        console.error("Error adding executive member:", error);
+        if (error instanceof Error && error.message.includes("permission-denied")) {
+            throw new Error("You do not have permission to add new members.");
+        }
+        throw new Error("An unexpected error occurred while adding the member.");
+    }
+}
+
+export async function getExecutiveMembers(): Promise<ExecutiveMemberData[]> {
+    try {
+        const membersCollectionRef = collection(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION);
+        const q = query(membersCollectionRef, orderBy("createdAt", "asc"));
+        const querySnapshot = await getDocs(q);
+        const members: ExecutiveMemberData[] = [];
+        querySnapshot.forEach((docSnap: QueryDocumentSnapshot<DocumentData>) => {
+            const data = docSnap.data();
+            members.push({
+                id: docSnap.id,
+                name: data.name,
+                designation: data.designation,
+                cellNumber: data.cellNumber,
+                createdAt: data.createdAt as Timestamp,
+            });
+        });
+        return members;
+    } catch(error) {
+        console.error("Error fetching executive members:", error);
+        if (error instanceof Error && error.message.includes("permission-denied")) {
+            throw new Error("You do not have permission to view members.");
+        }
+        throw new Error("An unexpected error occurred while fetching members.");
+    }
+}
+
+export async function updateExecutiveMember(memberId: string, updates: Partial<Omit<ExecutiveMemberData, 'id' | 'createdAt'>>): Promise<void> {
+    try {
+        const memberDocRef = doc(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION, memberId);
+        await updateDoc(memberDocRef, updates);
+    } catch(error) {
+        console.error("Error updating executive member:", error);
+        if (error instanceof Error && error.message.includes("permission-denied")) {
+            throw new Error("You do not have permission to update members.");
+        }
+        throw new Error("An unexpected error occurred while updating the member.");
+    }
+}
+
+export async function deleteExecutiveMember(memberId: string): Promise<void> {
+    try {
+        const memberDocRef = doc(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION, memberId);
+        await deleteDoc(memberDocRef);
+    } catch(error) {
+        console.error("Error deleting executive member:", error);
+        if (error instanceof Error && error.message.includes("permission-denied")) {
+            throw new Error("You do not have permission to delete members.");
+        }
+        throw new Error("An unexpected error occurred while deleting the member.");
+    }
 }
