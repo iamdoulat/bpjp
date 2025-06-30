@@ -62,8 +62,8 @@ export async function saveExecutiveCommitteeData(content: string): Promise<void>
   } catch (error) {
     console.error("Error saving executive committee content:", error);
     if (error instanceof Error) {
-        if (error.message.includes("Missing or insufficient permissions")) {
-          throw new Error(`Failed to save committee content: Firestore permission denied.`);
+        if (error.message.includes("Missing or insufficient permissions") || (error as any).code === "permission-denied") {
+          throw new Error(`Failed to save content: Permission denied. Please ensure you are logged in as an admin and your Firestore security rules allow admin writes to the '${COMMITTEE_COLLECTION}/${COMMITTEE_CONTENT_DOC_ID}' document.`);
         }
         throw new Error(`Failed to save committee content: ${error.message}`);
     }
@@ -83,8 +83,8 @@ export async function addExecutiveMember(member: Omit<ExecutiveMemberData, 'id' 
         return docRef.id;
     } catch(error) {
         console.error("Error adding executive member:", error);
-        if (error instanceof Error && error.message.includes("permission-denied")) {
-            throw new Error("You do not have permission to add new members.");
+        if (error instanceof Error && (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions"))) {
+            throw new Error("Failed to add member: Firestore permission denied. Check security rules for the executiveCommittee members subcollection.");
         }
         throw new Error("An unexpected error occurred while adding the member.");
     }
@@ -109,7 +109,7 @@ export async function getExecutiveMembers(): Promise<ExecutiveMemberData[]> {
         return members;
     } catch(error) {
         console.error("Error fetching executive members:", error);
-        if (error instanceof Error && error.message.includes("permission-denied")) {
+        if (error instanceof Error && (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions"))) {
             throw new Error("You do not have permission to view members.");
         }
         throw new Error("An unexpected error occurred while fetching members.");
@@ -122,8 +122,8 @@ export async function updateExecutiveMember(memberId: string, updates: Partial<O
         await updateDoc(memberDocRef, updates);
     } catch(error) {
         console.error("Error updating executive member:", error);
-        if (error instanceof Error && error.message.includes("permission-denied")) {
-            throw new Error("You do not have permission to update members.");
+        if (error instanceof Error && (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions"))) {
+            throw new Error("Failed to update member: Firestore permission denied.");
         }
         throw new Error("An unexpected error occurred while updating the member.");
     }
@@ -135,8 +135,8 @@ export async function deleteExecutiveMember(memberId: string): Promise<void> {
         await deleteDoc(memberDocRef);
     } catch(error) {
         console.error("Error deleting executive member:", error);
-        if (error instanceof Error && error.message.includes("permission-denied")) {
-            throw new Error("You do not have permission to delete members.");
+        if (error instanceof Error && (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions"))) {
+            throw new Error("Failed to delete member: Firestore permission denied.");
         }
         throw new Error("An unexpected error occurred while deleting the member.");
     }
