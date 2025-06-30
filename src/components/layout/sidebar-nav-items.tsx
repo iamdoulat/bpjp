@@ -31,6 +31,7 @@ const generalNavLinks: NavItem[] = [
   { href: '/election-vote', label: 'Election & Vote', icon: Vote },
   { href: '/our-mission', label: 'Our Mission', icon: Target },
   { href: '/about-us', label: 'About Us', icon: Info },
+  { href: '/executive-committee', label: 'Executive Committee', icon: Users },
   { href: '/profile', label: 'Profile', icon: UserCircle2 },
 ];
 
@@ -52,6 +53,7 @@ const publicPagesForUnauthenticated: NavItem[] = [
   { href: '/our-mission', label: 'Our Mission', icon: Target },
   { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2 },
   { href: '/about-us', label: 'About Us', icon: Info },
+  { href: '/executive-committee', label: 'Executive Committee', icon: Users },
   { href: '/donors-list', label: 'Donors List', icon: Users },
   { href: '/election-vote', label: 'Election & Vote', icon: Vote },
 ];
