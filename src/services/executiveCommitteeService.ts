@@ -9,11 +9,14 @@ export interface ExecutiveCommitteeContentData {
   lastUpdated?: Timestamp;
 }
 
+export type CommitteeType = 'কার্যকরী কমিটি' | 'কার্যনির্বাহী কমিটি';
+
 export interface ExecutiveMemberData {
     id: string;
     name: string;
     designation: string;
     cellNumber: string;
+    committeeType: CommitteeType;
     createdAt: Timestamp;
 }
 
@@ -108,6 +111,7 @@ export async function getExecutiveMembers(): Promise<ExecutiveMemberData[]> {
                 name: data.name,
                 designation: data.designation,
                 cellNumber: data.cellNumber,
+                committeeType: data.committeeType || 'কার্যকরী কমিটি', // Default value if not set
                 createdAt: data.createdAt as Timestamp,
             });
         });

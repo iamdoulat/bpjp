@@ -1,4 +1,3 @@
-
 // src/app/admin/members/page.tsx
 "use client";
 
@@ -40,6 +39,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, AlertCircle, Users, PlusCircle, Trash2, Edit2, MoreHorizontal } from "lucide-react";
@@ -64,6 +70,9 @@ type CommitteeFormValues = z.infer<typeof committeeFormSchema>;
 const memberFormSchema = z.object({
     name: z.string().min(3, "Name must be at least 3 characters.").max(100),
     designation: z.string().min(3, "Designation must be at least 3 characters.").max(100),
+    committeeType: z.enum(['কার্যকরী কমিটি', 'কার্যনির্বাহী কমিটি'], {
+        required_error: "Please select a committee type.",
+    }),
     cellNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid cell number format.").optional().or(z.literal('')),
 });
 type MemberFormValues = z.infer<typeof memberFormSchema>;
@@ -95,7 +104,7 @@ export default function ManageMembersPage() {
   
   const memberForm = useForm<MemberFormValues>({
     resolver: zodResolver(memberFormSchema),
-    defaultValues: { name: "", designation: "", cellNumber: "" },
+    defaultValues: { name: "", designation: "", cellNumber: "", committeeType: 'কার্যকরী কমিটি' },
   });
 
   const fetchMembers = React.useCallback(async () => {
@@ -153,9 +162,10 @@ export default function ManageMembersPage() {
             name: member.name,
             designation: member.designation,
             cellNumber: member.cellNumber,
+            committeeType: member.committeeType || 'কার্যকরী কমিটি',
         });
     } else {
-        memberForm.reset({ name: "", designation: "", cellNumber: "" });
+        memberForm.reset({ name: "", designation: "", cellNumber: "", committeeType: 'কার্যকরী কমিটি' });
     }
     setIsMemberDialogOpen(true);
   }
@@ -242,6 +252,7 @@ export default function ManageMembersPage() {
                                 <TableRow>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Designation</TableHead>
+                                    <TableHead>Committee Type</TableHead>
                                     <TableHead>Cell Number</TableHead>
                                     <TableHead className="text-right w-[100px]">Actions</TableHead>
                                 </TableRow>
@@ -251,6 +262,7 @@ export default function ManageMembersPage() {
                                     <TableRow key={member.id}>
                                         <TableCell className="font-medium">{member.name}</TableCell>
                                         <TableCell>{member.designation}</TableCell>
+                                        <TableCell>{member.committeeType}</TableCell>
                                         <TableCell className="text-muted-foreground">{member.cellNumber || 'N/A'}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
@@ -389,6 +401,27 @@ export default function ManageMembersPage() {
                         <FormField control={memberForm.control} name="designation" render={({field}) => (
                             <FormItem><FormLabel>Designation</FormLabel><FormControl><Input {...field} disabled={isSubmittingMember}/></FormControl><FormMessage/></FormItem>
                         )}/>
+                        <FormField
+                            control={memberForm.control}
+                            name="committeeType"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Committee Type</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmittingMember}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a committee type" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="কার্যকরী কমিটি">কার্যকরী কমিটি</SelectItem>
+                                            <SelectItem value="কার্যনির্বাহী কমিটি">কার্যনির্বাহী কমিটি</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <FormField control={memberForm.control} name="cellNumber" render={({field}) => (
                             <FormItem><FormLabel>Cell Number (Optional)</FormLabel><FormControl><Input type="tel" {...field} value={field.value ?? ""} disabled={isSubmittingMember}/></FormControl><FormMessage/></FormItem>
                         )}/>
