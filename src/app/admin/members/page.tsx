@@ -323,7 +323,7 @@ export default function ManageMembersPage() {
             {/* Executive Member Content */}
             <Card className="shadow-lg max-w-4xl mx-auto">
               <CardHeader>
-                <CardTitle>২০২৫-২৭ সেশনে কার্যনির্বাহী কমিটির সদস্য</CardTitle>
+                <CardTitle>কার্যনির্বাহী কমিটি</CardTitle>
                 <ShadCNCardDescription>
                   Enter the descriptive information for the executive members list page. You can use Markdown for formatting.
                 </ShadCNCardDescription>
