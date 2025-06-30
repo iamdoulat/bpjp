@@ -279,7 +279,7 @@ export default function ManageMembersPage() {
             {/* Main Content Text Area */}
             <Card className="shadow-lg max-w-4xl mx-auto">
               <CardHeader>
-                <CardTitle>২০২৫-২৭ সেশনে কার্যকরী কমিটি</CardTitle>
+                <CardTitle>কার্যকরী কমিটি</CardTitle>
                 <ShadCNCardDescription>
                   Enter the descriptive information that will be displayed on the public committee page. You can use Markdown for formatting.
                 </ShadCNCardDescription>
