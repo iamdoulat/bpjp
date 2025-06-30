@@ -145,18 +145,6 @@ export default function ExecutiveCommitteePage() {
             </CardContent>
         </Card>
 
-        {contentData?.membersContent && (
-             <Card className="shadow-md mt-8">
-                <CardHeader>
-                    <CardTitle>কার্যনির্বাহী কমিটি</CardTitle>
-                     <CardDescription>ভূজপুর প্রবাসী যুব কল্যাণ পরিষদের ২০২৫-২৭ সেশনে কার্যনির্বাহী কমিটি</CardDescription>
-                </CardHeader>
-                <CardContent className="prose dark:prose-invert max-w-none text-sm">
-                   <div dangerouslySetInnerHTML={{ __html: contentData.membersContent.replace(/\n/g, '<br />') }} />
-                </CardContent>
-            </Card>
-        )}
-
         <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle>কার্যনির্বাহী কমিটি সদস্য</CardTitle>
