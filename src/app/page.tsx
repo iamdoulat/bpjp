@@ -1,4 +1,3 @@
-
 // src/app/page.tsx
 "use client";
 
@@ -41,7 +40,7 @@ export default function DashboardPage() {
   // If we reach here, user is loaded and authenticated
   return (
     <AppShell>
-      <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 space-y-8 overflow-auto pb-20 md:pb-6">
+      <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 space-y-8 overflow-auto pb-20 md:pb-6 animate-zoom-in">
         <UserInfo />
         <StatsGrid />
         <FeaturedCampaigns />
