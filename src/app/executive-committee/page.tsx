@@ -138,7 +138,11 @@ export default function ExecutiveCommitteePage() {
         <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle>কার্যকরী কমিটি সদস্য</CardTitle>
-                <CardDescription>ভূজপুর প্রবাসী যুব কল্যাণ পরিষদের ২০২৫-২৭ সেশনে কার্যকরী কমিটি</CardDescription>
+                {contentData?.content && (
+                    <CardDescription>
+                        <div dangerouslySetInnerHTML={{ __html: contentData.content.replace(/\n/g, '<br />') }} />
+                    </CardDescription>
+                )}
             </CardHeader>
             <CardContent>
                 {renderMemberTable(karjokoriMembers)}
@@ -147,8 +151,12 @@ export default function ExecutiveCommitteePage() {
 
         <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle>কার্যনির্বাহী কমিটি সদস্য</CardTitle>
-                <CardDescription>ভূজপুর প্রবাসী যুব কল্যাণ পরিষদের ২০২৫-২৭ সেশনে কার্যনির্বাহী কমিটি</CardDescription>
+                <CardTitle>কার্যনির্বাহী কমিটি</CardTitle>
+                 {contentData?.membersContent && (
+                    <CardDescription>
+                        <div dangerouslySetInnerHTML={{ __html: contentData.membersContent.replace(/\n/g, '<br />') }} />
+                    </CardDescription>
+                )}
             </CardHeader>
             <CardContent>
                 {renderMemberTable(karjonirbahiMembers)}
