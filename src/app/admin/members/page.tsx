@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -423,7 +424,7 @@ const handleConfirmImport = async () => {
         <div className="flex items-center gap-3">
           <Users className="h-8 w-8 text-green-600" />
           <div>
-            <h1 className="text-2xl font-headline font-semibold">Manage Executive Committee</h1>
+            <h1 className="text-2xl font-headline font-semibold">Manage Exe. Committee</h1>
             <p className="text-muted-foreground text-sm">
               Update committee member lists and page content.
             </p>
