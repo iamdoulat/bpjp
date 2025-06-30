@@ -1,5 +1,5 @@
 
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_APP_NAME || 'ImpactBoard', // Use env var or default
   description: 'Donor & Campaign Management Dashboard',
   manifest: '/manifest.json', // Added manifest link here for metadata
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

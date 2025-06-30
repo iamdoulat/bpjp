@@ -40,7 +40,7 @@ export default function DashboardPage() {
   // If we reach here, user is loaded and authenticated
   return (
     <AppShell>
-      <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-6 animate-zoom-in">
+      <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-6">
         <UserInfo />
         <StatsGrid />
         <FeaturedCampaigns />
