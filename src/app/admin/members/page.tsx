@@ -1,4 +1,3 @@
-
 // src/app/admin/members/page.tsx
 "use client";
 
@@ -273,80 +272,107 @@ export default function ManageMembersPage() {
             </CardContent>
         </Card>
 
-        {/* Main Content Text Area */}
-        <Card className="shadow-lg max-w-4xl mx-auto">
-          <CardHeader>
-            <CardTitle>২০২৫-২৭ সেশনে কার্যকরী কমিটি</CardTitle>
-            <ShadCNCardDescription>
-              Enter the descriptive information that will be displayed on the public committee page. You can use Markdown for formatting.
-            </ShadCNCardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingContent ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-1/4" />
-                  <Skeleton className="h-48 w-full" />
-                  <Skeleton className="h-10 w-28 mt-4" />
-                </div>
-            ) : contentError ? (
-                <Alert variant="destructive">
+        {/* Content Forms */}
+        <Form {...contentForm}>
+          <form onSubmit={contentForm.handleSubmit(onContentSubmit)} className="space-y-8">
+            {/* Main Content Text Area */}
+            <Card className="shadow-lg max-w-4xl mx-auto">
+              <CardHeader>
+                <CardTitle>২০২৫-২৭ সেশনে কার্যকরী কমিটি</CardTitle>
+                <ShadCNCardDescription>
+                  Enter the descriptive information that will be displayed on the public committee page. You can use Markdown for formatting.
+                </ShadCNCardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingContent ? (
+                    <div className="space-y-4">
+                      <Skeleton className="h-4 w-1/4" />
+                      <Skeleton className="h-48 w-full" />
+                    </div>
+                ) : contentError ? (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <ShadCNAlertTitle>Error Loading Content</ShadCNAlertTitle>
+                        <AlertDescription>{contentError}</AlertDescription>
+                    </Alert>
+                ) : (
+                  <FormField
+                    control={contentForm.control}
+                    name="content"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Committee Descriptive Content</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe the committee, its history, roles, and other relevant information..."
+                            className="resize-y min-h-[200px]"
+                            {...field}
+                            disabled={isSubmittingContent}
+                          />
+                        </FormControl>
+                        <FormDescription>This content will be displayed on the public committee page. Markdown is supported.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Executive Member Content */}
+            <Card className="shadow-lg max-w-4xl mx-auto">
+              <CardHeader>
+                <CardTitle>২০২৫-২৭ সেশনে কার্যনির্বাহী কমিটির সদস্য</CardTitle>
+                <ShadCNCardDescription>
+                  Enter the descriptive information for the executive members list page. You can use Markdown for formatting.
+                </ShadCNCardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingContent ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-48 w-full" />
+                  </div>
+                ) : contentError ? (
+                  <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <ShadCNAlertTitle>Error Loading Content</ShadCNAlertTitle>
                     <AlertDescription>{contentError}</AlertDescription>
-                </Alert>
-            ) : (
-                <Form {...contentForm}>
-                    <form onSubmit={contentForm.handleSubmit(onContentSubmit)} className="space-y-8">
-                        <FormField
-                            control={contentForm.control}
-                            name="content"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Committee Descriptive Content</FormLabel>
-                                <FormControl>
-                                    <Textarea
-                                    placeholder="Describe the committee, its history, roles, and other relevant information..."
-                                    className="resize-y min-h-[200px]"
-                                    {...field}
-                                    disabled={isSubmittingContent}
-                                    />
-                                </FormControl>
-                                <FormDescription>This content will be displayed on the public committee page. Markdown is supported.</FormDescription>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                  </Alert>
+                ) : (
+                  <FormField
+                    control={contentForm.control}
+                    name="membersContent"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Executive Member Content</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe the executive members, their roles, and other relevant information..."
+                            className="resize-y min-h-[200px]"
+                            {...field}
+                            value={field.value ?? ""}
+                            disabled={isSubmittingContent}
+                          />
+                        </FormControl>
+                        <FormDescription>This content will be displayed on the public members list page. Markdown is supported.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </CardContent>
+            </Card>
 
-                        <FormField
-                            control={contentForm.control}
-                            name="membersContent"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Executive Member Content</FormLabel>
-                                <FormControl>
-                                    <Textarea
-                                    placeholder="Describe the executive members, their roles, and other relevant information..."
-                                    className="resize-y min-h-[200px]"
-                                    {...field}
-                                    value={field.value ?? ""}
-                                    disabled={isSubmittingContent}
-                                    />
-                                </FormControl>
-                                <FormDescription>This content will be displayed on the public members list page. Markdown is supported.</FormDescription>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <Button type="submit" disabled={isSubmittingContent || !contentForm.formState.isDirty || !contentForm.formState.isValid}>
-                        {isSubmittingContent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        {isSubmittingContent ? "Saving..." : "Save Content"}
-                        </Button>
-                    </form>
-                </Form>
-            )}
-          </CardContent>
-        </Card>
+            <div className="max-w-4xl mx-auto">
+              <Button type="submit" disabled={isSubmittingContent || !contentForm.formState.isDirty || !contentForm.formState.isValid}>
+                {isSubmittingContent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {isSubmittingContent ? "Saving..." : "Save All Content"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+        
 
         {/* Add/Edit Member Dialog */}
         <Dialog open={isMemberDialogOpen} onOpenChange={setIsMemberDialogOpen}>
