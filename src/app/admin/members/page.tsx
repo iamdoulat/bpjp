@@ -61,6 +61,7 @@ import {
 } from "@/services/executiveCommitteeService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Timestamp } from "firebase/firestore";
 
 const committeeFormSchema = z.object({
   content: z.string().min(10, { message: "Content must be at least 10 characters." }).max(20000, { message: "Content must be at most 20,000 characters."}),
@@ -233,6 +234,8 @@ export default function ManageMembersPage() {
     setMembersError(null);
     try {
         const fetchedMembers = await getExecutiveMembers();
+        // Sort by creation date ascending (oldest first)
+        fetchedMembers.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
         setMembers(fetchedMembers);
     } catch (e) {
         setMembersError(e instanceof Error ? e.message : "Could not load members.");

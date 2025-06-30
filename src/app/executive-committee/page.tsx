@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { getExecutiveCommitteeData, getExecutiveMembers, type ExecutiveCommitteeContentData, type ExecutiveMemberData } from "@/services/executiveCommitteeService";
 import { Users, ServerCrash } from "lucide-react";
+import { Timestamp } from "firebase/firestore";
 
 export default function ExecutiveCommitteePage() {
   const [contentData, setContentData] = React.useState<ExecutiveCommitteeContentData | null>(null);
@@ -34,6 +35,9 @@ export default function ExecutiveCommitteePage() {
           getExecutiveMembers()
         ]);
 
+        // Sort by creation date ascending (oldest first)
+        fetchedMembers.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+        
         setContentData(fetchedContent);
         
         const karjokori = fetchedMembers.filter(m => m.committeeType === 'কার্যকরী কমিটি');
