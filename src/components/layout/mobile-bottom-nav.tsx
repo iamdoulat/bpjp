@@ -43,7 +43,7 @@ export function MobileBottomNav() {
   const navItems = user ? authenticatedNavItems : unauthenticatedNavItems;
   
   return (
-    <nav className="fixed bottom-4 left-4 right-4 z-40 h-16 border rounded-lg bg-background/95 backdrop-blur-sm md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 h-16 border-t bg-background/95 backdrop-blur-sm md:hidden">
       <div className="flex h-full items-center justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -60,7 +60,6 @@ export function MobileBottomNav() {
               className={cn(
                 'flex flex-1 flex-col items-center justify-center space-y-1 p-2 text-xs',
                 !isActive && 'text-muted-foreground hover:text-foreground',
-                isActive && 'text-primary'
               )}
             >
               <item.icon className={cn('h-5 w-5', isActive && 'text-accent')} />
