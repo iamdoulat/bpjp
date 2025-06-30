@@ -56,7 +56,8 @@ import {
   addExecutiveMember,
   updateExecutiveMember,
   deleteExecutiveMember,
-  type ExecutiveMemberData
+  type ExecutiveMemberData,
+  type CommitteeType
 } from "@/services/executiveCommitteeService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -76,6 +77,90 @@ const memberFormSchema = z.object({
     cellNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, "Invalid cell number format.").optional().or(z.literal('')),
 });
 type MemberFormValues = z.infer<typeof memberFormSchema>;
+
+
+const MemberTable = ({
+  members,
+  onEdit,
+  onDelete,
+  isLoading,
+  error,
+  isProcessingAction,
+  committeeName,
+}: {
+  members: ExecutiveMemberData[];
+  onEdit: (member: ExecutiveMemberData) => void;
+  onDelete: (member: ExecutiveMemberData) => void;
+  isLoading: boolean;
+  error: string | null;
+  isProcessingAction: boolean;
+  committeeName: string;
+}) => {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <ShadCNAlertTitle>Error Loading Members</ShadCNAlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (members.length === 0) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <ShadCNAlertTitle>No Members Found</ShadCNAlertTitle>
+        <AlertDescription>There are no members in the {committeeName} yet.</AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="border rounded-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Designation</TableHead>
+            <TableHead>Cell Number</TableHead>
+            <TableHead className="text-right w-[100px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {members.map((member) => (
+            <TableRow key={member.id}>
+              <TableCell className="font-medium">{member.name}</TableCell>
+              <TableCell>{member.designation}</TableCell>
+              <TableCell className="text-muted-foreground">{member.cellNumber || 'N/A'}</TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isProcessingAction}><MoreHorizontal className="h-4 w-4"/></Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(member)} disabled={isProcessingAction}><Edit2 className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
+                    <DropdownMenuSeparator/>
+                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(member)} disabled={isProcessingAction}><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
+
 
 export default function ManageMembersPage() {
   const { toast } = useToast();
@@ -204,6 +289,9 @@ export default function ManageMembersPage() {
     }
   }
   
+  const karjokoriMembers = members.filter(m => m.committeeType === 'কার্যকরী কমিটি');
+  const karjonirbahiMembers = members.filter(m => m.committeeType === 'কার্যনির্বাহী কমিটি');
+
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-8 overflow-auto pb-20 md:pb-6">
@@ -212,12 +300,12 @@ export default function ManageMembersPage() {
           <div>
             <h1 className="text-2xl font-headline font-semibold">Manage Executive Committee</h1>
             <p className="text-muted-foreground text-sm">
-              Update committee member list and page content.
+              Update committee member lists and page content.
             </p>
           </div>
         </div>
 
-        {/* Members List and Management */}
+        {/* কার্যকরী কমিটি Members List */}
         <Card className="shadow-lg max-w-4xl mx-auto">
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -229,61 +317,37 @@ export default function ManageMembersPage() {
                 </Button>
             </CardHeader>
             <CardContent>
-                {isLoadingMembers ? (
-                    <div className="space-y-2">
-                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-                    </div>
-                ) : membersError ? (
-                    <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <ShadCNAlertTitle>Error Loading Members</ShadCNAlertTitle>
-                        <AlertDescription>{membersError}</AlertDescription>
-                    </Alert>
-                ) : members.length === 0 ? (
-                    <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <ShadCNAlertTitle>No Members Added</ShadCNAlertTitle>
-                        <AlertDescription>There are no committee members to display. Click "Add Member" to get started.</AlertDescription>
-                    </Alert>
-                ) : (
-                    <div className="border rounded-md">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Designation</TableHead>
-                                    <TableHead>Committee Type</TableHead>
-                                    <TableHead>Cell Number</TableHead>
-                                    <TableHead className="text-right w-[100px]">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {members.map((member) => (
-                                    <TableRow key={member.id}>
-                                        <TableCell className="font-medium">{member.name}</TableCell>
-                                        <TableCell>{member.designation}</TableCell>
-                                        <TableCell>{member.committeeType}</TableCell>
-                                        <TableCell className="text-muted-foreground">{member.cellNumber || 'N/A'}</TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4"/></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => handleOpenMemberDialog(member)}><Edit2 className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
-                                                    <DropdownMenuSeparator/>
-                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setMemberToDelete(member)}><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                )}
+                <MemberTable
+                    members={karjokoriMembers}
+                    onEdit={handleOpenMemberDialog}
+                    onDelete={setMemberToDelete}
+                    isLoading={isLoadingMembers}
+                    error={membersError}
+                    isProcessingAction={isSubmittingMember || isDeletingMember}
+                    committeeName="কার্যকরী কমিটি"
+                />
             </CardContent>
         </Card>
+
+        {/* কার্যনির্বাহী কমিটি Members List */}
+        <Card className="shadow-lg max-w-4xl mx-auto">
+            <CardHeader>
+                <CardTitle>কার্যনির্বাহী কমিটি সদস্য</CardTitle>
+                <ShadCNCardDescription>List of members for the Executive Working Committee.</ShadCNCardDescription>
+            </CardHeader>
+            <CardContent>
+                 <MemberTable
+                    members={karjonirbahiMembers}
+                    onEdit={handleOpenMemberDialog}
+                    onDelete={setMemberToDelete}
+                    isLoading={isLoadingMembers}
+                    error={membersError}
+                    isProcessingAction={isSubmittingMember || isDeletingMember}
+                    committeeName="কার্যনির্বাহী কমিটি"
+                />
+            </CardContent>
+        </Card>
+
 
         {/* Content Forms */}
         <Form {...contentForm}>
