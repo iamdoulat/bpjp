@@ -5,6 +5,7 @@ import { collection, doc, getDoc, setDoc, addDoc, getDocs, updateDoc, deleteDoc,
 export interface ExecutiveCommitteeContentData {
   id?: string; // document ID, usually 'mainContent'
   content: string; // HTML content or Markdown
+  membersContent?: string;
   lastUpdated?: Timestamp;
 }
 
@@ -31,12 +32,14 @@ export async function getExecutiveCommitteeData(): Promise<ExecutiveCommitteeCon
       return {
         id: docSnap.id,
         content: data.content || "",
+        membersContent: data.membersContent || "",
         lastUpdated: data.lastUpdated as Timestamp,
       } as ExecutiveCommitteeContentData;
     }
     return {
         id: COMMITTEE_CONTENT_DOC_ID,
         content: "",
+        membersContent: "",
         lastUpdated: undefined,
     };
   } catch (error) {
@@ -47,16 +50,18 @@ export async function getExecutiveCommitteeData(): Promise<ExecutiveCommitteeCon
      return {
         id: COMMITTEE_CONTENT_DOC_ID,
         content: "Could not load content due to an error.",
+        membersContent: "Could not load content due to an error.",
         lastUpdated: undefined,
     };
   }
 }
 
-export async function saveExecutiveCommitteeData(content: string): Promise<void> {
+export async function saveExecutiveCommitteeData(data: { content: string, membersContent: string }): Promise<void> {
   try {
     const docRef = doc(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID);
     await setDoc(docRef, {
-      content,
+      content: data.content,
+      membersContent: data.membersContent,
       lastUpdated: serverTimestamp(),
     }, { merge: true });
   } catch (error) {

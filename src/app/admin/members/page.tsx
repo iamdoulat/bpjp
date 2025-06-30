@@ -57,6 +57,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const committeeFormSchema = z.object({
   content: z.string().min(10, { message: "Content must be at least 10 characters." }).max(20000, { message: "Content must be at most 20,000 characters."}),
+  membersContent: z.string().min(10, { message: "Content must be at least 10 characters." }).max(20000, { message: "Content must be at most 20,000 characters."}).optional().or(z.literal('')),
 });
 type CommitteeFormValues = z.infer<typeof committeeFormSchema>;
 
@@ -88,7 +89,7 @@ export default function ManageMembersPage() {
 
   const contentForm = useForm<CommitteeFormValues>({
     resolver: zodResolver(committeeFormSchema),
-    defaultValues: { content: "" },
+    defaultValues: { content: "", membersContent: "" },
     mode: "onChange",
   });
   
@@ -117,7 +118,10 @@ export default function ManageMembersPage() {
       try {
         const currentData = await getExecutiveCommitteeData();
         if (currentData) {
-          contentForm.reset({ content: currentData.content });
+          contentForm.reset({ 
+            content: currentData.content,
+            membersContent: currentData.membersContent || ""
+          });
         }
       } catch (e) {
         setContentError(e instanceof Error ? e.message : "Could not load content.");
@@ -132,7 +136,7 @@ export default function ManageMembersPage() {
   const onContentSubmit = async (data: CommitteeFormValues) => {
     setIsSubmittingContent(true);
     try {
-      await saveExecutiveCommitteeData(data.content);
+      await saveExecutiveCommitteeData({ content: data.content, membersContent: data.membersContent || "" });
       toast({ title: "Content Updated!", description: "The descriptive content has been saved." });
       contentForm.reset(data);
     } catch (e) {
@@ -298,20 +302,42 @@ export default function ManageMembersPage() {
                             name="content"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Descriptive Content</FormLabel>
+                                <FormLabel>Committee Descriptive Content</FormLabel>
                                 <FormControl>
                                     <Textarea
                                     placeholder="Describe the committee, its history, roles, and other relevant information..."
-                                    className="resize-y min-h-[300px]"
+                                    className="resize-y min-h-[200px]"
                                     {...field}
                                     disabled={isSubmittingContent}
                                     />
                                 </FormControl>
-                                <FormDescription>This content will be displayed on the public page. Markdown is supported.</FormDescription>
+                                <FormDescription>This content will be displayed on the public committee page. Markdown is supported.</FormDescription>
                                 <FormMessage />
                                 </FormItem>
                             )}
                         />
+
+                        <FormField
+                            control={contentForm.control}
+                            name="membersContent"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Executive Member Content</FormLabel>
+                                <FormControl>
+                                    <Textarea
+                                    placeholder="Describe the executive members, their roles, and other relevant information..."
+                                    className="resize-y min-h-[200px]"
+                                    {...field}
+                                    value={field.value ?? ""}
+                                    disabled={isSubmittingContent}
+                                    />
+                                </FormControl>
+                                <FormDescription>This content will be displayed on the public members list page. Markdown is supported.</FormDescription>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
                         <Button type="submit" disabled={isSubmittingContent || !contentForm.formState.isDirty || !contentForm.formState.isValid}>
                         {isSubmittingContent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         {isSubmittingContent ? "Saving..." : "Save Content"}
