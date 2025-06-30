@@ -134,18 +134,7 @@ export default function ExecutiveCommitteePage() {
             <p className="text-muted-foreground text-md">Meet the dedicated members of our committee.</p>
           </div>
         </div>
-        
-        {contentData?.content && (
-            <Card className="shadow-md">
-                <CardHeader>
-                    <CardTitle>কার্যকরী কমিটি</CardTitle>
-                </CardHeader>
-                <CardContent className="prose dark:prose-invert max-w-none text-sm">
-                   <div dangerouslySetInnerHTML={{ __html: contentData.content.replace(/\n/g, '<br />') }} />
-                </CardContent>
-            </Card>
-        )}
-        
+                
         <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle>কার্যকরী কমিটি সদস্য</CardTitle>
