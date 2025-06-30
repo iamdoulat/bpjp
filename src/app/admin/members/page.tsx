@@ -1,3 +1,4 @@
+
 // src/app/admin/members/page.tsx
 "use client";
 
@@ -354,7 +355,7 @@ export default function ManageMembersPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== "text/csv") {
+    if (!file.name.toLowerCase().endsWith('.csv') && file.type !== "text/csv") {
         setCsvError("Invalid file type. Please upload a .csv file.");
         return;
     }
@@ -363,6 +364,7 @@ export default function ManageMembersPage() {
     Papa.parse<ParsedCsvData>(file, {
         header: true,
         skipEmptyLines: true,
+        encoding: "UTF-8",
         complete: (results) => {
             const requiredHeaders = ["name", "designation"];
             const actualHeaders = results.meta.fields || [];
