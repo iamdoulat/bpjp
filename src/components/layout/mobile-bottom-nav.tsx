@@ -65,10 +65,10 @@ export function MobileBottomNav() {
               className={cn(
                 'flex flex-col items-center justify-center space-y-1 p-2 text-xs',
                 itemWidthClass,
-                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                isActive ? 'text-accent' : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <item.icon className={cn('h-5 w-5', isActive ? 'text-primary' : '')} />
+              <item.icon className={cn('h-5 w-5', isActive ? 'text-accent' : '')} />
               <span>{displayLabel}</span>
             </Link>
           );
