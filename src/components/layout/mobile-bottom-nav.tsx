@@ -8,7 +8,6 @@ import {
   Megaphone,
   History,
   UserCircle2,
-  ReceiptText,
   Users,
   CalendarCheck2,
   LogIn,
@@ -21,7 +20,6 @@ const authenticatedNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
   { href: '/my-donations', label: 'Donations', icon: History },
-  { href: '/expenses/history', label: 'Expenses', icon: ReceiptText },
   { href: '/profile', label: 'Profile', icon: UserCircle2 },
 ];
 
@@ -52,7 +50,6 @@ export function MobileBottomNav() {
           let displayLabel = item.label;
           // Shorten labels slightly for mobile if needed
           if (item.label === "My Donations") displayLabel = "Donations";
-          if (item.label === "Expenses History") displayLabel = "Expenses";
           if (item.label === "Upcoming Events") displayLabel = "Events";
           if (item.label === "Executive Committee") displayLabel = "Committee";
           
