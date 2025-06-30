@@ -635,7 +635,7 @@ const handleConfirmImport = async () => {
         <AlertDialog open={!!memberToDelete} onOpenChange={() => setMemberToDelete(null)}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <ShadCNAlertDialogTitle>Are you sure?</ShadCNAlertDialogTitle>
                     <ShadCNAlertDialogDescription>This action cannot be undone. This will permanently delete the member "{memberToDelete?.name}".</ShadCNAlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
