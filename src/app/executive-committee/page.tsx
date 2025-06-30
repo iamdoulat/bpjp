@@ -149,7 +149,7 @@ export default function ExecutiveCommitteePage() {
         <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle>কার্যকরী কমিটি সদস্য</CardTitle>
-                <CardDescription>List of members for the Core Executive Committee.</CardDescription>
+                <CardDescription>ভূজপুর প্রবাসী যুব কল্যাণ পরিষদের ২০২৫-২৭ সেশনে কার্যকরী কমিটি</CardDescription>
             </CardHeader>
             <CardContent>
                 {renderMemberTable(karjokoriMembers)}
