@@ -170,7 +170,7 @@ export function AppShell({ children }: AppShellProps) {
             v1.0
           </footer>
         </SidebarInset>
-        {user && <MobileBottomNav />}
+        <MobileBottomNav />
       </div>
     </SidebarProvider>
   );
