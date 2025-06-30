@@ -16,16 +16,16 @@ export default function ManageMembersPage() {
           <div className="flex items-center gap-3">
             <Users className="h-8 w-8 text-green-600" />
             <div>
-              <h1 className="text-2xl font-headline font-semibold">Manage Members</h1>
+              <h1 className="text-2xl font-headline font-semibold">Manage Executive Committee</h1>
               <p className="text-muted-foreground text-sm">
-                View, edit, and manage member accounts and profiles.
+                View, edit, and manage executive committee member profiles.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Add Member
+              Add Committee Member
             </Button>
           </div>
         </div>
@@ -34,7 +34,7 @@ export default function ManageMembersPage() {
           <Users className="h-4 w-4" />
           <ShadCNAlertTitle>Under Construction</ShadCNAlertTitle>
           <AlertDescription>
-            This page is for managing members. The functionality to display and manage members will be implemented here.
+            This page is for managing the executive committee. The functionality to display and manage members will be implemented here.
           </AlertDescription>
         </Alert>
         
