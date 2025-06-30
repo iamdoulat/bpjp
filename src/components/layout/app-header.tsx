@@ -6,7 +6,6 @@ import Image from 'next/image';
 import {
   Moon,
   Sun,
-  Bell,
   LogIn,
   LogOut,
   UserPlus,
@@ -89,20 +88,11 @@ export function AppHeader() {
           {loading && (
             <>
               <Skeleton className="h-9 w-9 rounded-full" />
-              <Skeleton className="h-9 w-9 rounded-full" />
             </>
           )}
 
           {!loading && user && (
             <>
-              <Button variant="ghost" size="icon" aria-label="Notifications" className="h-9 w-9 relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent"></span>
-                </span>
-              </Button>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
