@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, AlertCircle, Users, PlusCircle, Trash2, Edit2, MoreHorizontal } from "lucide-react";
+import { Loader2, Save, AlertCircle, Users, PlusCircle, Trash2, Edit2, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   getExecutiveCommitteeData,
   saveExecutiveCommitteeData,
@@ -78,6 +78,7 @@ const memberFormSchema = z.object({
 });
 type MemberFormValues = z.infer<typeof memberFormSchema>;
 
+const MEMBERS_PER_PAGE = 20;
 
 const MemberTable = ({
   members,
@@ -96,6 +97,14 @@ const MemberTable = ({
   isProcessingAction: boolean;
   committeeName: string;
 }) => {
+  const [currentPage, setCurrentPage] = React.useState(1);
+
+  const totalPages = Math.ceil(members.length / MEMBERS_PER_PAGE);
+  const paginatedMembers = members.slice(
+    (currentPage - 1) * MEMBERS_PER_PAGE,
+    currentPage * MEMBERS_PER_PAGE
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -125,38 +134,65 @@ const MemberTable = ({
   }
 
   return (
-    <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Designation</TableHead>
-            <TableHead>Cell Number</TableHead>
-            <TableHead className="text-right w-[100px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {members.map((member) => (
-            <TableRow key={member.id}>
-              <TableCell className="font-medium">{member.name}</TableCell>
-              <TableCell>{member.designation}</TableCell>
-              <TableCell className="text-muted-foreground">{member.cellNumber || 'N/A'}</TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isProcessingAction}><MoreHorizontal className="h-4 w-4"/></Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(member)} disabled={isProcessingAction}><Edit2 className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
-                    <DropdownMenuSeparator/>
-                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(member)} disabled={isProcessingAction}><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+    <div>
+        <div className="border rounded-md">
+        <Table>
+            <TableHeader>
+            <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Designation</TableHead>
+                <TableHead>Cell Number</TableHead>
+                <TableHead className="text-right w-[100px]">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+            {paginatedMembers.map((member) => (
+                <TableRow key={member.id}>
+                <TableCell className="font-medium">{member.name}</TableCell>
+                <TableCell>{member.designation}</TableCell>
+                <TableCell className="text-muted-foreground">{member.cellNumber || 'N/A'}</TableCell>
+                <TableCell className="text-right">
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isProcessingAction}><MoreHorizontal className="h-4 w-4"/></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(member)} disabled={isProcessingAction}><Edit2 className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
+                        <DropdownMenuSeparator/>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(member)} disabled={isProcessingAction}><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </TableCell>
+                </TableRow>
+            ))}
+            </TableBody>
+        </Table>
+        </div>
+        {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4">
+              <p className="text-xs text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-3 w-3 mr-1" /> Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next <ChevronRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
+            </div>
+        )}
     </div>
   );
 };
@@ -332,7 +368,7 @@ export default function ManageMembersPage() {
         {/* কার্যনির্বাহী কমিটি Members List */}
         <Card className="shadow-lg max-w-4xl mx-auto">
             <CardHeader>
-                <CardTitle>কার্যনির্বাহী কমিটি সদস্য</CardTitle>
+                <CardTitle>কার্যনির্বাহী কমিটি</CardTitle>
                 <ShadCNCardDescription>List of members for the Executive Working Committee.</ShadCNCardDescription>
             </CardHeader>
             <CardContent>
