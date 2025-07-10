@@ -2,67 +2,61 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
+
     // Helper function to check if a user is an admin by reading their Firestore profile
     function isAdmin() {
-      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+      // Note: Firestore rules must allow this get() operation.
+      // The user must be authenticated.
+      return request.auth != null && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Default deny all reads and writes
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-
-    // Allow read access on profile images for all users
-    match /profile-images/{userId}/{fileName} {
+    // Campaign Images: Publicly readable, admin write.
+    match /campaign_images/{allPaths=**} {
       allow read: if true;
-      // Allow write only if the user is updating their own profile picture
+      allow write: if isAdmin();
+    }
+
+    // Event Attachments: Publicly readable, admin write.
+    match /event_attachments/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Notice Images: Publicly readable, admin write.
+    match /notice_images/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Expense Attachments: Only readable by the admin who created them or any admin.
+    // This is a stricter rule example. For simplicity, we can make it admin-only read/write.
+    match /expense_attachments/{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Election Candidate Images: Publicly readable, admin write.
+    match /election_candidates/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Profile Images: Users can read all profile images (for avatars).
+    // Users can only write to their own profile image path.
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
-
-    // Allow read access on campaign images for all users
-    match /campaign_images/{fileName} {
-      allow read: if true;
-      // Allow write only for authenticated admins
-      allow write: if request.auth != null && isAdmin();
-    }
     
-    // Allow read access on organization setting images for all users
-    match /organization/{contentId}/{fileName} {
-      allow read: if true;
-      allow write: if request.auth != null && isAdmin();
-    }
-    
-    // Advisory Board images
-    match /advisory_board_images/{fileName} {
+    // Organization settings images (president, secretary, cover)
+    match /organization/{allPaths=**} {
         allow read: if true;
-        allow write: if request.auth != null && isAdmin();
-    }
-    
-    // Expense attachments
-    match /expense_attachments/{fileName} {
-      // Allow read only for the user who created it or an admin
-      // This requires storing the createdBy UID on the expense document, which is not done yet.
-      // For now, let's restrict read/write to admins for simplicity and security.
-      allow read, write: if request.auth != null && isAdmin();
-    }
-    
-    // Event attachments
-     match /event_attachments/{fileName} {
-      allow read: if true; // Publicly readable
-      allow write: if request.auth != null && isAdmin(); // Admin only write
-    }
-    
-    // Election candidate images
-    match /election_candidates/{position}/{fileName} {
-        allow read: if true;
-        allow write: if request.auth != null && isAdmin();
+        allow write: if isAdmin();
     }
 
-    // Notice images
-    match /notice_images/{fileName} {
-      allow read: if true; // Publicly readable
-      allow write: if request.auth != null && isAdmin(); // Admin only write
+    // Advisory Board Images
+     match /advisory_board_images/{allPaths=**} {
+        allow read: if true;
+        allow write: if isAdmin();
     }
   }
 }

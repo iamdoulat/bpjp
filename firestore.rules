@@ -11,15 +11,16 @@ service cloud.firestore {
     // User Profiles
     match /userProfiles/{userId} {
       // Authenticated users can read any profile (e.g., for Donors List).
-      allow read: if request.auth != null;
-      // Authenticated users can list profiles (e.g., for Donors List).
-      allow list: if request.auth != null;
+      // Also allow internal service requests (like from Storage Rules) to read profiles.
+      allow read: if request.auth != null || request.auth.token.firebase.sign_in_provider == 'custom';
       // User can create their own profile.
       allow create: if request.auth.uid == userId;
       // User can update their own profile, or an admin can update any profile.
       allow update: if request.auth.uid == userId || isAdmin(request.auth.uid);
       // Only admin can delete profiles.
       allow delete: if isAdmin(request.auth.uid);
+      // Allow listing profiles for authenticated users.
+      allow list: if request.auth != null;
     }
 
     // Campaigns
@@ -41,12 +42,12 @@ service cloud.firestore {
       }
     }
     
-    // Rules for notices collection
+     // Rules for notices collection
     match /notices/{noticeId} {
-      // Any authenticated user can read notices
-      allow read: if request.auth != null;
-      // Only admins can create, update, or delete notices
-      allow write: if request.auth != null && isAdmin(request.auth.uid);
+        // Any authenticated user can read notices
+        allow read: if request.auth != null;
+        // Only admins can create, update, or delete notices
+        allow write: if isAdmin(request.auth.uid);
     }
 
     // Events
@@ -86,16 +87,16 @@ service cloud.firestore {
     }
 
     // Site Content (Mission, Organization Settings etc.)
-    match /siteContent/{contentId} {
+    match /siteContent/{contentId=**} {
       allow read: if true; // Publicly readable (e.g., for 'Our Mission', 'About Us' pages)
-      allow list: if true;
-      allow create, update, delete: if request.auth != null && isAdmin(request.auth.uid); // Admin only CUD
+      allow write: if request.auth != null && isAdmin(request.auth.uid); // Admin only CUD
     }
 
-    match /siteContent/organizationDetails/advisoryBoardMembers/{memberId} {
-      allow read, list: if true; // Publicly readable
-      allow create, update, delete: if request.auth != null && isAdmin(request.auth.uid); // Admin only CUD
-    }
+    // This rule is covered by the one above, but is kept for clarity if needed.
+    // match /siteContent/organizationDetails/advisoryBoardMembers/{memberId} {
+    //   allow read, list: if true; // Publicly readable
+    //   allow create, update, delete: if request.auth != null && isAdmin(request.auth.uid); // Admin only CUD
+    // }
 
     // Election Candidates
     match /electionCandidates/{candidateId} {
@@ -121,19 +122,17 @@ service cloud.firestore {
     
     // Election Control Settings
     match /electionControl/{docId} {
-      allow read: if true; // Publicly readable to check if if voting is open/results published.
+      allow read: if true; // Publicly readable to check if voting is open/results published.
       // Admin only write access.
       allow write: if request.auth != null && isAdmin(request.auth.uid);
     }
     
     // Rules for all documents and subcollections within 'executiveCommittee'
     match /executiveCommittee/{document=**} {
-      
       // Allow anyone to read the data (for public pages)
       allow read: if true;
-
       // Only allow authenticated admins to create, update, or delete
-      allow write: if isAdmin(request.auth.uid);
+      allow write: if request.auth != null && isAdmin(request.auth.uid);
     }
 
 
