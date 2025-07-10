@@ -1,19 +1,22 @@
 // src/services/noticeService.ts
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import {
   collection,
   addDoc,
   getDocs,
   doc,
+  getDoc,
   updateDoc,
   deleteDoc,
   Timestamp,
   serverTimestamp,
   query,
   orderBy,
+  where,
   type DocumentData,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 const NOTICES_COLLECTION = 'notices';
 
@@ -23,6 +26,8 @@ export interface NoticeData {
   content: string;
   isActive: boolean;
   link?: string | null;
+  imageUrl?: string | null;
+  imagePath?: string | null;
   createdAt: Timestamp;
   lastUpdated: Timestamp;
 }
@@ -32,6 +37,7 @@ export interface NewNoticeInput {
   content: string;
   isActive: boolean;
   link?: string;
+  imageFile?: File | null;
 }
 
 export interface UpdateNoticeInput {
@@ -39,13 +45,53 @@ export interface UpdateNoticeInput {
   content?: string;
   isActive?: boolean;
   link?: string;
+  imageFile?: File | null; // For new/replacement image
+  removeCurrentImage?: boolean; // To explicitly remove image
+}
+
+async function uploadNoticeImage(file: File, noticeId?: string): Promise<{ imageUrl: string, imagePath: string }> {
+  const timestamp = new Date().getTime();
+  const uniqueFileName = `notice_${noticeId || timestamp}_${file.name.replace(/\s+/g, '_')}`;
+  const storagePath = `notice_images/${uniqueFileName}`;
+  const storageRef = ref(storage, storagePath);
+  
+  try {
+    const snapshot = await uploadBytes(storageRef, file);
+    return { imageUrl: await getDownloadURL(snapshot.ref), imagePath: storagePath };
+  } catch (error: any) {
+    console.error("[noticeService.uploadNoticeImage] Error:", error);
+    throw new Error(`Failed to upload notice image: ${error.message}`);
+  }
+}
+
+async function deleteNoticeImage(imagePath?: string | null) {
+  if (!imagePath) return;
+  try {
+    const imageRef = ref(storage, imagePath);
+    await deleteObject(imageRef);
+  } catch (error: any) {
+    if (error.code === 'storage/object-not-found') {
+      console.warn(`[noticeService.deleteNoticeImage] Image not found: ${imagePath}`);
+    } else {
+      console.error(`[noticeService.deleteNoticeImage] Error deleting image ${imagePath}:`, error);
+    }
+  }
 }
 
 export async function addNotice(data: NewNoticeInput): Promise<string> {
   try {
+    let imageDetails: { imageUrl: string, imagePath: string } | undefined;
+    if (data.imageFile) {
+      imageDetails = await uploadNoticeImage(data.imageFile);
+    }
+
     const noticeData = {
-      ...data,
+      title: data.title,
+      content: data.content,
+      isActive: data.isActive,
       link: data.link || null,
+      imageUrl: imageDetails?.imageUrl || null,
+      imagePath: imageDetails?.imagePath || null,
       createdAt: serverTimestamp() as Timestamp,
       lastUpdated: serverTimestamp() as Timestamp,
     };
@@ -63,9 +109,16 @@ export async function addNotice(data: NewNoticeInput): Promise<string> {
   }
 }
 
-export async function getNotices(): Promise<NoticeData[]> {
+export async function getNotices(onlyActive: boolean = false): Promise<NoticeData[]> {
   try {
-    const q = query(collection(db, NOTICES_COLLECTION), orderBy("lastUpdated", "desc"));
+    let q;
+    const noticesCollectionRef = collection(db, NOTICES_COLLECTION);
+    if (onlyActive) {
+      q = query(noticesCollectionRef, where("isActive", "==", true), orderBy("lastUpdated", "desc"));
+    } else {
+      q = query(noticesCollectionRef, orderBy("lastUpdated", "desc"));
+    }
+    
     const querySnapshot = await getDocs(q);
     const notices: NoticeData[] = [];
     querySnapshot.forEach((docSnap: QueryDocumentSnapshot<DocumentData>) => {
@@ -76,6 +129,8 @@ export async function getNotices(): Promise<NoticeData[]> {
         content: data.content,
         isActive: data.isActive,
         link: data.link || null,
+        imageUrl: data.imageUrl || null,
+        imagePath: data.imagePath || null,
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
       });
@@ -93,14 +148,34 @@ export async function getNotices(): Promise<NoticeData[]> {
   }
 }
 
+
 export async function updateNotice(noticeId: string, updates: UpdateNoticeInput): Promise<void> {
   try {
     const noticeDocRef = doc(db, NOTICES_COLLECTION, noticeId);
-    const dataToUpdate = {
-      ...updates,
-      link: updates.link || null,
+    const dataToUpdate: Partial<NoticeData> = {
       lastUpdated: serverTimestamp() as Timestamp,
     };
+
+    // Add only the fields that are being updated
+    if (updates.title !== undefined) dataToUpdate.title = updates.title;
+    if (updates.content !== undefined) dataToUpdate.content = updates.content;
+    if (updates.isActive !== undefined) dataToUpdate.isActive = updates.isActive;
+    dataToUpdate.link = updates.link || null;
+    
+    const currentNoticeSnap = await getDoc(noticeDocRef);
+    const currentNoticeData = currentNoticeSnap.data() as NoticeData | undefined;
+
+    if (updates.removeCurrentImage) {
+      await deleteNoticeImage(currentNoticeData?.imagePath);
+      dataToUpdate.imageUrl = null;
+      dataToUpdate.imagePath = null;
+    } else if (updates.imageFile) {
+      await deleteNoticeImage(currentNoticeData?.imagePath);
+      const imageDetails = await uploadNoticeImage(updates.imageFile, noticeId);
+      dataToUpdate.imageUrl = imageDetails.imageUrl;
+      dataToUpdate.imagePath = imageDetails.imagePath;
+    }
+
     await updateDoc(noticeDocRef, dataToUpdate);
   } catch (error) {
     console.error(`Error updating notice ${noticeId}:`, error);
@@ -117,6 +192,10 @@ export async function updateNotice(noticeId: string, updates: UpdateNoticeInput)
 export async function deleteNotice(noticeId: string): Promise<void> {
   try {
     const noticeDocRef = doc(db, NOTICES_COLLECTION, noticeId);
+    const noticeSnap = await getDoc(noticeDocRef);
+    if (noticeSnap.exists()) {
+      await deleteNoticeImage(noticeSnap.data().imagePath);
+    }
     await deleteDoc(noticeDocRef);
   } catch (error) {
     console.error(`Error deleting notice ${noticeId}:`, error);

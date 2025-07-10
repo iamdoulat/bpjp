@@ -31,7 +31,7 @@ const adminOnlyPaths = [
   '/admin/events/create',
   '/admin/events', // covers /edit, /view, /registrations subpaths
   '/admin/mission/edit',
-  '/admin/notice', // Added notice path
+  '/admin/notice',
   '/admin/settings',
   '/admin/election-vote', // Covers subpaths like /results, /candidate-management
 ];
@@ -40,6 +40,7 @@ const publicPaths = [
   '/login',
   '/signup',
   '/campaigns', // Main listing page
+  '/notices', // Public notices page
   '/our-mission',
   '/about-us',
   '/upcoming-events', // Main listing page
