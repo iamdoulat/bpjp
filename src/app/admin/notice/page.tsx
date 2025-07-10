@@ -41,7 +41,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileText, PlusCircle, Edit, Trash2, MoreHorizontal, AlertCircle, Save } from "lucide-react";
+import { Loader2, FileText as NoticeIcon, PlusCircle, Edit, Trash2, MoreHorizontal, AlertCircle, Save } from "lucide-react";
 import {
   addNotice,
   getNotices,
