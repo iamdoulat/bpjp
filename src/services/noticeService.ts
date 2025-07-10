@@ -222,15 +222,19 @@ export async function getActivePopupNotice(): Promise<NoticeData | null> {
     const q = query(
       collection(db, NOTICES_COLLECTION),
       where("isActive", "==", true),
-      where("isPopup", "==", true),
-      orderBy("lastUpdated", "desc"),
-      limit(1)
+      where("isPopup", "==", true)
+      // Removed orderBy to avoid needing a composite index. We will sort client-side.
     );
     const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      const docSnap = querySnapshot.docs[0];
+    
+    if (querySnapshot.empty) {
+      return null; // No active popup notice found
+    }
+
+    const notices: NoticeData[] = [];
+    querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      return {
+       notices.push({
         id: docSnap.id,
         title: data.title,
         content: data.content,
@@ -241,9 +245,14 @@ export async function getActivePopupNotice(): Promise<NoticeData | null> {
         imagePath: data.imagePath || null,
         createdAt: data.createdAt as Timestamp,
         lastUpdated: data.lastUpdated as Timestamp,
-      };
-    }
-    return null; // No active popup notice found
+      });
+    });
+
+    // Sort by lastUpdated descending to get the most recent one
+    notices.sort((a, b) => b.lastUpdated.toMillis() - a.lastUpdated.toMillis());
+
+    return notices[0]; // Return the most recent active popup notice
+    
   } catch (error) {
     console.error("Error fetching active popup notice:", error);
     // Don't throw error to prevent crashing the app, just return null
