@@ -43,7 +43,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileText as NoticeIcon, PlusCircle, Edit, Trash2, MoreHorizontal, AlertCircle, Save, X } from "lucide-react";
+import { Loader2, FileText as NoticeIcon, PlusCircle, Edit, Trash2, MoreHorizontal, AlertCircle, Save, X, Megaphone } from "lucide-react";
 import {
   addNotice,
   getNotices,
@@ -63,6 +63,7 @@ const noticeFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(150),
   content: z.string().min(10, "Content must be at least 10 characters.").max(5000),
   isActive: z.boolean().default(false),
+  isPopup: z.boolean().default(false), // New field
   link: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   imageFile: z.instanceof(File).optional().nullable(),
   removeCurrentImage: z.boolean().default(false),
@@ -102,6 +103,7 @@ export default function ManageNoticePage() {
       title: "",
       content: "",
       isActive: false,
+      isPopup: false,
       link: "",
       imageFile: null,
       removeCurrentImage: false,
@@ -143,6 +145,7 @@ export default function ManageNoticePage() {
         title: notice.title,
         content: notice.content,
         isActive: notice.isActive,
+        isPopup: notice.isPopup || false,
         link: notice.link || "",
         imageFile: null,
         removeCurrentImage: false,
@@ -155,6 +158,7 @@ export default function ManageNoticePage() {
         title: "",
         content: "",
         isActive: true, // Default to active for new notices
+        isPopup: false,
         link: "",
         imageFile: null,
         removeCurrentImage: false,
@@ -277,9 +281,16 @@ export default function ManageNoticePage() {
                   {notices.map((notice) => (
                     <TableRow key={notice.id}>
                       <TableCell>
-                        <Badge variant={notice.isActive ? "default" : "secondary"}>
-                          {notice.isActive ? "Active" : "Inactive"}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={notice.isActive ? "default" : "secondary"}>
+                            {notice.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                          {notice.isPopup && (
+                            <Badge variant="destructive">
+                              Popup
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="font-medium">{notice.title}</TableCell>
                       <TableCell>{formatDisplayDateTime(notice.lastUpdated)}</TableCell>
@@ -333,15 +344,26 @@ export default function ManageNoticePage() {
                   <FormMessage>{form.formState.errors.imageFile?.message as React.ReactNode}</FormMessage>
                 </FormItem>
 
-                <FormField control={form.control} name="isActive" render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Active Status</FormLabel>
-                       <CardDescription>If active, this notice may be displayed publicly.</CardDescription>
-                    </div>
-                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting}/></FormControl>
-                  </FormItem>
-                )} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="isActive" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Active Status</FormLabel>
+                         <CardDescription className="text-xs">If active, this notice may be displayed publicly.</CardDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting}/></FormControl>
+                    </FormItem>
+                  )} />
+                   <FormField control={form.control} name="isPopup" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Show as Popup</FormLabel>
+                         <CardDescription className="text-xs">If active, shows a popup to all users once.</CardDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting}/></FormControl>
+                    </FormItem>
+                  )} />
+                </div>
                  <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button></DialogClose>
                     <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>

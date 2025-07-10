@@ -13,6 +13,7 @@ import {
   query,
   orderBy,
   where,
+  limit, // Import limit
   type DocumentData,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
@@ -25,6 +26,7 @@ export interface NoticeData {
   title: string;
   content: string;
   isActive: boolean;
+  isPopup: boolean; // New field for popup functionality
   link?: string | null;
   imageUrl?: string | null;
   imagePath?: string | null;
@@ -36,6 +38,7 @@ export interface NewNoticeInput {
   title: string;
   content: string;
   isActive: boolean;
+  isPopup: boolean; // New field
   link?: string;
   imageFile?: File | null;
 }
@@ -44,6 +47,7 @@ export interface UpdateNoticeInput {
   title?: string;
   content?: string;
   isActive?: boolean;
+  isPopup?: boolean; // New field
   link?: string;
   imageFile?: File | null; // For new/replacement image
   removeCurrentImage?: boolean; // To explicitly remove image
@@ -89,6 +93,7 @@ export async function addNotice(data: NewNoticeInput): Promise<string> {
       title: data.title,
       content: data.content,
       isActive: data.isActive,
+      isPopup: data.isPopup, // Save the new field
       link: data.link || null,
       imageUrl: imageDetails?.imageUrl || null,
       imagePath: imageDetails?.imagePath || null,
@@ -128,6 +133,7 @@ export async function getNotices(onlyActive: boolean = false): Promise<NoticeDat
         title: data.title,
         content: data.content,
         isActive: data.isActive,
+        isPopup: data.isPopup || false, // Default to false if not present
         link: data.link || null,
         imageUrl: data.imageUrl || null,
         imagePath: data.imagePath || null,
@@ -160,6 +166,7 @@ export async function updateNotice(noticeId: string, updates: UpdateNoticeInput)
     if (updates.title !== undefined) dataToUpdate.title = updates.title;
     if (updates.content !== undefined) dataToUpdate.content = updates.content;
     if (updates.isActive !== undefined) dataToUpdate.isActive = updates.isActive;
+    if (updates.isPopup !== undefined) dataToUpdate.isPopup = updates.isPopup; // Update isPopup field
     dataToUpdate.link = updates.link || null;
     
     const currentNoticeSnap = await getDoc(noticeDocRef);
@@ -206,5 +213,40 @@ export async function deleteNotice(noticeId: string): Promise<void> {
       throw new Error(`Failed to delete notice: ${error.message}`);
     }
     throw new Error('An unknown error occurred while deleting the notice.');
+  }
+}
+
+// New function to get the single active popup notice
+export async function getActivePopupNotice(): Promise<NoticeData | null> {
+  try {
+    const q = query(
+      collection(db, NOTICES_COLLECTION),
+      where("isActive", "==", true),
+      where("isPopup", "==", true),
+      orderBy("lastUpdated", "desc"),
+      limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const docSnap = querySnapshot.docs[0];
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        title: data.title,
+        content: data.content,
+        isActive: data.isActive,
+        isPopup: data.isPopup,
+        link: data.link || null,
+        imageUrl: data.imageUrl || null,
+        imagePath: data.imagePath || null,
+        createdAt: data.createdAt as Timestamp,
+        lastUpdated: data.lastUpdated as Timestamp,
+      };
+    }
+    return null; // No active popup notice found
+  } catch (error) {
+    console.error("Error fetching active popup notice:", error);
+    // Don't throw error to prevent crashing the app, just return null
+    return null;
   }
 }

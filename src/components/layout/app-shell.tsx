@@ -7,14 +7,17 @@ import Link from 'next/link';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarNavItems } from './sidebar-nav-items';
 import { AppHeader } from './app-header';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, Megaphone, Link as LinkIcon } from 'lucide-react';
 import { MobileBottomNav } from './mobile-bottom-nav';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useRef } from 'react'; // Added useRef
+import { useEffect, useRef, useState } from 'react'; // Added useRef, useState
 import { Loader2 } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
+import { getActivePopupNotice, type NoticeData } from '@/services/noticeService';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface AppShellProps {
   children: ReactNode;
@@ -62,7 +65,10 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const { toast } = useToast();
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
-  const mainScrollRef = useRef<HTMLDivElement>(null); // Ref for the main scrollable area
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+
+  const [popupNotice, setPopupNotice] = useState<NoticeData | null>(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   useEffect(() => {
     if (loading) {
@@ -87,6 +93,29 @@ export function AppShell({ children }: AppShellProps) {
       }
     }
   }, [user, loading, isAdmin, router, pathname, toast]);
+
+  // Effect to fetch and display popup notice
+  useEffect(() => {
+    const fetchAndShowPopup = async () => {
+      const notice = await getActivePopupNotice();
+      if (notice) {
+        const seenNoticeId = sessionStorage.getItem('seenPopupNoticeId');
+        if (seenNoticeId !== notice.id) {
+          setPopupNotice(notice);
+          setIsPopupOpen(true);
+        }
+      }
+    };
+    fetchAndShowPopup();
+  }, []);
+
+  const handleClosePopup = () => {
+    if (popupNotice) {
+      sessionStorage.setItem('seenPopupNoticeId', popupNotice.id);
+    }
+    setIsPopupOpen(false);
+  };
+
 
   // Scroll to bottom on component mount (after page load/refresh) or when pathname changes
   useEffect(() => {
@@ -174,6 +203,34 @@ export function AppShell({ children }: AppShellProps) {
         </SidebarInset>
         <MobileBottomNav />
       </div>
+       {popupNotice && (
+        <Dialog open={isPopupOpen} onOpenChange={setIsPopupOpen}>
+          <DialogContent className="sm:max-w-md" onEscapeKeyDown={handleClosePopup}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5 text-primary" />
+                {popupNotice.title}
+              </DialogTitle>
+              {popupNotice.imageUrl && (
+                <div className="relative aspect-video w-full rounded-md overflow-hidden mt-2">
+                  <Image src={popupNotice.imageUrl} alt={popupNotice.title} layout="fill" objectFit="cover" />
+                </div>
+              )}
+            </DialogHeader>
+            <DialogDescription className="py-4 whitespace-pre-wrap">{popupNotice.content}</DialogDescription>
+            <DialogFooter className="sm:justify-between gap-2">
+              {popupNotice.link && (
+                <Button variant="outline" asChild>
+                  <a href={popupNotice.link} target="_blank" rel="noopener noreferrer">
+                    <LinkIcon className="mr-2 h-4 w-4" /> Learn More
+                  </a>
+                </Button>
+              )}
+              <Button onClick={handleClosePopup}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </SidebarProvider>
   );
 }
