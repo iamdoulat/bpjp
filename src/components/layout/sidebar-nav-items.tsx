@@ -24,7 +24,6 @@ interface NavItem {
 const generalNavLinks: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone },
-  { href: '/notices', label: 'Notices', icon: NoticeIcon },
   { href: '/my-donations', label: 'My Donations', icon: HistoryIcon },
   { href: '/donors-list', label: 'Donors List', icon: Users },
   { href: '/expenses/history', label: 'Expenses History', icon: ReceiptText },
@@ -52,7 +51,6 @@ const adminNavLinks: NavItem[] = [
 
 const publicPagesForUnauthenticated: NavItem[] = [
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone },
-  { href: '/notices', label: 'Notices', icon: NoticeIcon },
   { href: '/our-mission', label: 'Our Mission', icon: Target },
   { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2 },
   { href: '/about-us', label: 'About Us', icon: Info },

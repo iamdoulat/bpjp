@@ -12,7 +12,7 @@ import {
   CalendarCheck2,
   LogIn,
   Info,
-  FileText as NoticeIcon, // Added NoticeIcon
+  FileText as NoticeIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,14 +20,12 @@ import { useAuth } from '@/contexts/AuthContext';
 const authenticatedNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
-  { href: '/notices', label: 'Notices', icon: NoticeIcon },
   { href: '/my-donations', label: 'Donations', icon: History },
   { href: '/profile', label: 'Profile', icon: UserCircle2 },
 ];
 
 const unauthenticatedNavItems = [
   { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
-  { href: '/notices', label: 'Notices', icon: NoticeIcon },
   { href: '/upcoming-events', label: 'Events', icon: CalendarCheck2 },
   { href: '/about-us', label: 'About', icon: Info },
   { href: '/login', label: 'Login', icon: LogIn },
