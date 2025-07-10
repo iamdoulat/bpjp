@@ -1,3 +1,4 @@
+
 // src/components/layout/sidebar-nav-items.tsx
 "use client";
 
@@ -28,6 +29,7 @@ const generalNavLinks: NavItem[] = [
   { href: '/donors-list', label: 'Donors List', icon: Users },
   { href: '/expenses/history', label: 'Expenses History', icon: ReceiptText },
   { href: '/upcoming-events', label: 'Upcoming Events', icon: CalendarCheck2 },
+  { href: '/notices', label: 'Notices', icon: NoticeIcon },
   { href: '/election-vote', label: 'Election & Vote', icon: Vote },
   { href: '/our-mission', label: 'Our Mission', icon: Target },
   { href: '/about-us', label: 'About Us', icon: Info },
