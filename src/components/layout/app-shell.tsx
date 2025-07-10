@@ -31,6 +31,7 @@ const adminOnlyPaths = [
   '/admin/events/create',
   '/admin/events', // covers /edit, /view, /registrations subpaths
   '/admin/mission/edit',
+  '/admin/notice', // Added notice path
   '/admin/settings',
   '/admin/election-vote', // Covers subpaths like /results, /candidate-management
 ];
