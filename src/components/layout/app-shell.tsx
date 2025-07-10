@@ -1,3 +1,4 @@
+
 // src/components/layout/app-shell.tsx
 "use client";
 
@@ -94,8 +95,13 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [user, loading, isAdmin, router, pathname, toast]);
 
-  // Effect to fetch and display popup notice
+  // Effect to fetch and display popup notice upon user login
   useEffect(() => {
+    // Don't run when auth is loading or if there's no user
+    if (loading || !user) {
+      return;
+    }
+
     const fetchAndShowPopup = async () => {
       const notice = await getActivePopupNotice();
       if (notice) {
@@ -106,8 +112,12 @@ export function AppShell({ children }: AppShellProps) {
         }
       }
     };
+    
     fetchAndShowPopup();
-  }, []);
+  // This effect now specifically depends on the user object.
+  // It will run when the user object changes from null (logged out) to a user object (logged in).
+  }, [user, loading]);
+
 
   const handleClosePopup = () => {
     if (popupNotice) {
