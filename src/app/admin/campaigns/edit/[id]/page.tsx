@@ -201,7 +201,7 @@ export default function EditCampaignPage() {
       <AppShell>
         <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
           <div>
-            <Card className="shadow-lg max-w-3xl mx-auto">
+            <Card className="shadow-lg">
               <CardHeader>
                 <Skeleton className="h-8 w-3/5" />
                 <Skeleton className="h-4 w-4/5" />
@@ -251,7 +251,7 @@ export default function EditCampaignPage() {
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto pb-20 md:pb-6">
         <div> 
-          <Card className="shadow-lg max-w-3xl mx-auto">
+          <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-2xl font-headline">Edit Campaign: {campaign.campaignTitle}</CardTitle>
               <ShadCNCardDescription>

@@ -171,7 +171,7 @@ export default function EditExpensePage() {
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 space-y-6">
-          <Card className="shadow-lg max-w-2xl mx-auto">
+          <Card className="shadow-lg">
             <CardHeader><Skeleton className="h-8 w-3/5" /><Skeleton className="h-4 w-4/5 mt-1" /></CardHeader>
             <CardContent className="space-y-8 pt-6">
               {[...Array(4)].map((_, i) => (
@@ -231,7 +231,7 @@ export default function EditExpensePage() {
           </div>
         </div>
 
-        <Card className="shadow-lg max-w-2xl mx-auto">
+        <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Update Expense Details</CardTitle>
           </CardHeader>
@@ -302,4 +302,3 @@ export default function EditExpensePage() {
     </AppShell>
   );
 }
-

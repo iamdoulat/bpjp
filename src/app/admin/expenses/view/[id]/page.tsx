@@ -70,7 +70,7 @@ export default function ViewExpensePage() {
           <Button variant="outline" size="sm" className="mb-4" disabled>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
           </Button>
-          <Card className="shadow-lg max-w-2xl mx-auto">
+          <Card className="shadow-lg">
             <CardHeader>
               <Skeleton className="h-8 w-3/4 mb-2" />
             </CardHeader>
@@ -121,7 +121,7 @@ export default function ViewExpensePage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Expenses History
         </Button>
-        <Card className="shadow-lg max-w-2xl mx-auto">
+        <Card className="shadow-lg">
           <CardHeader className="bg-muted/30 p-4 md:p-6 border-b">
             <CardTitle className="text-2xl font-headline">{expense.name}</CardTitle>
             <CardDescription>Detailed view of the recorded expense.</CardDescription>
@@ -197,4 +197,3 @@ export default function ViewExpensePage() {
     </AppShell>
   )
 }
-

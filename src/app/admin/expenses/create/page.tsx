@@ -125,7 +125,7 @@ export default function CreateExpensePage() {
           </div>
         </div>
 
-        <Card className="shadow-lg max-w-2xl mx-auto">
+        <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Expense Details</CardTitle>
             <ShadCNCardDescription>
