@@ -155,12 +155,12 @@ export default function ManageEventsPage() {
         {loading && (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-                <div key={i} className="grid grid-cols-[minmax(250px,1fr)_150px_100px_120px_100px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md"> {/* Adjusted grid */}
-                    <Skeleton className="h-4 w-3/4" /> {/* Title */}
-                    <Skeleton className="h-4 w-full" /> {/* Date */}
-                    <Skeleton className="h-4 w-12 justify-self-center" /> {/* Participants */}
-                    <Skeleton className="h-4 w-16 justify-self-center" /> {/* Tokens */}
-                    <Skeleton className="h-6 w-8 rounded-md justify-self-end" /> {/* Actions */}
+                <div key={i} className="grid grid-cols-[minmax(250px,1fr)_150px_100px_120px_100px] items-center gap-x-4 p-3 border-b border-border last:border-b-0 bg-card rounded-md">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-12 justify-self-center" />
+                    <Skeleton className="h-4 w-16 justify-self-center" />
+                    <Skeleton className="h-6 w-8 rounded-md justify-self-end" />
                 </div>
             ))}
           </div>
@@ -207,7 +207,7 @@ export default function ManageEventsPage() {
                   <TableHead className="w-[250px] md:w-[350px]">Event Title</TableHead>
                   <TableHead>Event Date</TableHead>
                   <TableHead className="text-center w-[120px]">Participants</TableHead>
-                  <TableHead className="text-center w-[130px]">Token Distributed</TableHead> {/* New Header */}
+                  <TableHead className="text-center w-[130px]">Token Distributed</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -228,7 +228,7 @@ export default function ManageEventsPage() {
                          <span>{event.participantCount || 0}</span>
                        )}
                     </TableCell>
-                    <TableCell className="text-center"> {/* New Cell */}
+                    <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Gift className="h-3.5 w-3.5 text-muted-foreground"/> 
                         {calculateTotalTokens(event)}
