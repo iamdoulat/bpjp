@@ -256,7 +256,17 @@ export default function DonorsListPage() {
           {!loading && !error && topDonorsList.length > 0 && (
             <div className="border rounded-lg shadow-sm overflow-hidden bg-card">
               <Table>
-                <TableHeader><TableRow><TableHead className="w-[60px] text-xs">Rank</TableHead><TableHead className="min-w-[200px] text-xs">User</TableHead><TableHead className="min-w-[180px] text-xs">Email ID</TableHead><TableHead className="w-[100px] text-xs">Ward No.</TableHead><TableHead className="w-[120px] text-xs">Joined</TableHead><TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead><TableHead className="w-[150px] text-right text-xs">Total Donation</TableHead></TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[60px] text-xs">Rank</TableHead>
+                    <TableHead className="min-w-[200px] text-xs">User</TableHead>
+                    <TableHead className="min-w-[180px] text-xs">Email ID</TableHead>
+                    <TableHead className="w-[100px] text-xs">Ward No.</TableHead>
+                    <TableHead className="w-[120px] text-xs">Joined</TableHead>
+                    <TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead>
+                    <TableHead className="w-[150px] text-right text-xs">Total Donation</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {topDonorsList.map((donor) => (
                     <TableRow key={donor.userId}>
@@ -341,20 +351,12 @@ export default function DonorsListPage() {
                   <TableBody>
                     {currentAllDonorsTransactions.map((tx) => (
                       <TableRow key={tx.id}>
-                        <TableCell className="text-xs font-medium">{(startIndexAllDonors + currentAllDonorsTransactions.indexOf(tx) + 1)}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-xs font-medium">{(startIndexAllDonors + currentAllDonorsTransactions.indexOf(tx) + 1)}</TableCell><TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9"><AvatarImage src={tx.userAvatarUrl || `https://placehold.co/40x40.png?text=${getInitials(tx.userName, tx.userEmail)}`} alt={tx.userName} data-ai-hint="profile person" /><AvatarFallback>{getInitials(tx.userName, tx.userEmail)}</AvatarFallback></Avatar>
                             <div><span className="font-medium truncate block text-sm">{tx.userName}</span>{tx.userMobileNumber && <span className="text-xs text-muted-foreground block">Mobile: {tx.userMobileNumber}</span>}</div>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-xs truncate max-w-[150px]">{tx.userEmail}</TableCell>
-                        <TableCell className="text-xs">{tx.userWardNo || "N/A"}</TableCell> {/* Display Ward No. */}
-                        <TableCell className="text-xs">{formatDisplayDateTime(tx.transactionDate)}</TableCell>
-                        <TableCell className="text-xs truncate max-w-[150px]">{tx.campaignNameForTransaction}</TableCell>
-                        <TableCell className="text-right text-xs font-medium">{formatCurrency(tx.donationAmountForTransaction)}</TableCell>
-                        <TableCell className="text-center text-xs">{tx.totalCampaignsSupportedByUser}</TableCell>
-                        <TableCell className="text-right text-xs font-semibold">{formatCurrency(tx.totalDonationByUser)}</TableCell>
+                        </TableCell><TableCell className="text-xs truncate max-w-[150px]">{tx.userEmail}</TableCell><TableCell className="text-xs">{tx.userWardNo || "N/A"}</TableCell><TableCell className="text-xs">{formatDisplayDateTime(tx.transactionDate)}</TableCell><TableCell className="text-xs truncate max-w-[150px]">{tx.campaignNameForTransaction}</TableCell><TableCell className="text-right text-xs font-medium">{formatCurrency(tx.donationAmountForTransaction)}</TableCell><TableCell className="text-center text-xs">{tx.totalCampaignsSupportedByUser}</TableCell><TableCell className="text-right text-xs font-semibold">{formatCurrency(tx.totalDonationByUser)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
