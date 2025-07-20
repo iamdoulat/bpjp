@@ -45,6 +45,13 @@
     --specific-button-bg: 220 45% 35%; /* a pleasant dark blue */
     --specific-button-fg: 0 0% 100%; /* white */
     --specific-button-hover-bg: 220 45% 30%; /* a slightly darker blue for hover */
+
+    /* Stats Card Colors */
+    --stats-card-blue: 221 83% 53%;
+    --stats-card-green: 142 76% 36%;
+    --stats-card-purple: 262 74% 59%;
+    --stats-card-orange: 25 95% 53%;
+    --stats-card-red: 0 72% 51%;
   }
 
   .dark {

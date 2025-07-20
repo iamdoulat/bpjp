@@ -202,53 +202,52 @@ export default function AdminOverviewPage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"> {/* Adjusted grid for potential 5 cards */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {loading || !stats ? (
             <>
-              <StatsCardSkeleton />
-              <StatsCardSkeleton />
-              <StatsCardSkeleton />
-              <StatsCardSkeleton />
-              <StatsCardSkeleton variant="destructive" /> {/* Covers pending payments and completed */}
+              <StatsCardSkeleton color="blue" />
+              <StatsCardSkeleton color="green" />
+              <StatsCardSkeleton color="orange" />
+              <StatsCardSkeleton color="purple" />
+              <StatsCardSkeleton color="red" />
             </>
           ) : (
             <>
               <StatsCard
                 title="Total Users"
                 value={stats.totalUsers.toLocaleString()}
-                subtitle="Manage users"
-                icon={<Users className="h-5 w-5 text-green-600" />}
+                subtitle="All registered users"
+                icon={<Users className="h-6 w-6" />}
+                color="blue"
               />
               <StatsCard
                 title="Platform Net Funds"
                 value={formatCurrency(stats.netPlatformFunds)}
-                subtitle="Net funds after expenses"
-                icon={<DollarSign className="h-5 w-5 text-green-600" />}
+                subtitle="After expenses"
+                icon={<DollarSign className="h-6 w-6" />}
+                color="green"
               />
               <StatsCard
                 title="Active Campaigns"
                 value={stats.activeCampaigns.toString()}
-                subtitle="Manage campaigns"
-                icon={<ListChecks className="h-5 w-5 text-green-600" />}
+                subtitle="Currently running"
+                icon={<ListChecks className="h-6 w-6" />}
+                color="orange"
               />
               <StatsCard
                 title="Completed Campaigns"
                 value={stats.completedCampaigns.toString()}
-                subtitle="Successfully concluded campaigns"
-                icon={<CheckCircle2 className="h-5 w-5 text-green-600" />}
+                subtitle="Successfully concluded"
+                icon={<CheckCircle2 className="h-6 w-6" />}
+                color="purple"
               />
-              <Card className={cn("shadow-lg", stats.pendingPayments > 0 ? "border-destructive border-2" : "")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className={cn("text-sm font-medium font-headline", stats.pendingPayments > 0 ? "text-destructive-foreground" : "")}>Pending Payments</CardTitle>
-                  <AlertTriangle className={cn("h-5 w-5", stats.pendingPayments > 0 ? "text-destructive" : "text-muted-foreground")} />
-                </CardHeader>
-                <CardContent>
-                  <div className={cn("text-3xl font-bold font-headline", stats.pendingPayments > 0 ? "text-destructive" : "")}>{stats.pendingPayments}</div>
-                  <p className={cn("text-xs pt-1", stats.pendingPayments > 0 ? "text-destructive/80" : "text-muted-foreground")}>
-                    {stats.pendingPayments > 0 ? "Review pending payments" : "No pending payments"}
-                  </p>
-                </CardContent>
-              </Card>
+              <StatsCard
+                title="Pending Payments"
+                value={stats.pendingPayments.toString()}
+                subtitle={stats.pendingPayments > 0 ? "Review needed" : "All clear"}
+                icon={<AlertTriangle className="h-6 w-6" />}
+                color="red"
+              />
             </>
           )}
         </div>
@@ -361,17 +360,25 @@ export default function AdminOverviewPage() {
   );
 }
 
-function StatsCardSkeleton({ variant }: { variant?: "destructive" }) {
+const customColorClasses: Record<string, string> = {
+  blue: 'bg-[hsl(var(--stats-card-blue))]',
+  green: 'bg-[hsl(var(--stats-card-green))]',
+  purple: 'bg-[hsl(var(--stats-card-purple))]',
+  orange: 'bg-[hsl(var(--stats-card-orange))]',
+  red: 'bg-[hsl(var(--stats-card-red))]',
+};
+
+function StatsCardSkeleton({ color = 'blue' }: { color?: string }) {
   return (
-    <Card className={cn("shadow-lg", variant === "destructive" ? "border-destructive border-2" : "")}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-5 w-5 rounded-full" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-8 w-12 mb-1" />
-        <Skeleton className="h-3 w-28" />
-      </CardContent>
-    </Card>
+    <div className={`p-5 rounded-lg flex justify-between items-center ${customColorClasses[color]} opacity-70`}>
+      <div className="flex flex-col space-y-2">
+        <Skeleton className="h-4 w-24 bg-white/30" />
+        <Skeleton className="h-8 w-16 bg-white/30" />
+        <Skeleton className="h-3 w-28 bg-white/30" />
+      </div>
+      <div className="p-3 bg-black/20 rounded-lg">
+        <Skeleton className="h-6 w-6 bg-white/30" />
+      </div>
+    </div>
   );
 }
