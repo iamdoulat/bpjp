@@ -12,7 +12,7 @@
     *   প্ল্যাটফর্মের মোট কত টাকা জমা আছে, কয়টা সক্রিয় ক্যাম্পেইন এবং ব্যবহারকারীর ব্যক্তিগত অনুদানের পরিসংখ্যান দেখা যায়।
     *   সহজেই বিভিন্ন ফিচার অ্যাক্সেস করার জন্য দ্রুত লিঙ্ক দেয়া আছে।
 
-    ![সদস্য ড্যাশবোর্ড](https://res-console.cloudinary.com/dzepzzvh8/thumbnails/v1/image/upload/v1752994278/QlBKUC01X2Rhc2hib2FyZA==/template_primary/Y19maWxsLHdfMzAw)
+    ![সদস্য ড্যাশবোর্ড](https://res.cloudinary.com/dzepzzvh8/image/upload/w_300/v1752994278/BPJP-5_dashboard.jpg)
 
 *   **ক্যাম্পেইন ব্রাউজ:**
     *   চলমান, আসন্ন এবং সম্পন্ন হওয়া সকল ক্যাম্পেইন ব্রাউজ করার সুবিধা রয়েছে।
