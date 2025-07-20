@@ -256,15 +256,7 @@ export default function DonorsListPage() {
           {!loading && !error && topDonorsList.length > 0 && (
             <div className="border rounded-lg shadow-sm overflow-hidden bg-card">
               <Table>
-                <TableHeader><TableRow>
-                    <TableHead className="w-[60px] text-xs">Rank</TableHead>
-                    <TableHead className="min-w-[200px] text-xs">User</TableHead>
-                    <TableHead className="min-w-[180px] text-xs">Email ID</TableHead>
-                    <TableHead className="w-[100px] text-xs">Ward No.</TableHead> {/* Added Ward No. header */}
-                    <TableHead className="w-[120px] text-xs">Joined</TableHead>
-                    <TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead>
-                    <TableHead className="w-[150px] text-right text-xs">Total Donation</TableHead>
-                </TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead className="w-[60px] text-xs">Rank</TableHead><TableHead className="min-w-[200px] text-xs">User</TableHead><TableHead className="min-w-[180px] text-xs">Email ID</TableHead><TableHead className="w-[100px] text-xs">Ward No.</TableHead><TableHead className="w-[120px] text-xs">Joined</TableHead><TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead><TableHead className="w-[150px] text-right text-xs">Total Donation</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {topDonorsList.map((donor) => (
                     <TableRow key={donor.userId}>
@@ -308,17 +300,7 @@ export default function DonorsListPage() {
           {loading && (
             <div className="border rounded-lg shadow-sm overflow-hidden bg-card">
                <Table>
-                <TableHeader><TableRow>
-                    <TableHead className="w-[50px]">No</TableHead>
-                    <TableHead className="min-w-[200px]">User</TableHead>
-                    <TableHead className="min-w-[150px]">Email</TableHead>
-                    <TableHead className="w-[100px]">Ward No.</TableHead> {/* Added Ward No. skeleton header */}
-                    <TableHead className="w-[140px]">Transaction Date</TableHead>
-                    <TableHead className="min-w-[150px]">Campaign</TableHead>
-                    <TableHead className="w-[100px] text-right">Donation</TableHead>
-                    <TableHead className="w-[100px] text-center">Total Supported</TableHead>
-                    <TableHead className="w-[150px] text-right">User Total</TableHead>
-                </TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead className="w-[50px]">No</TableHead><TableHead className="min-w-[200px]">User</TableHead><TableHead className="min-w-[150px]">Email</TableHead><TableHead className="w-[100px]">Ward No.</TableHead><TableHead className="w-[140px]">Transaction Date</TableHead><TableHead className="min-w-[150px]">Campaign</TableHead><TableHead className="w-[100px] text-right">Donation</TableHead><TableHead className="w-[100px] text-center">Total Supported</TableHead><TableHead className="w-[150px] text-right">User Total</TableHead></TableRow></TableHeader>
                 <TableBody>
                     {[...Array(5)].map((_,i) => (
                         <TableRow key={i}><TableCell><Skeleton className="h-4 w-6" /></TableCell>
@@ -355,17 +337,7 @@ export default function DonorsListPage() {
             <>
               <div className="border rounded-lg shadow-sm overflow-hidden bg-card">
                 <Table>
-                  <TableHeader><TableRow>
-                      <TableHead className="w-[50px] text-xs">No</TableHead>
-                      <TableHead className="min-w-[200px] text-xs">User</TableHead>
-                      <TableHead className="min-w-[150px] text-xs">Email ID</TableHead>
-                      <TableHead className="w-[100px] text-xs">Ward No.</TableHead> {/* Added Ward No. header */}
-                      <TableHead className="w-[140px] text-xs">Transaction Date</TableHead>
-                      <TableHead className="min-w-[150px] text-xs">Campaigns Name</TableHead>
-                      <TableHead className="w-[100px] text-right text-xs">Donation</TableHead>
-                      <TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead>
-                      <TableHead className="w-[150px] text-right text-xs">Total Donation</TableHead>
-                  </TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead className="w-[50px] text-xs">No</TableHead><TableHead className="min-w-[200px] text-xs">User</TableHead><TableHead className="min-w-[150px] text-xs">Email ID</TableHead><TableHead className="w-[100px] text-xs">Ward No.</TableHead><TableHead className="w-[140px] text-xs">Transaction Date</TableHead><TableHead className="min-w-[150px] text-xs">Campaigns Name</TableHead><TableHead className="w-[100px] text-right text-xs">Donation</TableHead><TableHead className="w-[100px] text-center text-xs">Campaigns Supported</TableHead><TableHead className="w-[150px] text-right text-xs">Total Donation</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {currentAllDonorsTransactions.map((tx) => (
                       <TableRow key={tx.id}>
@@ -406,4 +378,3 @@ export default function DonorsListPage() {
     </AppShell>
   );
 }
-
