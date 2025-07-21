@@ -21,6 +21,7 @@
 /build
 
 # misc
+/src/example.firestore.rules
 .DS_Store
 *.pem
 
