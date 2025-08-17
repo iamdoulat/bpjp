@@ -86,7 +86,12 @@ export function EventsSection() {
     <section id="events" className="py-5 bg-background">
       <div className="container">
         <div className="text-center">
-          <div className="inline-block rounded-lg bg-green-600 text-white px-3 py-1 text-3xl font-bold mb-4">Upcoming Events</div>
+        <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl text-black dark:text-foreground mb-4">
+            Upcoming{' '}
+            <span className="inline-block rounded-lg bg-green-600 text-white px-3 py-1">
+              Events
+            </span>
+          </h2>
         </div>
         <p className="mt-4 text-center text-lg text-black dark:text-muted-foreground">
           Join our community gatherings and make memories with us.
