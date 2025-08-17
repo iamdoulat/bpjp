@@ -23,7 +23,9 @@ export default function LandingPage() {
           <div className="mt-5">
             <EventsSection />
           </div>
-          <MissionSection />
+          <div className="mt-5">
+            <MissionSection />
+          </div>
           <AboutSection />
           <CommitteeSection />
         </main>
