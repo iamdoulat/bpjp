@@ -1,4 +1,3 @@
-
 // src/app/admin/settings/page.tsx
 "use client";
 
@@ -553,7 +552,7 @@ export default function AdminSettingsPage() {
                     {/* President Profile */}
                     <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
-                        <Image src="https://firebasestorage.googleapis.com/v0/b/impactboard-opo8r.firebasestorage.app/o/organization%2ForganizationDetails%2Fpresident_image.png?alt=media&token=92d6d216-d1c3-44ea-a13c-2d336a74aaed" alt="President 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                        <Image src="https://placehold.co/150x150.png" alt="President 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
                       <h4 className="text-lg font-semibold">মোহাম্মদ আবদুল্লাহ বিন হক</h4>
                       <p className="text-muted-foreground">President</p>
@@ -561,7 +560,7 @@ export default function AdminSettingsPage() {
                     {/* Secretary Profile */}
                     <div className="flex flex-col items-center text-center p-4 bg-muted/20 rounded-lg border">
                       <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden border-2 border-primary/40">
-                        <Image src="https://firebasestorage.googleapis.com/v0/b/impactboard-opo8r.firebasestorage.app/o/organization%2ForganizationDetails%2Fsecretary_image.png?alt=media&token=3bc40b95-56c3-4dbe-9907-8d3b6b512c05" alt="General Secretary 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
+                        <Image src="https://placehold.co/150x150.png" alt="General Secretary 2025-2026" layout="fill" objectFit="cover" data-ai-hint="person portrait" />
                       </div>
                       <h4 className="text-lg font-semibold">মোহাম্মদ আবু বকর সিদ্দিক</h4>
                       <p className="text-muted-foreground">General Secretary</p>
