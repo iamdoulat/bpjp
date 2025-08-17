@@ -37,15 +37,15 @@ export function AdvisoryBoardSection() {
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
           <div className="inline-block rounded-lg bg-muted px-3 py-1 text-3xl font-bold mb-4">Advisory Board</div>
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Guiding Our Path</h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">Guiding Our Path</h2>
+          <p className="mt-4 text-lg text-black dark:text-muted-foreground">
             Meet the experienced leaders providing strategic advice and direction to our organization.
           </p>
         </div>
         <div className="mt-12">
           {loading ? (
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {[...Array(4)].map((_, i) => <MemberCardSkeleton key={i} />)}
+              {[...Array(5)].map((_, i) => <MemberCardSkeleton key={i} />)}
             </div>
           ) : error ? (
             <Alert variant="destructive">
@@ -96,8 +96,8 @@ function MemberCard({ member }: { member: AdvisoryBoardMemberData }) {
             data-ai-hint="person portrait"
           />
         </div>
-        <p className="text-lg font-semibold text-center text-foreground">{member.name}</p>
-        <p className="text-sm text-muted-foreground text-center mt-1">{member.title}</p>
+        <p className="text-lg font-semibold text-center text-black dark:text-foreground">{member.name}</p>
+        <p className="text-sm text-center mt-1 text-black dark:text-muted-foreground">{member.title}</p>
       </CardContent>
     </Card>
   );

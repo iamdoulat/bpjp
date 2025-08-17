@@ -32,8 +32,8 @@ export function CommitteeSection() {
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
             <div className="inline-block rounded-lg bg-muted px-3 py-1 text-3xl font-bold mb-4">Leadership</div>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Meet Our Committee</h2>
-            <div className="mt-4 text-lg text-muted-foreground">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">Meet Our Committee</h2>
+            <div className="mt-4 text-lg text-black dark:text-muted-foreground">
                 <span>The driving force behind our mission. Committee Period: {loading ? <Skeleton className="h-5 w-24 inline-block" /> : settings?.committeePeriod || 'N/A'}.</span>
             </div>
         </div>
@@ -85,10 +85,10 @@ function LeadershipCard({ name, title, imageUrl, mobileNumber }: LeadershipCardP
         />
       </div>
       <div className="mt-6">
-        <h3 className="text-xl font-bold">{name}</h3>
-        <p className="text-muted-foreground">{title}</p>
+        <h3 className="text-xl font-bold text-black dark:text-foreground">{name}</h3>
+        <p className="text-black dark:text-muted-foreground">{title}</p>
         {mobileNumber && (
-            <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center mt-2 text-sm text-black dark:text-muted-foreground">
                 <Phone className="mr-2 h-4 w-4" />
                 <span>{mobileNumber}</span>
             </div>
