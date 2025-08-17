@@ -5,14 +5,16 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn, UserPlus, Moon, Sun } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTheme } from "next-themes";
 
 export function LandingNavbar() {
   const { appName } = useAppContext();
   const { user, loading } = useAuth();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
   const [scrolled, setScrolled] = React.useState(false);
@@ -43,6 +45,15 @@ export function LandingNavbar() {
           <Link href="#committee" className="text-muted-foreground transition-colors hover:text-foreground">Committee</Link>
         </nav>
         <div className="flex items-center gap-2">
+           <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle Theme"
+            className="h-9 w-9"
+            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          >
+            {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
           {loading ? (
             <Skeleton className="h-9 w-20 rounded-md" />
           ) : user ? (
