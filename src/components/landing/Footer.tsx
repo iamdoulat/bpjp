@@ -31,7 +31,7 @@ export function Footer() {
                 {organizationSettings?.organizationName || "Our Organization"}
               </h3>
             </div>
-            <p className="text-sm text-black dark:text-muted-foreground flex items-start gap-3">
+            <div className="text-sm text-black dark:text-muted-foreground flex items-start gap-3">
               <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-600 text-white flex-shrink-0">
                 <MapPin className="h-4 w-4" />
               </div>
@@ -39,26 +39,26 @@ export function Footer() {
                 {organizationSettings?.address ||
                   "Community Address, City, Country"}
               </span>
-            </p>
+            </div>
           </div>
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-black dark:text-foreground">
               Contact Us
             </h3>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-3 text-black dark:text-muted-foreground">
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-3 text-black dark:text-muted-foreground">
                 <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-600 text-white">
                     <Phone className="h-4 w-4" />
                 </div>
                 <span>{organizationSettings?.contactPersonCell || "Not Available"}</span>
-              </li>
-              <li className="flex items-center gap-3 text-black dark:text-muted-foreground">
+              </div>
+              <div className="flex items-center gap-3 text-black dark:text-muted-foreground">
                 <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-600 text-white">
                     <Mail className="h-4 w-4" />
                 </div>
                 <span>{organizationSettings?.contactEmail || "contact@example.com"}</span>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-black dark:text-foreground">
