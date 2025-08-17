@@ -39,7 +39,7 @@ export function CampaignsSection() {
   }, []);
 
   return (
-    <section id="campaigns" className="py-16 md:py-24 bg-card">
+    <section id="campaigns" className="py-16 md:py-24 bg-card mt-5">
       <div className="container">
         <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl">Active Campaigns</h2>
         <p className="mt-4 text-center text-lg text-muted-foreground">
