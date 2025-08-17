@@ -1,3 +1,4 @@
+
 // src/components/landing/AboutSection.tsx
 "use client";
 
@@ -36,16 +37,18 @@ export function AboutSection() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               {loading ? <Skeleton className="h-9 w-3/4" /> : settings?.organizationName || "Our Organization"}
             </h2>
-            <p className="text-muted-foreground">
+            <div className="text-muted-foreground">
               {loading ? (
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-5/6" />
                 </div>
               ) : (
-                `Established in ${settings?.establishedYear || 'recent years'}, we are a non-profit organization with registration number ${settings?.registrationNumber || 'N/A'}. Our main office is located at ${settings?.address || 'our community center'}.`
+                <p>
+                  Established in {settings?.establishedYear || 'recent years'}, we are a non-profit organization with registration number {settings?.registrationNumber || 'N/A'}. Our main office is located at {settings?.address || 'our community center'}.
+                </p>
               )}
-            </p>
+            </div>
           </div>
           <div className="relative h-80 w-full overflow-hidden rounded-xl">
             {loading ? (
