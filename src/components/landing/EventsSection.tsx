@@ -85,7 +85,9 @@ export function EventsSection() {
   return (
     <section id="events" className="py-5 bg-background">
       <div className="container">
-        <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl">Upcoming Events</h2>
+        <div className="text-center">
+          <div className="inline-block rounded-lg bg-green-600 text-white px-3 py-1 text-3xl font-bold mb-4">Upcoming Events</div>
+        </div>
         <p className="mt-4 text-center text-lg text-black dark:text-muted-foreground">
           Join our community gatherings and make memories with us.
         </p>
@@ -97,7 +99,7 @@ export function EventsSection() {
           ) : error ? (
             <Alert variant="destructive">
               <ServerCrash className="h-5 w-5" />
-              <AlertTitle>Error Loading Events</AlertTitle>
+              <ShadCNAlertTitle>Error Loading Events</ShadCNAlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : upcomingEvents.length > 0 ? (
