@@ -44,8 +44,8 @@ export function AdvisoryBoardSection() {
         </div>
         <div className="mt-12">
           {loading ? (
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {[...Array(5)].map((_, i) => <MemberCardSkeleton key={i} />)}
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[...Array(4)].map((_, i) => <MemberCardSkeleton key={i} />)}
             </div>
           ) : error ? (
             <Alert variant="destructive">
@@ -53,10 +53,10 @@ export function AdvisoryBoardSection() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : members.length > 0 ? (
-             <Carousel opts={{ align: "start", loop: members.length > 3 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-4xl mx-auto">
+             <Carousel opts={{ align: "start", loop: members.length > 4 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-5xl mx-auto">
               <CarouselContent className="-ml-4">
                 {members.map((member) => (
-                  <CarouselItem key={member.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                  <CarouselItem key={member.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                     <div className="p-1 h-full">
                       <MemberCard member={member} />
                     </div>
