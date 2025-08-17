@@ -33,7 +33,7 @@ export function AdvisoryBoardSection() {
   }, []);
 
   return (
-    <section id="advisory-board" className="py-5 bg-card">
+    <section id="advisory-board" className="py-5 bg-card px-2.5">
       <div className="container">
         <div className="mx-auto max-w-4xl text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
