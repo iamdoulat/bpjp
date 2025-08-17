@@ -9,7 +9,8 @@ import {
   LogIn,
   LogOut,
   UserPlus,
-  UserCircle2
+  UserCircle2,
+  LayoutDashboard
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
