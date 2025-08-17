@@ -26,12 +26,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from 'next/navigation';
-import { useAppContext } from '@/contexts/AppContext'; // Added useAppContext
+import { useAppContext } from '@/contexts/AppContext';
 
 export function AppHeader() {
   const { user, loading, logout } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { appName } = useAppContext(); // Get appName from context
+  const { appName } = useAppContext();
   const router = useRouter();
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
@@ -49,11 +49,9 @@ export function AppHeader() {
     return "U";
   };
 
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-header-background/95 backdrop-blur supports-[backdrop-filter]:bg-header-background/60">
       <div className="container flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Left items container */}
         <div className="flex items-center gap-2"> 
           {user && <SidebarTrigger className="md:hidden" /> }
           <div className="flex items-center gap-2 md:flex peer-data-[state=expanded]:md:hidden min-w-0">
@@ -74,7 +72,7 @@ export function AppHeader() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3"> {/* Right items container */}
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
@@ -112,6 +110,10 @@ export function AppHeader() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                   <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/profile')}>
                     <UserCircle2 className="mr-2 h-4 w-4" />
                     <span>Profile</span>

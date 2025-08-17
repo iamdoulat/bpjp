@@ -1,52 +1,28 @@
 // src/app/page.tsx
 "use client";
 
-import { useEffect } from 'react'; // Added useEffect
-import { AppShell } from '@/components/layout/app-shell';
-import { UserInfo } from '@/components/dashboard/user-info';
-import { StatsGrid } from '@/components/dashboard/stats-grid';
-import { FeaturedCampaigns } from '@/components/dashboard/featured-campaigns';
-import { UpcomingCampaigns } from '@/components/dashboard/upcoming-campaigns';
-import { CompletedCampaignsDashboardSection } from '@/components/dashboard/completed-campaigns-dashboard'; // Added import
-import { useAuth } from '@/contexts/AuthContext';
-// Button and Link are not used when redirecting unauthenticated users from root
-// import { Button } from '@/components/ui/button';
-// import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Added useRouter
+import { LandingNavbar } from "@/components/landing/LandingNavbar";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { CampaignsSection } from "@/components/landing/CampaignsSection";
+import { EventsSection } from "@/components/landing/EventsSection";
+import { MissionSection } from "@/components/landing/MissionSection";
+import { AboutSection } from "@/components/landing/AboutSection";
+import { CommitteeSection } from "@/components/landing/CommitteeSection";
+import { Footer } from "@/components/landing/Footer";
 
-export default function DashboardPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter(); // Initialize router
-
-  useEffect(() => {
-    // If not loading and no user, redirect to login
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]); // Add dependencies
-
-  // Show loader if auth state is loading OR if user is not authenticated (while redirect is in progress)
-  if (loading || (!user && !loading)) { 
-    return (
-      <AppShell>
-        <main className="flex-1 p-6 flex items-center justify-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </main>
-      </AppShell>
-    );
-  }
-
-  // If we reach here, user is loaded and authenticated
+export default function LandingPage() {
   return (
-    <AppShell>
-      <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-6">
-        <UserInfo />
-        <StatsGrid />
-        <FeaturedCampaigns />
-        <UpcomingCampaigns />
-        <CompletedCampaignsDashboardSection /> {/* Added new section */}
+    <div className="flex flex-col min-h-screen bg-background">
+      <LandingNavbar />
+      <main className="flex-1">
+        <HeroSection />
+        <CampaignsSection />
+        <EventsSection />
+        <MissionSection />
+        <AboutSection />
+        <CommitteeSection />
       </main>
-    </AppShell>
+      <Footer />
+    </div>
   );
 }

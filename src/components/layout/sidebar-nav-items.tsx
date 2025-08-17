@@ -1,4 +1,3 @@
-
 // src/components/layout/sidebar-nav-items.tsx
 "use client";
 
@@ -14,7 +13,7 @@ import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator } fro
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '../ui/skeleton';
-import { cn } from '@/lib/utils'; // Import cn
+import { cn } from '@/lib/utils';
 
 interface NavItem {
   href: string;
@@ -23,7 +22,7 @@ interface NavItem {
 }
 
 const generalNavLinks: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Browse Campaigns', icon: Megaphone },
   { href: '/my-donations', label: 'My Donations', icon: HistoryIcon },
   { href: '/donors-list', label: 'Donors List', icon: Users },
