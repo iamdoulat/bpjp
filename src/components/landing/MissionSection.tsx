@@ -28,7 +28,7 @@ export function MissionSection() {
   }, []);
 
   return (
-    <section id="mission" className="py-16 md:py-24 bg-card">
+    <section id="mission" className="py-5 bg-card">
       <div className="container">
         <Card className="w-full border-2 border-primary/20 shadow-xl">
           <CardHeader className="text-center">
