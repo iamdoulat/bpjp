@@ -193,10 +193,7 @@ export default function LoginPage() {
               />
               <Button
                 type="submit"
-                className={cn(
-                  "w-full",
-                  "bg-specific-button-bg text-specific-button-fg hover:bg-specific-button-hover-bg"
-                )}
+                className="w-full"
                 disabled={isSubmitting || authLoading || !loginForm.formState.isValid}
               >
                 {(isSubmitting || authLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
