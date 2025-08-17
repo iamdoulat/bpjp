@@ -241,6 +241,21 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
     }
   };
 
+  const handleViewClick = () => {
+    if (authLoading) return; // Do nothing if auth state is still loading
+
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to view campaign details.",
+        variant: "default"
+      });
+      router.push('/login');
+    } else {
+      router.push(`/campaigns/view/${campaign.id}`);
+    }
+  };
+
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden rounded-lg">
       <div className="relative aspect-[3/2] w-full">
@@ -374,11 +389,15 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
       </div>
       {(isPublicView || !campaign.id?.startsWith('admin_preview')) && (
         <CardFooter className="p-3 bg-muted/20 border-t flex items-center justify-between">
-          <Button variant="outline" size="sm" asChild className="text-xs h-auto py-1.5 px-3">
-            <Link href={`/campaigns/view/${campaign.id}`}>
-              <Eye className="mr-1.5 h-3.5 w-3.5" />
-              View
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs h-auto py-1.5 px-3"
+            onClick={handleViewClick}
+            disabled={authLoading}
+          >
+            <Eye className="mr-1.5 h-3.5 w-3.5" />
+            View
           </Button>
           <div className="flex items-center space-x-2">
             <Button
