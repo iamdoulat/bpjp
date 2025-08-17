@@ -11,6 +11,9 @@ import { Loader2, ServerCrash, CalendarClock, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getEvents, type EventData } from '@/services/eventService';
 import { Timestamp } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 function formatDisplayDate(date: Timestamp | Date | undefined) {
   if (!date) return "N/A";
@@ -109,6 +112,25 @@ function EventCardSkeleton() {
 }
 
 function EventCard({ event }: { event: EventData }) {
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleRegisterClick = () => {
+    if (authLoading) return;
+
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to register for this event.",
+        variant: "default"
+      });
+      router.push('/login');
+    } else {
+      router.push(`/upcoming-events/view/${event.id}`);
+    }
+  };
+
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300">
       <div className="relative aspect-[16/9] w-full bg-muted">
@@ -126,8 +148,8 @@ function EventCard({ event }: { event: EventData }) {
         <p className="line-clamp-3">{event.details}</p>
       </CardContent>
       <CardFooter>
-        <Button variant="outline" size="sm" className="w-full" asChild>
-          <Link href={`/upcoming-events/view/${event.id}`}><Eye className="mr-2 h-4 w-4" /> View Details</Link>
+        <Button variant="outline" size="sm" className="w-full" onClick={handleRegisterClick}>
+          <Eye className="mr-2 h-4 w-4" /> Register for this Event
         </Button>
       </CardFooter>
     </Card>
