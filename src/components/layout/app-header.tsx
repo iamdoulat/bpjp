@@ -56,20 +56,17 @@ export function AppHeader() {
         <div className="flex items-center gap-2"> 
           {user && <SidebarTrigger className="md:hidden" /> }
           <div className="flex items-center gap-2 md:flex peer-data-[state=expanded]:md:hidden min-w-0">
-            {appLogoUrl ? (
-              <Link href="/" passHref>
-                <div className="flex items-center gap-2 cursor-pointer">
+            <Link href="/" passHref>
+              <div className="flex items-center gap-2 cursor-pointer">
+                {appLogoUrl && (
                   <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded flex-shrink-0" data-ai-hint="logo company" />
-                  <span className="font-semibold text-base md:text-lg text-foreground truncate">{appName}</span>
+                )}
+                <div className="font-semibold text-base md:text-lg text-foreground truncate">
+                  <span className="md:hidden">BPJP</span>
+                  <span className="hidden md:inline">{appName}</span>
                 </div>
-              </Link>
-            ) : (
-              <Link href="/" passHref>
-                 <div className="flex items-center gap-2 cursor-pointer">
-                    <span className="font-semibold text-base md:text-lg text-foreground truncate">{appName}</span>
-                 </div>
-              </Link>
-            )}
+              </div>
+            </Link>
           </div>
         </div>
 

@@ -30,7 +30,10 @@ export function LandingNavbar() {
       <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
           {appLogoUrl && <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />}
-          <span className="text-xl font-bold text-foreground">{appName}</span>
+          <div className="text-xl font-bold text-foreground">
+            <span className="md:hidden">BPJP</span>
+            <span className="hidden md:inline">{appName}</span>
+          </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
           <Link href="#campaigns" className="text-muted-foreground transition-colors hover:text-foreground">Campaigns</Link>
