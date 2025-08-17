@@ -80,7 +80,7 @@ export function EventsSection() {
           )}
         </div>
         <div className="mt-12 text-center">
-          <Button size="lg" asChild variant="secondary">
+          <Button size="lg" asChild variant="default">
             <Link href="/upcoming-events">View All Events</Link>
           </Button>
         </div>
