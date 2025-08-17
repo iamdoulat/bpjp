@@ -1,4 +1,3 @@
-
 // src/components/dashboard/featured-campaigns.tsx
 "use client";
 
@@ -7,7 +6,7 @@ import Link from 'next/link';
 import { CampaignCard } from './campaign-card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, ServerCrash, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Loader2, ServerCrash, ChevronLeft, ChevronRight, Search, Zap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
@@ -71,11 +70,14 @@ export function FeaturedCampaigns() {
 
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-headline font-semibold mb-2 dark:text-white">
-        Featured Campaigns
-      </h2>
-      <p className="text-muted-foreground mb-6">
-        Discover active campaigns you can support right now.
+      <div className="flex items-center gap-2 mb-2">
+        <Zap className="h-6 w-6 text-orange-500" />
+        <h2 className="text-2xl font-headline font-semibold text-foreground">
+          Active Campaigns
+        </h2>
+      </div>
+      <p className="text-muted-foreground mb-6 ml-8">
+        Discover campaigns you can support right now.
       </p>
 
       {loading && (
@@ -156,4 +158,3 @@ function CardSkeleton() {
     </div>
   );
 }
-

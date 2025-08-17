@@ -1,4 +1,3 @@
-
 // src/components/dashboard/upcoming-campaigns.tsx
 "use client";
 
@@ -63,11 +62,14 @@ export function UpcomingCampaigns() {
   };
 
   return (
-    <div className="mt-10"> {/* Added mt-10 for spacing */}
-      <h2 className="text-2xl font-headline font-semibold mb-2 dark:text-white">
-        Upcoming Campaigns
-      </h2>
-      <p className="text-muted-foreground mb-6">
+    <div className="mt-10">
+      <div className="flex items-center gap-2 mb-2">
+        <CalendarCheck2 className="h-6 w-6 text-blue-500" />
+        <h2 className="text-2xl font-headline font-semibold text-foreground">
+          Upcoming Campaigns
+        </h2>
+      </div>
+      <p className="text-muted-foreground mb-6 ml-8">
         Get ready to support these causes starting soon.
       </p>
 
@@ -125,7 +127,6 @@ export function UpcomingCampaigns() {
          </Alert>
       )}
       
-      {/* Conditionally show "Explore All Campaigns" button if there are any upcoming campaigns, or always show it */}
       {(allUpcomingCampaigns.length > 0 || !loading && !error) && (
           <div className="mt-8 flex justify-center">
             <Button asChild variant="default" size="lg">
@@ -153,4 +154,3 @@ function CardSkeleton() {
     </div>
   );
 }
-
