@@ -36,7 +36,7 @@ export function HeroSection() {
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Link href="#campaigns">বিস্তারিত</Link>
+            <Link href="#about">বিস্তারিত</Link>
           </Button>
         </div>
       </div>
