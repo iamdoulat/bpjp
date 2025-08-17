@@ -66,8 +66,8 @@ export function LandingNavbar() {
               key={link.href} 
               href={link.href} 
               className={cn(
-                "text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground",
-                activeLink === link.href && "text-green-600 dark:text-green-500 font-semibold"
+                "text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground pb-1",
+                activeLink === link.href && "text-green-600 dark:text-green-500 font-semibold border-b-2 border-black dark:border-green-500"
               )}
               onClick={() => setActiveLink(link.href)}
             >
