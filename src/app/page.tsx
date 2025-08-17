@@ -17,7 +17,9 @@ export default function LandingPage() {
       <div className="px-[5%]">
         <main className="flex-1">
           <HeroSection />
-          <CampaignsSection />
+          <div className="mt-5">
+            <CampaignsSection />
+          </div>
           <EventsSection />
           <MissionSection />
           <AboutSection />
