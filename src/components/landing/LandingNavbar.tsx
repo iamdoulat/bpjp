@@ -62,7 +62,7 @@ export function LandingNavbar() {
             </Button>
           ) : (
             <>
-              <Button variant="outline" asChild>
+              <Button variant="default" asChild>
                 <Link href="/login"><LogIn className="mr-2 h-4 w-4" /> Login</Link>
               </Button>
             </>
