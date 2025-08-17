@@ -37,8 +37,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Conditionally apply the PWA wrapper only when not using Turbopack
-// This resolves the "Webpack is configured while Turbopack is not" warning.
-const configToExport = process.env.TURBOPACK ? nextConfig : withPWA(nextConfig);
-
-export default configToExport;
+export default withPWA(nextConfig);
