@@ -26,9 +26,10 @@ export function HeroSection() {
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
           ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ এ আপনাকে স্বাগতম
         </h1>
-        <p className="mt-4 max-w-3xl text-lg text-gray-300 md:text-xl">
-          ভূজপুর থানা, ফটিকছড়ি, চট্টগ্রাম। রেজিঃ নং- ২০১৮/এ, স্থাপিত: ২০১৮ ইংরেজি
-        </p>
+        <div className="mt-4 max-w-3xl text-lg text-gray-300 md:text-xl">
+          <p>ঠিকানা : ভূজপুর থানা, ফটিকছড়ি, চট্টগ্রাম।</p>
+          <p>রেজিঃ নং- ২০১৮/এ, স্থাপিত: ২০১৮ ইংরেজি</p>
+        </div>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href="#campaigns">Explore Campaigns</Link>
