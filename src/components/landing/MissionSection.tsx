@@ -35,7 +35,7 @@ export function MissionSection() {
             <div className="inline-flex items-center justify-center mb-4">
                 <Target className="h-10 w-10 text-primary" />
             </div>
-            <CardTitle className="text-3xl font-bold sm:text-4xl">
+            <CardTitle className="text-3xl font-bold sm:text-4xl text-black dark:text-foreground">
                 {loading ? <Skeleton className="h-9 w-48 mx-auto" /> : missionData?.title || "Our Mission"}
             </CardTitle>
           </CardHeader>
@@ -47,7 +47,7 @@ export function MissionSection() {
                 <Skeleton className="h-4 w-full" />
               </div>
             ) : (
-              <div className="max-w-3xl mx-auto text-left space-y-4">
+              <div className="max-w-3xl mx-auto text-left space-y-4 text-black dark:text-muted-foreground">
                 <p>
                   আমরা বিশ্বাস করি—মানুষ মানুষের জন্য। মানবতার মহান ব্রত নিয়ে আমরা এগিয়ে চলেছি সমাজের অসহায়, দুঃস্থ ও সুবিধাবঞ্চিত মানুষের পাশে দাঁড়ানোর প্রত্যয়ে। আমাদের এই ক্ষুদ্র প্রয়াসের মাধ্যমে আমরা প্রবাসীদের সহযোগিতায় গড়ে তুলতে চাই একটি মানবিক সমাজ, যেখানে বিপদে-আপদে আমরা একে অপরের সহায় হই।
                 </p>
