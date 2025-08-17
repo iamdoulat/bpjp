@@ -28,12 +28,12 @@ export function AboutSection() {
   }, []);
 
   return (
-    <section id="about" className="py-5 bg-background">
+    <section id="about" className="py-5 bg-background pr-[5px]">
       <div className="container">
         <div className="grid items-start gap-12 lg:grid-cols-2">
-          <div className="space-y-4 pl-[5px]">
+          <div className="space-y-4 pl-[10px]">
             <div className="inline-block rounded-lg bg-muted px-3 py-1 text-2xl font-bold">About Us</div>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">
               {loading ? <Skeleton className="h-9 w-3/4" /> : settings?.organizationName || "Our Organization"}
             </h2>
             <div className="text-black dark:text-muted-foreground">
