@@ -27,8 +27,8 @@ export function HeroSection() {
         data-ai-hint="community charity event"
       />
       <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white p-4">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-          ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ এ আপনাকে স্বাগতম
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl leading-tight">
+          ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ <br /> এ আপনাকে স্বাগতম
         </h1>
         <div className="mt-4 max-w-3xl text-lg text-gray-300 md:text-xl">
           <p>ঠিকানা : {address}</p>
