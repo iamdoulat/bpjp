@@ -35,9 +35,12 @@ export function AdvisoryBoardSection() {
   return (
     <section id="advisory-board" className="py-5 bg-card">
       <div className="container">
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="inline-block rounded-lg bg-muted px-3 py-1 text-3xl font-bold mb-4">Advisory Board</div>
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">Guiding Our Path</h2>
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="inline-block rounded-lg bg-green-600 text-white px-3 py-1 text-3xl font-bold">Advisory Board</div>
+            <span className="text-3xl font-bold">-</span>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">Guiding Our Path</h2>
+          </div>
           <p className="mt-4 text-lg text-black dark:text-muted-foreground">
             Meet the experienced leaders providing strategic advice and direction to our organization.
           </p>
