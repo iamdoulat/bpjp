@@ -10,6 +10,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 export function LandingNavbar() {
   const { appName } = useAppContext();
@@ -18,14 +19,36 @@ export function LandingNavbar() {
   const appLogoUrl = process.env.NEXT_PUBLIC_APP_LOGO_URL;
 
   const [scrolled, setScrolled] = React.useState(false);
+  const [activeLink, setActiveLink] = React.useState("");
 
   React.useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
+
+    const handleHashChange = () => {
+      setActiveLink(window.location.hash);
+    };
+
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("hashchange", handleHashChange, false);
+    
+    // Set initial active link
+    handleHashChange();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("hashchange", handleHashChange, false);
+    };
   }, []);
+
+  const navLinks = [
+    { href: "#campaigns", label: "Campaigns" },
+    { href: "#events", label: "Events" },
+    { href: "#mission", label: "Mission" },
+    { href: "#about", label: "About" },
+    { href: "#committee", label: "Committee" },
+  ];
 
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${scrolled ? "border-b border-border/40 bg-background/95 backdrop-blur-sm" : "bg-transparent"}`}>
@@ -38,11 +61,19 @@ export function LandingNavbar() {
           </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          <Link href="#campaigns" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">Campaigns</Link>
-          <Link href="#events" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">Events</Link>
-          <Link href="#mission" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">Mission</Link>
-          <Link href="#about" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">About</Link>
-          <Link href="#committee" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">Committee</Link>
+          {navLinks.map((link) => (
+            <Link 
+              key={link.href} 
+              href={link.href} 
+              className={cn(
+                "text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground",
+                activeLink === link.href && "text-green-600 dark:text-green-500 font-semibold"
+              )}
+              onClick={() => setActiveLink(link.href)}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
         <div className="flex items-center gap-2">
            <Button
