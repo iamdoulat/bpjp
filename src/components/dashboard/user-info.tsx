@@ -12,6 +12,8 @@ export function UserInfo() {
   const [greeting, setGreeting] = useState("Welcome"); // Default greeting
 
   useEffect(() => {
+    // This effect runs only on the client, after the initial render.
+    // This prevents a hydration mismatch between server-rendered and client-rendered HTML.
     const getBangladeshGreeting = (): string => {
       const now = new Date();
       // Get current time in UTC
@@ -21,8 +23,9 @@ export function UserInfo() {
       let bstHours = utcHours + bstOffset;
       
       // Normalize bstHours to be within 0-23 range
-      bstHours = bstHours % 24;
-      if (bstHours < 0) {
+      if (bstHours >= 24) {
+          bstHours -= 24;
+      } else if (bstHours < 0) {
           bstHours += 24;
       }
 
@@ -35,7 +38,7 @@ export function UserInfo() {
       }
     };
     setGreeting(getBangladeshGreeting());
-  }, []); // Empty dependency array means this runs once on the client after mount
+  }, []); // Empty dependency array ensures this runs once on mount, on the client.
 
 
   if (loading) {
