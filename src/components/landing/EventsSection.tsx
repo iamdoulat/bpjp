@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, ServerCrash, CalendarClock, Eye } from 'lucide-react';
+import { Loader2, ServerCrash, CalendarClock, Eye, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getEvents, type EventData } from '@/services/eventService';
 import { Timestamp } from 'firebase/firestore';
@@ -104,8 +104,9 @@ function EventCardSkeleton() {
         <Skeleton className="h-4 w-full mb-2" />
         <Skeleton className="h-4 w-5/6" />
       </CardContent>
-      <CardFooter>
-        <Skeleton className="h-9 w-24" />
+      <CardFooter className="flex gap-2">
+        <Skeleton className="h-9 w-1/2" />
+        <Skeleton className="h-9 w-1/2" />
       </CardFooter>
     </Card>
   );
@@ -147,9 +148,14 @@ function EventCard({ event }: { event: EventData }) {
       <CardContent className="flex-grow text-sm text-muted-foreground">
         <p className="line-clamp-3">{event.details}</p>
       </CardContent>
-      <CardFooter>
-        <Button variant="outline" size="sm" className="w-full" onClick={handleRegisterClick}>
-          <Eye className="mr-2 h-4 w-4" /> Register for this Event
+      <CardFooter className="flex gap-2">
+        <Button variant="outline" size="sm" className="w-full" asChild>
+            <Link href={`/upcoming-events/view/${event.id}`}>
+                <Eye className="mr-2 h-4 w-4" /> View Details
+            </Link>
+        </Button>
+        <Button variant="default" size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={handleRegisterClick}>
+            <UserPlus className="mr-2 h-4 w-4" /> Join
         </Button>
       </CardFooter>
     </Card>
