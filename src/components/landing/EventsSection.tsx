@@ -54,7 +54,7 @@ export function EventsSection() {
     <section id="events" className="py-5 bg-background">
       <div className="container">
         <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl">Upcoming Events</h2>
-        <p className="mt-4 text-center text-lg text-muted-foreground">
+        <p className="mt-4 text-center text-lg text-black dark:text-muted-foreground">
           Join our community gatherings and make memories with us.
         </p>
         <div className="mt-12">
