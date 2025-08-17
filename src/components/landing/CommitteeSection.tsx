@@ -28,7 +28,7 @@ export function CommitteeSection() {
   }, []);
 
   return (
-    <section id="committee" className="py-16 md:py-24 bg-card">
+    <section id="committee" className="pt-16 md:pt-24 pb-5 bg-card">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
             <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm mb-4">Leadership</div>
