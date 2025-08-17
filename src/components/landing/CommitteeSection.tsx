@@ -42,7 +42,7 @@ export function CommitteeSection() {
             {loading ? (
                 <>
                     <LeadershipCardSkeleton />
-                    <Separator orientation="vertical" className="h-32 mx-auto hidden md:block" />
+                    <Separator orientation="vertical" className="h-32 mx-auto hidden md:block bg-black dark:bg-border" />
                     <LeadershipCardSkeleton />
                 </>
             ) : (
@@ -53,8 +53,8 @@ export function CommitteeSection() {
                         imageUrl={settings?.presidentImageURL}
                         mobileNumber={settings?.presidentMobileNumber}
                     />
-                     <Separator orientation="vertical" className="h-32 mx-auto hidden md:block" />
-                     <Separator orientation="horizontal" className="md:hidden" />
+                     <Separator orientation="vertical" className="h-32 mx-auto hidden md:block bg-black dark:bg-border" />
+                     <Separator orientation="horizontal" className="md:hidden bg-black dark:bg-border" />
                     <LeadershipCard
                         name={settings?.secretaryName || "General Secretary"}
                         title="General Secretary"
