@@ -12,7 +12,7 @@ import { Footer } from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-[#FFF5F2] dark:bg-background">
       <LandingNavbar />
       <div className="px-[5%]">
         <main className="flex-1">
