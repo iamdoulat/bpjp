@@ -6,9 +6,11 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/contexts/AppContext";
 import { UserPlus } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function HeroSection() {
   const { organizationSettings } = useAppContext();
+  const { user, loading } = useAuth();
   // Use the cover image from settings, with a fallback
   const heroImageUrl = organizationSettings?.coverImageUrl || "https://placehold.co/1200x500.png";
 
@@ -39,9 +41,11 @@ export function HeroSection() {
           <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href="#about">বিস্তারিত</Link>
           </Button>
-          <Button size="lg" asChild variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Link href="/signup"><UserPlus className="mr-2 h-5 w-5" /> Sign Up</Link>
-          </Button>
+          {!loading && !user && (
+            <Button size="lg" asChild variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Link href="/signup"><UserPlus className="mr-2 h-5 w-5" /> Sign Up</Link>
+            </Button>
+          )}
         </div>
       </div>
     </section>
