@@ -20,7 +20,9 @@ export default function LandingPage() {
           <div className="mt-5">
             <CampaignsSection />
           </div>
-          <EventsSection />
+          <div className="mt-5">
+            <EventsSection />
+          </div>
           <MissionSection />
           <AboutSection />
           <CommitteeSection />
