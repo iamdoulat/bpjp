@@ -44,12 +44,16 @@ export function Footer() {
               Contact Us
             </h3>
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-2 text-black dark:text-muted-foreground">
-                <Phone className="h-4 w-4 shrink-0" />
+              <li className="flex items-center gap-3 text-black dark:text-muted-foreground">
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-600 text-white">
+                    <Phone className="h-4 w-4" />
+                </div>
                 <span>{organizationSettings?.contactPersonCell || "Not Available"}</span>
               </li>
-              <li className="flex items-center gap-2 text-black dark:text-muted-foreground">
-                <Mail className="h-4 w-4 shrink-0" />
+              <li className="flex items-center gap-3 text-black dark:text-muted-foreground">
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-600 text-white">
+                    <Mail className="h-4 w-4" />
+                </div>
                 <span>{organizationSettings?.contactEmail || "contact@example.com"}</span>
               </li>
             </ul>
