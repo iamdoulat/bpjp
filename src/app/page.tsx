@@ -9,6 +9,7 @@ import { MissionSection } from "@/components/landing/MissionSection";
 import { AboutSection } from "@/components/landing/AboutSection";
 import { CommitteeSection } from "@/components/landing/CommitteeSection";
 import { Footer } from "@/components/landing/Footer";
+import { AdvisoryBoardSection } from "@/components/landing/AdvisoryBoardSection";
 
 export default function LandingPage() {
   return (
@@ -23,14 +24,15 @@ export default function LandingPage() {
           <div className="mt-5">
             <EventsSection />
           </div>
-          <div className="mt-5">
-            <MissionSection />
-          </div>
+          <MissionSection />
           <div className="mt-5">
             <AboutSection />
           </div>
-          <div className="mt-5 mb-5">
+          <div className="mt-5">
             <CommitteeSection />
+          </div>
+          <div className="mt-5 mb-5">
+            <AdvisoryBoardSection />
           </div>
         </main>
       </div>
