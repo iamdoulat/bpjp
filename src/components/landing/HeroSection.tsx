@@ -34,9 +34,6 @@ export function HeroSection() {
           <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href="#campaigns">Explore Campaigns</Link>
           </Button>
-          <Button size="lg" variant="secondary" asChild>
-            <Link href="#about">Learn More</Link>
-          </Button>
         </div>
       </div>
     </section>
