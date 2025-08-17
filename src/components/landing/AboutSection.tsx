@@ -1,4 +1,3 @@
-
 // src/components/landing/AboutSection.tsx
 "use client";
 
@@ -29,7 +28,7 @@ export function AboutSection() {
   }, []);
 
   return (
-    <section id="about" className="py-16 md:py-24 bg-background">
+    <section id="about" className="pt-5 pb-16 md:py-24 bg-background">
       <div className="container">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div className="space-y-4">
