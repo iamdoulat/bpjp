@@ -51,7 +51,7 @@ export function EventsSection() {
   }, []);
 
   return (
-    <section id="events" className="py-16 md:py-24 bg-background">
+    <section id="events" className="py-5 bg-background">
       <div className="container">
         <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl">Upcoming Events</h2>
         <p className="mt-4 text-center text-lg text-muted-foreground">
