@@ -45,7 +45,7 @@ export function AdvisoryBoardSection() {
         <div className="mt-12">
           {loading ? (
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {[...Array(3)].map((_, i) => <MemberCardSkeleton key={i} />)}
+              {[...Array(5)].map((_, i) => <MemberCardSkeleton key={i} />)}
             </div>
           ) : error ? (
             <Alert variant="destructive">
