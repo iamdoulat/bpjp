@@ -108,7 +108,7 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
         variant: "destructive",
       });
       setIsDialogOpen(false);
-      router.push("/login");
+      router.push("/signup");
       return;
     }
 
@@ -228,6 +228,18 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
     }
   };
 
+  const handleDonateClick = () => {
+    if (!user) {
+      toast({
+        title: "Registration Required",
+        description: "Please create an account or log in to donate.",
+        variant: "default"
+      });
+      router.push("/signup");
+    } else {
+      setIsDialogOpen(true);
+    }
+  };
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden rounded-lg">
@@ -251,13 +263,14 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button
+             <Button
               variant="default"
               className={cn(
                 "w-full mt-auto text-sm py-2 h-auto",
                 "bg-green-600 hover:bg-green-700 text-white"
               )}
-              disabled={campaign.initialStatus !== 'active'} // Disable if campaign is not active
+              disabled={campaign.initialStatus !== 'active'}
+              onClick={handleDonateClick}
             >
               <HeartHandshake className="mr-2 h-4 w-4" /> Donate Now
             </Button>

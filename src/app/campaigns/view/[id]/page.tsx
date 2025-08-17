@@ -140,7 +140,7 @@ export default function PublicViewCampaignPage() {
         variant: "destructive",
       });
       setIsDialogOpen(false);
-      router.push("/login");
+      router.push("/signup");
       return;
     }
 
@@ -213,6 +213,19 @@ export default function PublicViewCampaignPage() {
         });
     } finally {
         setIsSubmittingDonation(false);
+    }
+  };
+
+  const handleDonateClick = () => {
+    if (!user) {
+      toast({
+        title: "Registration Required",
+        description: "Please create an account or log in to donate.",
+        variant: "default"
+      });
+      router.push("/signup");
+    } else {
+      setIsDialogOpen(true);
     }
   };
 
@@ -412,6 +425,7 @@ export default function PublicViewCampaignPage() {
                         size="lg" 
                         className="w-full sm:w-auto text-lg py-3 px-8 bg-green-600 hover:bg-green-700 text-white"
                         disabled={campaign.initialStatus !== 'active'} // Disable if campaign is not active
+                        onClick={handleDonateClick}
                     >
                       <HeartHandshake className="mr-2 h-5 w-5" /> Donate Now
                     </Button>
