@@ -31,8 +31,10 @@ export function Footer() {
                 {organizationSettings?.organizationName || "Our Organization"}
               </h3>
             </div>
-            <p className="text-sm text-black dark:text-muted-foreground flex items-start gap-2">
-              <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+            <p className="text-sm text-black dark:text-muted-foreground flex items-start gap-3">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-600 text-white flex-shrink-0">
+                <MapPin className="h-4 w-4" />
+              </div>
               <span>
                 {organizationSettings?.address ||
                   "Community Address, City, Country"}
