@@ -31,8 +31,6 @@ import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadCNCardDescription } from "@/components/ui/card"
 import { addCampaign, type NewCampaignInputData } from '@/services/campaignService';
 import { Loader2, UploadCloud } from "lucide-react"
-// uploadImageToStorage is not directly used here anymore, campaignService handles it.
-// import { uploadImageToStorage } from "@/lib/firebase"; 
 import ImageCropDialog from "@/components/ui/image-crop-dialog";
 import { useRouter } from "next/navigation";
 
@@ -74,7 +72,7 @@ const defaultValues: Omit<NewCampaignFormValues, 'startDate' | 'endDate'> & { st
   initialStatus: "draft",
 }
 
-export default function NewCampaignPage() {
+export default function AdminNewCampaignPage() {
   const { toast } = useToast()
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);

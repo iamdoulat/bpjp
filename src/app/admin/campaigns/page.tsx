@@ -33,7 +33,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ClipboardList, Search, PlusCircle, MoreHorizontal, AlertCircle, Edit, Eye, Trash2, Loader2 } from "lucide-react";
 import { getCampaigns, deleteCampaign, type CampaignData } from "@/services/campaignService"; 
@@ -163,7 +162,7 @@ export default function ManageCampaignsPage() {
               />
             </div>
             <Button asChild>
-              <Link href="/new-campaign">
+              <Link href="/admin/campaigns/create">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create Campaign
               </Link>
