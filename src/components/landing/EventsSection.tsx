@@ -5,15 +5,38 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, ServerCrash, CalendarClock, Eye, UserPlus } from 'lucide-react';
+import { Loader2, ServerCrash, CalendarClock, Eye, UserPlus, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getEvents, type EventData } from '@/services/eventService';
+import { getEvents, type EventData, registerForEvent, checkIfUserRegistered } from '@/services/eventService';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { getUserProfile, type UserProfileData } from "@/services/userService";
 
 function formatDisplayDate(date: Timestamp | Date | undefined) {
   if (!date) return "N/A";
@@ -27,6 +50,12 @@ function formatDisplayDate(date: Timestamp | Date | undefined) {
     hour12: true,
   }).format(jsDate);
 }
+
+const registrationFormSchema = z.object({
+  mobileNumber: z.string().regex(/^[+]?[0-9\s-()]{7,20}$/, "Invalid mobile number format."),
+});
+type RegistrationFormValues = z.infer<typeof registrationFormSchema>;
+
 
 export function EventsSection() {
   const [upcomingEvents, setUpcomingEvents] = useState<EventData[]>([]);
@@ -117,7 +146,31 @@ function EventCard({ event }: { event: EventData }) {
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleRegisterClick = () => {
+  const [isRegistrationDialogOpen, setIsRegistrationDialogOpen] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [checkingRegistration, setCheckingRegistration] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profileData, setProfileData] = useState<UserProfileData | null>(null);
+  
+  const registrationForm = useForm<RegistrationFormValues>({
+    resolver: zodResolver(registrationFormSchema),
+    defaultValues: { mobileNumber: "" },
+  });
+
+  useEffect(() => {
+    if (user && event.id) {
+      setCheckingRegistration(true);
+      checkIfUserRegistered(event.id, user.uid)
+        .then(setIsRegistered)
+        .catch(err => console.error("Error checking registration status:", err))
+        .finally(() => setCheckingRegistration(false));
+    } else {
+      setCheckingRegistration(false);
+      setIsRegistered(false);
+    }
+  }, [user, event.id]);
+
+  const handleJoinClick = () => {
     if (authLoading) return;
 
     if (!user) {
@@ -128,7 +181,49 @@ function EventCard({ event }: { event: EventData }) {
       });
       router.push('/login');
     } else {
-      router.push(`/upcoming-events/view/${event.id}`);
+      setIsRegistrationDialogOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    if (user && isRegistrationDialogOpen) {
+      getUserProfile(user.uid).then(profile => {
+        if (profile) {
+          setProfileData(profile);
+          registrationForm.reset({ mobileNumber: profile.mobileNumber || "" });
+        }
+      }).catch(err => console.error("Failed to prefill profile data:", err));
+    }
+  }, [user, isRegistrationDialogOpen, registrationForm]);
+
+
+  const handleRegistrationSubmit = async (data: RegistrationFormValues) => {
+    if (!user || !event.id) return;
+    setIsSubmitting(true);
+    const nameToSubmit = profileData?.displayName || user.displayName || "Registered User";
+    const wardNoToSubmit = profileData?.wardNo || "Not Provided";
+
+    try {
+      await registerForEvent(event.id, user.uid, {
+        name: nameToSubmit,
+        mobileNumber: data.mobileNumber,
+        wardNo: wardNoToSubmit,
+        userEmail: user.email || undefined,
+      });
+      toast({
+        title: "Registration Successful!",
+        description: `You are now registered for "${event.title}".`,
+      });
+      setIsRegistered(true);
+      setIsRegistrationDialogOpen(false);
+    } catch (e) {
+      toast({
+        title: "Registration Failed",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -154,9 +249,56 @@ function EventCard({ event }: { event: EventData }) {
                 <Eye className="mr-2 h-4 w-4" /> View Details
             </Link>
         </Button>
-        <Button variant="default" size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={handleRegisterClick}>
-            <UserPlus className="mr-2 h-4 w-4" /> Join
-        </Button>
+        <Dialog open={isRegistrationDialogOpen} onOpenChange={setIsRegistrationDialogOpen}>
+          <DialogTrigger asChild>
+             <Button 
+                variant="default" 
+                size="sm" 
+                className="w-full bg-green-600 hover:bg-green-700 text-white" 
+                onClick={handleJoinClick}
+                disabled={authLoading || checkingRegistration || isRegistered}
+              >
+               {checkingRegistration ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : isRegistered ? <CheckCircle className="mr-2 h-4 w-4"/> : <UserPlus className="mr-2 h-4 w-4" />}
+               {isRegistered ? "Joined" : "Join"}
+              </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Register for: {event.title}</DialogTitle>
+              <DialogDescription>Confirm your details to join this event.</DialogDescription>
+            </DialogHeader>
+             <Form {...registrationForm}>
+                <form id={`event-reg-form-${event.id}`} onSubmit={registrationForm.handleSubmit(handleRegistrationSubmit)} className="space-y-4 pt-4">
+                  <FormItem>
+                    <FormLabel>Your Name</FormLabel>
+                    <FormControl><Input value={profileData?.displayName || user?.displayName || ""} disabled /></FormControl>
+                  </FormItem>
+                   <FormItem>
+                    <FormLabel>Ward No.</FormLabel>
+                    <FormControl><Input value={profileData?.wardNo || "Not Set"} disabled /></FormControl>
+                  </FormItem>
+                  <FormField
+                    control={registrationForm.control}
+                    name="mobileNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mobile Number</FormLabel>
+                        <FormControl><Input type="tel" placeholder="Your contact number" {...field} disabled={isSubmitting} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </form>
+             </Form>
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline" type="button" disabled={isSubmitting}>Cancel</Button></DialogClose>
+              <Button type="submit" form={`event-reg-form-${event.id}`} disabled={isSubmitting || !registrationForm.formState.isValid}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                Confirm Registration
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardFooter>
     </Card>
   );
