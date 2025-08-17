@@ -60,7 +60,7 @@ export function LandingNavbar() {
             <span className="hidden md:inline">{appName}</span>
           </div>
         </Link>
-        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+        <nav className="hidden items-center gap-6 text-base font-medium md:flex">
           {navLinks.map((link) => (
             <Link 
               key={link.href} 
