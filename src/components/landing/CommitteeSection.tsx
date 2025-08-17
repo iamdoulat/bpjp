@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { getOrganizationSettings, type OrganizationSettingsData } from '@/services/organizationSettingsService';
 import { Users, Phone } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 export function CommitteeSection() {
   const [settings, setSettings] = useState<OrganizationSettingsData | null>(null);
@@ -37,10 +38,11 @@ export function CommitteeSection() {
                 <span>The driving force behind our mission. Committee Period: {loading ? <Skeleton className="h-5 w-24 inline-block" /> : settings?.committeePeriod || 'N/A'}.</span>
             </div>
         </div>
-        <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-2">
+        <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto_1fr] md:items-center">
             {loading ? (
                 <>
                     <LeadershipCardSkeleton />
+                    <Separator orientation="vertical" className="h-32 mx-auto hidden md:block" />
                     <LeadershipCardSkeleton />
                 </>
             ) : (
@@ -51,6 +53,8 @@ export function CommitteeSection() {
                         imageUrl={settings?.presidentImageURL}
                         mobileNumber={settings?.presidentMobileNumber}
                     />
+                     <Separator orientation="vertical" className="h-32 mx-auto hidden md:block" />
+                     <Separator orientation="horizontal" className="md:hidden" />
                     <LeadershipCard
                         name={settings?.secretaryName || "General Secretary"}
                         title="General Secretary"
