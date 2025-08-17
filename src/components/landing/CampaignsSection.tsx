@@ -39,7 +39,7 @@ export function CampaignsSection() {
   }, []);
 
   return (
-    <section id="campaigns" className="pt-6 pb-16 md:pb-24 bg-card">
+    <section id="campaigns" className="pt-8 pb-16 md:pb-24 bg-card">
       <div className="container">
         <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl">Active Campaigns</h2>
         <p className="mt-4 text-center text-lg text-muted-foreground">
