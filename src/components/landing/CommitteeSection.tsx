@@ -32,7 +32,7 @@ export function CommitteeSection() {
     <section id="committee" className="pt-5 pb-5 bg-card">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-block rounded-lg bg-muted px-3 py-1 text-3xl font-bold mb-4">Leadership</div>
+            <div className="inline-block rounded-lg bg-green-600 text-white px-3 py-1 text-3xl font-bold mb-4">Leadership</div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">Meet Our Committee</h2>
             <div className="mt-4 text-lg text-black dark:text-muted-foreground">
                 <span>The driving force behind our mission. Committee Period: {loading ? <Skeleton className="h-5 w-24 inline-block" /> : settings?.committeePeriod || 'N/A'}.</span>
