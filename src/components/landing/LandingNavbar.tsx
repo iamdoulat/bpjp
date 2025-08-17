@@ -38,11 +38,11 @@ export function LandingNavbar() {
           </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          <Link href="#campaigns" className="text-muted-foreground transition-colors hover:text-foreground">Campaigns</Link>
-          <Link href="#events" className="text-muted-foreground transition-colors hover:text-foreground">Events</Link>
-          <Link href="#mission" className="text-muted-foreground transition-colors hover:text-foreground">Mission</Link>
-          <Link href="#about" className="text-muted-foreground transition-colors hover:text-foreground">About</Link>
-          <Link href="#committee" className="text-muted-foreground transition-colors hover:text-foreground">Committee</Link>
+          <Link href="#campaigns" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">Campaigns</Link>
+          <Link href="#events" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">Events</Link>
+          <Link href="#mission" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">Mission</Link>
+          <Link href="#about" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">About</Link>
+          <Link href="#committee" className="text-black dark:text-muted-foreground transition-colors hover:text-black dark:hover:text-foreground">Committee</Link>
         </nav>
         <div className="flex items-center gap-2">
            <Button
