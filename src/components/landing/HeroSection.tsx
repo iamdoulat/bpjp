@@ -23,7 +23,7 @@ export function HeroSection() {
       />
       <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white p-4">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-          Welcome to <span className="text-primary">{organizationSettings?.organizationName || "Our Community"}</span>
+          ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ এ আপনাকে স্বাগতম
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-gray-300 md:text-xl">
           {organizationSettings?.address || "A non-profit organization dedicated to making a positive impact in our community."}

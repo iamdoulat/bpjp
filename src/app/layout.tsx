@@ -10,7 +10,7 @@ import { Analytics } from "@vercel/analytics/next"; // Added Vercel Analytics im
 // Metadata can be dynamic if we use generateMetadata with AppContext
 // For now, it's static or uses environment variables if needed before context is ready client-side
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_APP_NAME || 'ImpactBoard', // Use env var or default
+  title: process.env.NEXT_PUBLIC_APP_NAME || 'BPJP - Donor & Campaign Management Dashboard', // Use env var or default
   description: 'Donor & Campaign Management Dashboard',
   manifest: '/manifest.json', // Added manifest link here for metadata
 };
@@ -27,7 +27,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const appTitle = process.env.NEXT_PUBLIC_APP_NAME || 'ImpactBoard';
+  const appTitle = process.env.NEXT_PUBLIC_APP_NAME || 'BPJP';
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
