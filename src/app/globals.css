@@ -57,7 +57,7 @@
   .dark {
     --background: 0 0% 20%; /* #333333 Dark Slate Gray */
     --foreground: 0 0% 95%; /* Light gray for text */
-    --header-background: 0 0% 18%; /* #2E2E2E - Slightly darker for dark theme header */
+    --header-background: 0 0% 16%; /* #292929 - Made darker for footer */
 
     --card: 0 0% 24%; /* #3D3D3D */
     --card-foreground: 0 0% 95%;
