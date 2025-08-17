@@ -16,7 +16,7 @@ export function HeroSection() {
   const established = organizationSettings?.establishedYear || "২০১৮";
 
   return (
-    <section id="home" className="relative w-full h-[500px] rounded-[10px] overflow-hidden">
+    <section id="home" className="relative w-full h-[500px] rounded-[10px] overflow-hidden mt-5">
       <Image
         src={heroImageUrl}
         alt="Community working together"
