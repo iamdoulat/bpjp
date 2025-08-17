@@ -29,7 +29,7 @@ export function CommitteeSection() {
   }, []);
 
   return (
-    <section id="committee" className="pt-5 pb-5 bg-card">
+    <section id="committee" className="pt-5 pb-5 bg-card px-2.5">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
