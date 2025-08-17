@@ -32,7 +32,7 @@ export function AboutSection() {
       <div className="container">
         <div className="grid items-start gap-12 lg:grid-cols-2">
           <div className="space-y-4 pl-[10px]">
-            <div className="inline-block rounded-lg bg-muted px-3 py-1 text-2xl font-bold">About Us</div>
+            <div className="inline-block rounded-lg bg-green-600 text-white px-3 py-1 text-2xl font-bold">About Us</div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">
               {loading ? <Skeleton className="h-9 w-3/4" /> : settings?.organizationName || "Our Organization"}
             </h2>
