@@ -9,14 +9,14 @@ import { useAppContext } from "@/contexts/AppContext";
 export function HeroSection() {
   const { organizationSettings } = useAppContext();
   // Use the cover image from settings, with a fallback
-  const heroImageUrl = organizationSettings?.coverImageUrl || "https://placehold.co/1920x1080.png";
+  const heroImageUrl = organizationSettings?.coverImageUrl || "https://placehold.co/1200x500.png";
 
   const address = organizationSettings?.address || "ভূজপুর থানা, ফটিকছড়ি, চট্টগ্রাম।";
   const regNumber = organizationSettings?.registrationNumber || "২০১৮/এ";
   const established = organizationSettings?.establishedYear || "২০১৮";
 
   return (
-    <section id="home" className="relative w-full h-[80vh] min-h-[600px]">
+    <section id="home" className="relative w-full h-[500px] rounded-[10px] overflow-hidden">
       <Image
         src={heroImageUrl}
         alt="Community working together"
