@@ -36,7 +36,7 @@ export function AboutSection() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               {loading ? <Skeleton className="h-9 w-3/4" /> : settings?.organizationName || "Our Organization"}
             </h2>
-            <div className="text-muted-foreground">
+            <div className="text-black dark:text-muted-foreground">
               {loading ? (
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-full" />
