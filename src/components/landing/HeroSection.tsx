@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/contexts/AppContext";
+import { UserPlus } from "lucide-react";
 
 export function HeroSection() {
   const { organizationSettings } = useAppContext();
@@ -37,6 +38,9 @@ export function HeroSection() {
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href="#about">বিস্তারিত</Link>
+          </Button>
+          <Button size="lg" asChild variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
+            <Link href="/signup"><UserPlus className="mr-2 h-5 w-5" /> Sign Up</Link>
           </Button>
         </div>
       </div>
