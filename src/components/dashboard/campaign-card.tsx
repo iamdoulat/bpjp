@@ -403,19 +403,33 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
             <Button
               variant="ghost"
               size="icon"
-              className={cn("h-7 w-7", userLiked ? "text-blue-500 hover:text-blue-600" : "text-muted-foreground hover:text-rose-500")}
+              className={cn(
+                "h-7 w-7",
+                userLiked
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "text-muted-foreground hover:text-rose-500"
+              )}
               onClick={() => handleReactionToggle('like')}
               disabled={isTogglingReaction || authLoading || loadingReactions}
               aria-label="Like campaign"
             >
-              {isTogglingReaction || loadingReactions ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className="h-4 w-4" />}
+              {isTogglingReaction || loadingReactions ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Heart className={cn("h-4 w-4", userLiked && "fill-current")} />
+              )}
             </Button>
             <span className="text-xs text-muted-foreground">{formatCount(likeCount)}</span>
             
             <Button
               variant="ghost"
               size="icon"
-              className={cn("h-7 w-7", userSupported ? "text-blue-500 hover:text-blue-600" : "text-muted-foreground hover:text-primary")}
+              className={cn(
+                "h-7 w-7",
+                userSupported
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "text-muted-foreground hover:text-primary"
+              )}
               onClick={() => handleReactionToggle('support')}
               disabled={isTogglingReaction || authLoading || loadingReactions}
               aria-label="Support campaign"
