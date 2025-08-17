@@ -63,7 +63,8 @@ export function Footer() {
                 href="https://www.facebook.com/groups/bpkt2018"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-black dark:text-muted-foreground hover:text-primary"
+                className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                aria-label="Facebook Group"
               >
                 <Facebook className="h-6 w-6" />
                 <span className="sr-only">Facebook Group</span>
@@ -72,7 +73,8 @@ export function Footer() {
                 href="https://www.facebook.com/bpjkp"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-black dark:text-muted-foreground hover:text-primary"
+                className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                aria-label="Facebook Page"
               >
                 <Facebook className="h-6 w-6" />
                 <span className="sr-only">Facebook Page</span>
