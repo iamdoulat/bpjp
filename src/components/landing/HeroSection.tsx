@@ -30,10 +30,16 @@ export function HeroSection() {
         data-ai-hint="community charity event"
       />
       <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white p-4">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl leading-tight">
+        <h1 
+          className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl leading-tight"
+          style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.7)' }}
+        >
           ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ <br /> এ আপনাকে স্বাগতম
         </h1>
-        <div className="mt-4 max-w-3xl text-lg text-gray-300 md:text-xl">
+        <div 
+          className="mt-4 max-w-3xl text-lg text-gray-200 md:text-xl"
+          style={{ textShadow: '1px 1px 6px rgba(0,0,0,0.8)' }}
+        >
           <p>ঠিকানা : {address}</p>
           <p>রেজিঃ নং- {regNumber}, স্থাপিত: {established} ইংরেজি</p>
         </div>
