@@ -37,6 +37,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { getUserProfile, type UserProfileData } from "@/services/userService";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+
 
 function formatDisplayDate(date: Timestamp | Date | undefined) {
   if (!date) return "N/A";
@@ -70,7 +78,7 @@ export function EventsSection() {
         const fetchedEvents = await getEvents('asc'); // Fetch sorted by soonest
         const upcoming = fetchedEvents
           .filter(event => event.eventStatus === 'Planned' || event.eventStatus === 'Confirmed')
-          .slice(0, 3); // Get top 3 upcoming events
+          .slice(0, 4); // Get top 4 upcoming events
         setUpcomingEvents(upcoming);
       } catch (e) {
         console.error("Failed to fetch events for landing page:", e);
@@ -108,9 +116,25 @@ export function EventsSection() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : upcomingEvents.length > 0 ? (
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingEvents.map((event) => <EventCard key={event.id} event={event} />)}
-            </div>
+            <Carousel
+              opts={{
+                align: "center",
+                loop: upcomingEvents.length > 3,
+              }}
+              className="w-full px-[25px] m-[35px]"
+            >
+              <CarouselContent className="-ml-4">
+                {upcomingEvents.map((event) => (
+                  <CarouselItem key={event.id} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1 h-full">
+                      <EventCard event={event} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="absolute left-[-15px] sm:left-[-25px] top-1/2 -translate-y-1/2 hidden lg:flex" />
+              <CarouselNext className="absolute right-[-15px] sm:right-[-25px] top-1/2 -translate-y-1/2 hidden lg:flex" />
+            </Carousel>
           ) : (
             <Alert>
               <AlertTitle>No Upcoming Events</AlertTitle>
