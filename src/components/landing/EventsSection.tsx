@@ -121,7 +121,7 @@ export function EventsSection() {
                 align: "center",
                 loop: upcomingEvents.length > 3,
               }}
-              className="w-full px-[25px]"
+              className="w-[95%] px-[25px]"
             >
               <CarouselContent className="-ml-4">
                 {upcomingEvents.map((event) => (
