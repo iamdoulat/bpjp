@@ -121,7 +121,7 @@ export function EventsSection() {
                 align: "center",
                 loop: upcomingEvents.length > 3,
               }}
-              className="w-full px-[25px] m-[35px]"
+              className="w-full px-[25px]"
             >
               <CarouselContent className="-ml-4">
                 {upcomingEvents.map((event) => (
@@ -132,8 +132,8 @@ export function EventsSection() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious className="absolute left-[-15px] sm:left-[-25px] top-1/2 -translate-y-1/2 hidden lg:flex" />
-              <CarouselNext className="absolute right-[-15px] sm:right-[-25px] top-1/2 -translate-y-1/2 hidden lg:flex" />
+              <CarouselPrevious className="absolute left-[5px] sm:left-[-5px] top-1/2 -translate-y-1/2 hidden lg:flex" />
+              <CarouselNext className="absolute right-[5px] sm:right-[-5px] top-1/2 -translate-y-1/2 hidden lg:flex" />
             </Carousel>
           ) : (
             <Alert>

@@ -68,8 +68,8 @@ export function AdvisoryBoardSection() {
               </CarouselContent>
               {members.length > 1 && (
                 <>
-                  <CarouselPrevious className="absolute left-[-15px] sm:left-[-25px] top-1/2 -translate-y-1/2 hidden md:flex" />
-                  <CarouselNext className="absolute right-[-15px] sm:right-[-25px] top-1/2 -translate-y-1/2 hidden md:flex" />
+                  <CarouselPrevious className="absolute left-[-5px] sm:left-[-5px] top-1/2 -translate-y-1/2 hidden md:flex" />
+                  <CarouselNext className="absolute right-[-5px] sm:right-[-5px] top-1/2 -translate-y-1/2 hidden md:flex" />
                 </>
               )}
             </Carousel>
