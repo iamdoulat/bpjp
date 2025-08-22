@@ -56,10 +56,10 @@ export function AdvisoryBoardSection() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : members.length > 0 ? (
-             <Carousel opts={{ align: "start", loop: members.length > 4 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-5xl mx-auto">
+             <Carousel opts={{ align: "start", loop: members.length > 5 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-5xl mx-auto">
               <CarouselContent className="-ml-4">
                 {members.map((member) => (
-                  <CarouselItem key={member.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                  <CarouselItem key={member.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/5">
                     <div className="p-1 h-full">
                       <MemberCard member={member} />
                     </div>
