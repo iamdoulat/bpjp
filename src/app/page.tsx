@@ -16,7 +16,7 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen bg-[#EEEEEE] dark:bg-background">
       <LandingNavbar />
       <div className="px-4 sm:px-6 lg:px-8">
-        <main className="flex-1 max-w-[1330px] mx-auto">
+        <main className="flex-1 max-w-[1360px] mx-auto">
           <HeroSection />
           <div className="mt-5">
             <CampaignsSection />
