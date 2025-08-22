@@ -1,9 +1,9 @@
-
 // src/services/campaignService.ts
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, Timestamp, type DocumentData, type QueryDocumentSnapshot, runTransaction, deleteDoc, writeBatch, ref as firestoreRef } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // Correctly import from firebase/storage
 import { deleteImageFromStorage } from '@/lib/firebase'; // Import deleteImageFromStorage
+import { getUserProfile } from './userService';
 
 // Extended CampaignData to include raisedAmount, id, likeCount, and supportCount for display purposes
 export interface CampaignData {
@@ -47,8 +47,20 @@ export interface CampaignUpdateData {
   initialStatus: "draft" | "upcoming" | "active" | "completed"; // Allow setting to completed during edit
 }
 
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
+}
+
 
 export async function addCampaign(campaignData: NewCampaignInputData): Promise<string> {
+  await verifyAdminRole(); // Security check
   let uploadedImageUrl: string | undefined = undefined;
 
   // Check if campaignImageFile is provided for upload
@@ -184,6 +196,7 @@ export async function getCampaignById(id: string): Promise<CampaignData | null> 
 
 // Function to update an existing campaign
 export async function updateCampaign(id: string, campaignData: CampaignUpdateData): Promise<void> {
+  await verifyAdminRole(); // Security check
   try {
     const docRef = doc(db, "campaigns", id);
     const dataToUpdate = {
@@ -203,6 +216,7 @@ export async function updateCampaign(id: string, campaignData: CampaignUpdateDat
 
 // Function to delete a campaign
 export async function deleteCampaign(campaignId: string): Promise<void> {
+  await verifyAdminRole(); // Security check
   if (!campaignId) {
     throw new Error("Campaign ID is required to delete a campaign.");
   }
@@ -322,4 +336,3 @@ export async function toggleCampaignReaction(campaignId: string, userId: string,
     throw new Error(`An unknown error occurred while toggling ${reactionType}.`);
   }
 }
-

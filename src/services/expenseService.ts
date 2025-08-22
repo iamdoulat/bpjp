@@ -1,8 +1,8 @@
-
 // src/services/expenseService.ts
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, getDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getUserProfile } from './userService';
 
 export interface ExpenseData {
   id?: string;
@@ -31,8 +31,20 @@ export interface UpdateExpenseInput {
     attachmentFile?: File | null; // For new/replacement attachment
 }
 
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
+}
+
 
 export async function addExpense(expenseInput: NewExpenseInput): Promise<string> {
+  await verifyAdminRole(); // Security check
   try {
     let attachmentUrl: string | undefined = undefined;
     let attachmentPath: string | undefined = undefined;
@@ -170,6 +182,7 @@ export async function deleteExpenseAttachment(filePath: string): Promise<void> {
 }
 
 export async function deleteExpense(expenseId: string): Promise<void> {
+  await verifyAdminRole(); // Security check
   const expenseDocRef = doc(db, "expenses", expenseId);
   try {
     const expenseSnap = await getDoc(expenseDocRef);
@@ -193,6 +206,7 @@ export async function deleteExpense(expenseId: string): Promise<void> {
 }
 
 export async function updateExpense(expenseId: string, updates: UpdateExpenseInput, existingAttachmentPath?: string | null): Promise<void> {
+    await verifyAdminRole(); // Security check
     const expenseDocRef = doc(db, "expenses", expenseId);
     const dataToUpdate: Partial<ExpenseData> = { ...updates };
 

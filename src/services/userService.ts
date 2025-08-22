@@ -1,4 +1,3 @@
-
 // src/services/userService.ts
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, type QueryDocumentSnapshot, type DocumentData, deleteDoc } from 'firebase/firestore';
@@ -35,9 +34,24 @@ export interface NewUserProfileFirestoreData {
   walletBalance?: number;
 }
 
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
+}
+
 
 // Function to get user profile from Firestore
 export async function getUserProfile(uid: string): Promise<UserProfileData | null> {
+  if (!uid) {
+    console.warn("getUserProfile called with no UID.");
+    return null;
+  }
   try {
     const userDocRef = doc(db, 'userProfiles', uid);
     const docSnap = await getDoc(userDocRef);
@@ -59,17 +73,23 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
         walletBalance: data.walletBalance !== undefined ? data.walletBalance : 0,
       } as UserProfileData;
     }
-    return {
-      uid,
-      email: auth.currentUser?.email || null,
-      displayName: auth.currentUser?.displayName || null,
-      walletBalance: 0,
-      role: 'user',
-      status: 'Active',
-      mobileNumber: null, 
-      whatsAppNumber: null, 
-      wardNo: null,
-    };
+    // If the profile doesn't exist in Firestore, construct a minimal one from the auth user if available
+    const authUser = auth.currentUser;
+    if (authUser && authUser.uid === uid) {
+      return {
+        uid,
+        email: authUser.email || null,
+        displayName: authUser.displayName || null,
+        photoURL: authUser.photoURL || null,
+        walletBalance: 0,
+        role: 'user',
+        status: 'Active',
+        mobileNumber: null, 
+        whatsAppNumber: null, 
+        wardNo: null,
+      };
+    }
+    return null;
   } catch (error) {
     console.error("Error fetching user profile:", error);
     throw error;
@@ -78,6 +98,7 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
 
 // Function to fetch all user profiles from Firestore
 export async function getAllUserProfiles(): Promise<UserProfileData[]> {
+  await verifyAdminRole(); // Security check
   try {
     const usersCollectionRef = collection(db, 'userProfiles');
     const querySnapshot = await getDocs(usersCollectionRef);
@@ -116,7 +137,9 @@ export async function updateUserProfileService(
   authUser: AuthUser,
   profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'whatsAppNumber' | 'wardNo'>>
 ): Promise<void> {
-  if (!authUser) throw new Error("User not authenticated.");
+  if (!authUser || authUser.uid !== auth.currentUser?.uid) {
+    throw new Error("User not authenticated or UID mismatch.");
+  }
 
   const userDocRef = doc(db, 'userProfiles', authUser.uid);
   const currentProfile = await getUserProfile(authUser.uid);
@@ -174,6 +197,7 @@ export async function updateUserProfileAdmin(
   userId: string,
   profileUpdates: Partial<Pick<UserProfileData, 'displayName' | 'mobileNumber' | 'role' | 'status' | 'walletBalance' | 'whatsAppNumber' | 'wardNo'>>
 ): Promise<void> {
+  await verifyAdminRole(); // Security check
   if (!userId) throw new Error("User ID is required.");
   const userDocRef = doc(db, 'userProfiles', userId);
   const dataToUpdate: Partial<UserProfileData> & { lastUpdated: Timestamp } = {
@@ -195,7 +219,9 @@ export async function uploadProfilePictureAndUpdate(
   authUser: AuthUser,
   file: File
 ): Promise<string> {
-  if (!authUser) throw new Error("User not authenticated.");
+  if (!authUser || authUser.uid !== auth.currentUser?.uid) {
+    throw new Error("User not authenticated or UID mismatch.");
+  }
   if (!file) throw new Error("No file selected.");
 
   const filePath = `profile-images/${authUser.uid}/${file.name}`;
@@ -241,6 +267,7 @@ export async function uploadProfilePictureAndUpdate(
 
 // Function to delete a user's profile document from Firestore
 export async function deleteUserProfileDocument(userId: string): Promise<void> {
+  await verifyAdminRole(); // Security check
   if (!userId) throw new Error("User ID is required for deletion.");
   try {
     const userDocRef = doc(db, 'userProfiles', userId);
@@ -256,6 +283,8 @@ export async function createUserProfileDocument(
   uid: string,
   profileData: NewUserProfileFirestoreData
 ): Promise<void> {
+  // This function is typically called during signup, which has its own auth context.
+  // Admin-initiated creation will be handled by a separate flow which will include verifyAdminRole.
   try {
     const userDocRef = doc(db, 'userProfiles', uid);
     await setDoc(userDocRef, {
@@ -269,4 +298,3 @@ export async function createUserProfileDocument(
     throw error;
   }
 }
-

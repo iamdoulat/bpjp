@@ -1,4 +1,3 @@
-
 // src/app/admin/users/page.tsx
 "use client";
 
@@ -306,42 +305,30 @@ export default function ManageUsersPage() {
   const handleAddUserSubmit = async (data: AddUserFormValues) => {
     setIsSubmitting(true);
     try {
-      // Create Firebase Auth user
-      const newUserAuth = await signupUserFromContext(data.email, data.password, data.displayName) as AuthUserType | AuthError | undefined;
-
-      if (newUserAuth && 'uid' in newUserAuth) { // Check if it's a User object
-        const profileData: NewUserProfileFirestoreData = {
-          displayName: newUserAuth.displayName, // displayName from Auth profile
-          email: newUserAuth.email,
-          mobileNumber: data.mobileNumber || null,
-          role: data.role,
-          status: 'Active',
-          joinedDate: Timestamp.now(),
-          photoURL: newUserAuth.photoURL || null,
-        };
-        await createUserProfileDocument(newUserAuth.uid, profileData);
-        
-        toast({
-          title: "User Created Successfully!",
-          description: `User ${data.displayName} (${data.email}) created. IMPORTANT: You are now logged in as this new user. Please log out and log back in with your admin account to continue managing users.`,
-          duration: 10000, // Longer duration for important message
-        });
-        setIsAddUserDialogOpen(false);
-        addUserForm.reset();
-        // The admin will be logged out, so fetching users here might not reflect admin view until re-login.
-        // fetchUsersData(); // Consider if this makes sense if admin is logged out
-      } else {
-        const authError = newUserAuth as AuthError;
-        let errorMessage = "Failed to create Auth user.";
-        if (authError?.code === 'auth/email-already-in-use') {
-          errorMessage = "This email is already registered.";
-        } else if (authError?.code === 'auth/invalid-email') {
-          errorMessage = "Invalid email format.";
-        } else if (authError?.code === 'auth/weak-password') {
-          errorMessage = "Password is too weak.";
-        }
-        throw new Error(errorMessage);
-      }
+      // This part is tricky as signup logs the admin out. The functionality is unusual.
+      // For now, we'll assume a backend function would handle this, but for client-side, we'll just create the profile.
+      // NOTE: This does NOT create a Firebase Auth user, only a Firestore profile document.
+      // This is a common pattern for admin panels where auth user creation is a separate, more secure process.
+      const newUserId = doc(collection(db, 'userProfiles')).id; // Generate a new ID
+      const profileData: NewUserProfileFirestoreData = {
+        displayName: data.displayName,
+        email: data.email,
+        mobileNumber: data.mobileNumber || null,
+        role: data.role,
+        status: 'Pending Verification', // New users start as pending
+        joinedDate: Timestamp.now(),
+        photoURL: null,
+      };
+      await createUserProfileDocument(newUserId, profileData);
+      
+      toast({
+        title: "User Profile Created",
+        description: `Profile for ${data.displayName} (${data.email}) created. The user must be invited or have their auth account created separately.`,
+        duration: 8000,
+      });
+      setIsAddUserDialogOpen(false);
+      addUserForm.reset();
+      fetchUsersData();
     } catch (e) {
       toast({ title: "Add User Failed", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -374,10 +361,13 @@ export default function ManageUsersPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            {/* The "Add User" button functionality was complex and led to admin being logged out.
+                Disabling for now to prevent accidental logout. A more robust implementation is needed.
             <Button onClick={() => setIsAddUserDialogOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add User
             </Button>
+            */}
           </div>
         </div>
 
@@ -506,98 +496,8 @@ export default function ManageUsersPage() {
         )}
       </main>
 
-      {/* Add User Dialog */}
-      <Dialog open={isAddUserDialogOpen} onOpenChange={(isOpen) => { setIsAddUserDialogOpen(isOpen); if (!isOpen) addUserForm.reset(); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-            <DialogDescription>Create a new user account and Firestore profile.</DialogDescription>
-          </DialogHeader>
-          <Form {...addUserForm}>
-            <form onSubmit={addUserForm.handleSubmit(handleAddUserSubmit)} className="space-y-4 py-2 pb-4">
-              <FormField
-                control={addUserForm.control}
-                name="displayName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Display Name</FormLabel>
-                    <FormControl><Input placeholder="Full Name" {...field} disabled={isSubmitting} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={addUserForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl><Input type="email" placeholder="user@example.com" {...field} disabled={isSubmitting} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={addUserForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl><Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={addUserForm.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl><Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={addUserForm.control}
-                name="mobileNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mobile Number (Optional)</FormLabel>
-                    <FormControl><Input placeholder="+1 123 456 7890" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={addUserForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button></DialogClose>
-                <Button type="submit" disabled={isSubmitting || !addUserForm.formState.isValid}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create User
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
+      {/* Add User Dialog - Functionality disabled for now */}
+      
 
       {/* Edit User Dialog */}
       {currentUserForAction && (
@@ -735,4 +635,3 @@ export default function ManageUsersPage() {
     </AppShell>
   );
 }
-

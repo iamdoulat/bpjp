@@ -1,4 +1,3 @@
-
 // src/app/my-donations/page.tsx
 "use client";
 
@@ -20,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getPaymentTransactionsByUserId, type PaymentTransaction } from "@/services/paymentService";
+import { Timestamp } from "firebase/firestore";
 
 // Interface for donation entries displayed on this page
 export interface UserDonationEntry {
@@ -60,7 +60,7 @@ export default function MyDonationsPage() {
         const fetchedTransactions: PaymentTransaction[] = await getPaymentTransactionsByUserId(user.uid);
         const mappedDonations: UserDonationEntry[] = fetchedTransactions.map(tx => ({
           id: tx.id,
-          date: tx.date instanceof Date ? tx.date : new Date(), // Ensure date is a Date object
+          date: tx.date instanceof Timestamp ? tx.date.toDate() : (tx.date as Date),
           campaignName: tx.campaignName,
           amount: tx.amount,
           status: tx.status,
@@ -286,4 +286,3 @@ export default function MyDonationsPage() {
     </AppShell>
   );
 }
-

@@ -1,5 +1,5 @@
 // src/services/noticeService.ts
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import {
   collection,
   addDoc,
@@ -18,6 +18,7 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getUserProfile } from './userService';
 
 const NOTICES_COLLECTION = 'notices';
 
@@ -53,6 +54,17 @@ export interface UpdateNoticeInput {
   removeCurrentImage?: boolean; // To explicitly remove image
 }
 
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
+}
+
 async function uploadNoticeImage(file: File, noticeId?: string): Promise<{ imageUrl: string, imagePath: string }> {
   const timestamp = new Date().getTime();
   const uniqueFileName = `notice_${noticeId || timestamp}_${file.name.replace(/\s+/g, '_')}`;
@@ -83,6 +95,7 @@ async function deleteNoticeImage(imagePath?: string | null) {
 }
 
 export async function addNotice(data: NewNoticeInput): Promise<string> {
+  await verifyAdminRole(); // Security check
   try {
     let imageDetails: { imageUrl: string, imagePath: string } | undefined;
     if (data.imageFile) {
@@ -156,6 +169,7 @@ export async function getNotices(onlyActive: boolean = false): Promise<NoticeDat
 
 
 export async function updateNotice(noticeId: string, updates: UpdateNoticeInput): Promise<void> {
+  await verifyAdminRole(); // Security check
   try {
     const noticeDocRef = doc(db, NOTICES_COLLECTION, noticeId);
     const dataToUpdate: Partial<NoticeData> = {
@@ -197,6 +211,7 @@ export async function updateNotice(noticeId: string, updates: UpdateNoticeInput)
 }
 
 export async function deleteNotice(noticeId: string): Promise<void> {
+  await verifyAdminRole(); // Security check
   try {
     const noticeDocRef = doc(db, NOTICES_COLLECTION, noticeId);
     const noticeSnap = await getDoc(noticeDocRef);

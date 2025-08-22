@@ -4,6 +4,7 @@ import { collection, addDoc, getDocs, doc, getDoc, Timestamp, serverTimestamp, q
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { UserProfileData } from './userService'; // For enriching registration data
 import { sendWhatsAppEventRegistrationConfirmation } from './notificationService';
+import { getUserProfile } from './userService';
 
 // New interface for token distribution entry
 export interface TokenDistributionEntry {
@@ -62,8 +63,20 @@ export interface EnrichedEventRegistrationData extends EventRegistrationData {
   userProfileAvatarUrl?: string | null;
 }
 
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
+}
+
 
 export async function addEvent(eventInput: NewEventInput): Promise<string> {
+  await verifyAdminRole(); // Security check
   let imageUrl: string | undefined = undefined;
   let imagePath: string | undefined = undefined;
 
@@ -216,6 +229,7 @@ export async function updateEvent(
   updates: UpdateEventInput,
   currentEventData: EventData | null
 ): Promise<void> {
+  await verifyAdminRole(); // Security check
   const eventDocRef = doc(db, "events", eventId);
   const dataToUpdate: Partial<Omit<EventData, 'id' | 'createdAt' | 'participantCount'>> & { lastUpdated: Timestamp } = {
     lastUpdated: serverTimestamp() as Timestamp,
@@ -270,6 +284,7 @@ export async function updateEvent(
 
 
 export async function deleteEvent(eventId: string): Promise<void> {
+  await verifyAdminRole(); // Security check
   const eventDocRef = doc(db, "events", eventId);
   try {
     const eventSnap = await getDoc(eventDocRef);
@@ -298,7 +313,9 @@ export async function registerForEvent(
   userId: string,
   registrationDetails: { name: string; mobileNumber: string; wardNo: string; userEmail?: string }
 ): Promise<void> {
-  if (!userId) throw new Error("User ID is required for registration.");
+  if (!userId || userId !== auth.currentUser?.uid) {
+    throw new Error("User ID is missing or does not match the authenticated user.");
+  }
 
   const eventDocRef = doc(db, "events", eventId);
   const registrationDocRef = doc(db, "events", eventId, "registrations", userId);
@@ -379,21 +396,19 @@ export async function getEventRegistrationsWithDetails(eventId: string): Promise
 
     const enrichedRegistrations: EnrichedEventRegistrationData[] = [];
 
-    for (const regDoc of registrationsSnapshot.docs) {
+    const userProfilePromises = registrationsSnapshot.docs.map(regDoc => {
       const registrationData = regDoc.data() as Omit<EventRegistrationData, 'id'>;
+      return getUserProfile(registrationData.userId).then(profile => ({
+        regDoc,
+        registrationData,
+        profile
+      }));
+    });
 
-      let userProfileDisplayName: string | null = registrationData.name;
-      let userProfileAvatarUrl: string | null = null;
+    const results = await Promise.all(userProfilePromises);
 
-      const userProfileDocRef = doc(db, "userProfiles", registrationData.userId);
-      const userProfileSnap = await getDoc(userProfileDocRef);
-      if (userProfileSnap.exists()) {
-        const profile = userProfileSnap.data() as UserProfileData;
-        userProfileDisplayName = profile.displayName || registrationData.name;
-        userProfileAvatarUrl = profile.photoURL || null;
-      }
-
-      enrichedRegistrations.push({
+    for (const { regDoc, registrationData, profile } of results) {
+       enrichedRegistrations.push({
         id: regDoc.id,
         userId: registrationData.userId,
         userEmail: registrationData.userEmail,
@@ -401,10 +416,11 @@ export async function getEventRegistrationsWithDetails(eventId: string): Promise
         mobileNumber: registrationData.mobileNumber,
         wardNo: registrationData.wardNo,
         registeredAt: registrationData.registeredAt,
-        userProfileDisplayName,
-        userProfileAvatarUrl,
+        userProfileDisplayName: profile?.displayName || registrationData.name,
+        userProfileAvatarUrl: profile?.photoURL || null,
       });
     }
+
     return enrichedRegistrations;
   } catch (error) {
     console.error(`[eventService.getEventRegistrationsWithDetails] Error fetching registrations for event ${eventId}:`, error);

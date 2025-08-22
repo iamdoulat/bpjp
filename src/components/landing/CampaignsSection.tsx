@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ServerCrash, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
+import { Timestamp } from 'firebase/firestore';
 
 export function CampaignsSection() {
   const [activeCampaigns, setActiveCampaigns] = useState<CampaignData[]>([]);
@@ -24,7 +25,11 @@ export function CampaignsSection() {
         const fetchedCampaigns = await getCampaigns();
         const active = fetchedCampaigns
           .filter(campaign => campaign.initialStatus === 'active')
-          .sort((a, b) => (b.createdAt.toMillis() - a.createdAt.toMillis()))
+          .sort((a, b) => {
+              const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : (a.createdAt as unknown as Date).getTime();
+              const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : (b.createdAt as unknown as Date).getTime();
+              return dateB - dateA;
+          })
           .slice(0, 3); // Get top 3 most recent active campaigns
         
         setActiveCampaigns(active);

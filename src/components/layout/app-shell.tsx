@@ -1,4 +1,3 @@
-
 // src/components/layout/app-shell.tsx
 "use client";
 
@@ -127,20 +126,13 @@ export function AppShell({ children }: AppShellProps) {
   };
 
 
-  // Scroll to bottom on component mount (after page load/refresh) or when pathname changes
+  // Scroll to top on pathname change
   useEffect(() => {
     const mainEl = mainScrollRef.current;
     if (mainEl) {
-      const timer = setTimeout(() => {
-        mainEl.scrollTo({
-          top: mainEl.scrollHeight,
-          behavior: 'smooth'
-        });
-      }, 300); // Delay to allow content rendering
-
-      return () => clearTimeout(timer); // Cleanup timeout
+      mainEl.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [pathname]); // Runs on mount and when pathname changes
+  }, [pathname]);
 
 
   if (loading) {
