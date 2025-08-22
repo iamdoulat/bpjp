@@ -37,8 +37,8 @@ export function HeroSection() {
           ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ <br /> এ আপনাকে স্বাগতম
         </h1>
         <div 
-          className="mt-4 max-w-3xl text-lg text-gray-200 md:text-xl"
-          style={{ textShadow: '1px 1px 6px rgba(0,0,0,0.8)' }}
+          className="mt-4 max-w-3xl text-lg text-gray-200 md:text-xl bg-green-600/50 backdrop-blur-sm p-3 rounded-md"
+          style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}
         >
           <p>ঠিকানা : {address}</p>
           <p>রেজিঃ নং- {regNumber}, স্থাপিত: {established} ইংরেজি</p>
