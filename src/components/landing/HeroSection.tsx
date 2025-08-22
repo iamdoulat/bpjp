@@ -37,11 +37,20 @@ export function HeroSection() {
           ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ <br /> এ আপনাকে স্বাগতম
         </h1>
         <div 
-          className="mt-4 max-w-3xl text-lg text-gray-200 md:text-xl bg-green-600/50 backdrop-blur-sm p-3 rounded-md"
-          style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}
+          className="mt-4 max-w-3xl text-lg text-gray-200 md:text-xl flex flex-col items-center gap-2"
         >
-          <p>ঠিকানা : {address}</p>
-          <p>রেজিঃ নং- {regNumber}, স্থাপিত: {established} ইংরেজি</p>
+          <p 
+            className="bg-green-600/50 backdrop-blur-sm p-2 rounded-md"
+            style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}
+          >
+            ঠিকানা : {address}
+          </p>
+          <p 
+            className="bg-green-600/50 backdrop-blur-sm p-2 rounded-md"
+            style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}
+          >
+            রেজিঃ নং- {regNumber}, স্থাপিত: {established} ইংরেজি
+          </p>
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
