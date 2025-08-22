@@ -76,7 +76,7 @@ export function CampaignsSection() {
           ) : activeCampaigns.length > 0 ? (
              <Carousel
               opts={{
-                align: "start",
+                align: "center",
                 loop: activeCampaigns.length > 3,
               }}
               className="w-full px-[25px]"
