@@ -38,6 +38,9 @@ export function Footer() {
               <span>
                 {organizationSettings?.address ||
                   "Community Address, City, Country"}
+                <br />
+                রেজিঃ নং- {organizationSettings?.registrationNumber || "N/A"},
+                স্থাপিত: {organizationSettings?.establishedYear || "N/A"} ইংরেজি
               </span>
             </div>
           </div>
