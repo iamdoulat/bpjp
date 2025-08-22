@@ -125,7 +125,7 @@ export function EventsSection() {
             >
               <CarouselContent className="-ml-4">
                 {upcomingEvents.map((event) => (
-                  <CarouselItem key={event.id} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3">
+                  <CarouselItem key={event.id} className="pl-4 basis-full md:basis-1/2 lg:basis-[31%]">
                     <div className="p-1 h-full">
                       <EventCard event={event} />
                     </div>
