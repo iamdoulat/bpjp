@@ -79,7 +79,7 @@ export function CampaignsSection() {
                 align: "center",
                 loop: activeCampaigns.length > 3,
               }}
-              className="w-full px-[35px] my-[10px] mx-[20px]"
+              className="w-full px-[35px] my-[5px] mx-[20px]"
             >
               <CarouselContent className="-ml-4">
                 {activeCampaigns.map((campaign) => (
