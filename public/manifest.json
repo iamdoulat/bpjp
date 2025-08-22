@@ -1,24 +1,32 @@
 {
+  "theme_color": "#3D006A",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
   "name": "BPJP",
   "short_name": "BPJP",
-  "description": "Dashboard for Bhujpur Probashi Jobakollan Porisod Donor & Campaign Management",
+  "description": "Donor & Campaign Management Dashboard for BPJP",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
-  ],
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#333333",
-  "theme_color": "#3D006A",
-  "orientation": "portrait-primary"
+  ]
 }

@@ -5,14 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { AppProvider } from '@/contexts/AppContext';
-import { Analytics } from "@vercel/analytics/next"; // Added Vercel Analytics import
+import { Analytics } from "@vercel/analytics/next";
 
-// Metadata can be dynamic if we use generateMetadata with AppContext
-// For now, it's static or uses environment variables if needed before context is ready client-side
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_APP_NAME || 'BPJP', // Use env var or default
+  title: process.env.NEXT_PUBLIC_APP_NAME || 'BPJP',
   description: 'Donor & Campaign Management Dashboard',
-  manifest: '/manifest.json', // Added manifest link here for metadata
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
@@ -20,6 +18,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#3D006A',
 };
 
 export default function RootLayout({
@@ -36,11 +35,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
         
         {/* PWA Meta Tags */}
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#3D006A" />
+        <meta name="application-name" content={appTitle} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={appTitle} />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className="font-body antialiased">
@@ -50,14 +50,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppProvider> {/* AppProvider wraps AuthProvider now */}
+          <AppProvider>
             <AuthProvider>
               {children}
               <Toaster />
             </AuthProvider>
           </AppProvider>
         </ThemeProvider>
-        <Analytics /> {/* Added Vercel Analytics component here */}
+        <Analytics />
       </body>
     </html>
   );
