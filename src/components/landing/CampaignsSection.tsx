@@ -10,6 +10,13 @@ import { Loader2, ServerCrash, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getCampaigns, type CampaignData } from '@/services/campaignService';
 import { Timestamp } from 'firebase/firestore';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export function CampaignsSection() {
   const [activeCampaigns, setActiveCampaigns] = useState<CampaignData[]>([]);
@@ -30,7 +37,7 @@ export function CampaignsSection() {
               const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : (b.createdAt as unknown as Date).getTime();
               return dateB - dateA;
           })
-          .slice(0, 3); // Get top 3 most recent active campaigns
+          .slice(0, 4); // Get top 4 most recent active campaigns
         
         setActiveCampaigns(active);
       } catch (e) {
@@ -67,11 +74,25 @@ export function CampaignsSection() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : activeCampaigns.length > 0 ? (
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {activeCampaigns.map((campaign) => (
-                <CampaignCard key={campaign.id} campaign={campaign} isPublicView={true} />
-              ))}
-            </div>
+             <Carousel
+              opts={{
+                align: "start",
+                loop: activeCampaigns.length > 3,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4">
+                {activeCampaigns.map((campaign) => (
+                  <CarouselItem key={campaign.id} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1 h-full">
+                      <CampaignCard campaign={campaign} isPublicView={true} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="absolute left-[-15px] sm:left-[-25px] top-1/2 -translate-y-1/2 hidden lg:flex" />
+              <CarouselNext className="absolute right-[-15px] sm:right-[-25px] top-1/2 -translate-y-1/2 hidden lg:flex" />
+            </Carousel>
           ) : (
             <Alert>
               <AlertTitle>No Active Campaigns</AlertTitle>
