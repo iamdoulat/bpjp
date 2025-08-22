@@ -38,20 +38,21 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+// Allow a wider range of characters for internationalization (including Bangla)
 const organizationSettingsSchema = z.object({
   organizationName: z.string().min(3, { message: "Organization name must be at least 3 characters." }).max(100),
   address: z.string().min(10, { message: "Address must be at least 10 characters." }).max(250),
   registrationNumber: z.string().max(50).optional().or(z.literal('')),
-  establishedYear: z.string().regex(/^\d{4}$/, { message: "Must be a 4-digit year." }).optional().or(z.literal('')),
+  establishedYear: z.string().regex(/^[\d\u09E6-\u09EF]{4}$/, { message: "Must be a 4-digit year." }).optional().or(z.literal('')), // Allow English or Bangla numerals
   committeePeriod: z.string().max(50).optional().or(z.literal('')),
   contactPersonName: z.string().min(3, { message: "Contact person name must be at least 3 characters." }).max(100),
-  contactPersonCell: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid contact person cell number." }).optional().or(z.literal('')),
+  contactPersonCell: z.string().regex(/^$|^[+]?[\d\s-()\u09E6-\u09EF]{7,20}$/, { message: "Invalid contact person cell number." }).optional().or(z.literal('')),
   contactEmail: z.string().email({ message: "Invalid contact email format." }).max(100),
   presidentName: z.string().min(3, { message: "President's name must be at least 3 characters." }).max(100),
-  presidentMobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid president's mobile number." }).optional().or(z.literal('')),
+  presidentMobileNumber: z.string().regex(/^$|^[+]?[\d\s-()\u09E6-\u09EF]{7,20}$/, { message: "Invalid president's mobile number." }).optional().or(z.literal('')),
   presidentImageFile: z.instanceof(File).optional().nullable(),
   secretaryName: z.string().min(3, { message: "General Secretary's name must be at least 3 characters." }).max(100),
-  secretaryMobileNumber: z.string().regex(/^$|^[+]?[0-9\s-()]{7,20}$/, { message: "Invalid secretary's mobile number." }).optional().or(z.literal('')),
+  secretaryMobileNumber: z.string().regex(/^$|^[+]?[\d\s-()\u09E6-\u09EF]{7,20}$/, { message: "Invalid secretary's mobile number." }).optional().or(z.literal('')),
   secretaryImageFile: z.instanceof(File).optional().nullable(),
   appName: z.string().min(1, { message: "App Name cannot be empty." }).max(50),
   coverImageFile: z.instanceof(File).optional().nullable(),
