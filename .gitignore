@@ -40,6 +40,19 @@ next-env.d.ts
 .genkit/*
 .env*
 
+# gitignore
+.gitignore
+
+# IDX project files
+.idx
+.idx/
+
+# VS Code settings
+.vscode/
+
+# Docs files
+/docs
+
 # firebase
 firebase-debug.log
 firestore-debug.log
