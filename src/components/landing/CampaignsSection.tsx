@@ -62,7 +62,7 @@ export function CampaignsSection() {
         <p className="mt-4 text-center text-lg text-black dark:text-muted-foreground">
           Join us in making a difference. Support a cause that matters to you.
         </p>
-        <div className="mt-12">
+        <div className="mt-12 flex justify-center">
           {loading ? (
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, i) => <CardSkeleton key={i} />)}
@@ -79,7 +79,7 @@ export function CampaignsSection() {
                 align: "center",
                 loop: activeCampaigns.length > 3,
               }}
-              className="w-full px-[35px] my-[20px] mx-[20px]"
+              className="w-[90%] px-[35px] my-[20px] mx-[20px]"
             >
               <CarouselContent className="-ml-4">
                 {activeCampaigns.map((campaign) => (
