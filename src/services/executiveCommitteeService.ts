@@ -1,6 +1,7 @@
 // src/services/executiveCommitteeService.ts
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { collection, doc, getDoc, setDoc, addDoc, getDocs, updateDoc, deleteDoc, Timestamp, serverTimestamp, query, orderBy, type DocumentData, type QueryDocumentSnapshot, writeBatch } from 'firebase/firestore';
+import { getUserProfile } from './userService';
 
 export interface ExecutiveCommitteeContentData {
   id?: string; // document ID, usually 'mainContent'
@@ -31,6 +32,17 @@ const COMMITTEE_COLLECTION = 'executiveCommittee';
 const MEMBERS_SUBCOLLECTION = 'members';
 
 // --- Functions for Main Page Content ---
+
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
+}
 
 export async function getExecutiveCommitteeData(): Promise<ExecutiveCommitteeContentData | null> {
   try {
@@ -66,6 +78,7 @@ export async function getExecutiveCommitteeData(): Promise<ExecutiveCommitteeCon
 }
 
 export async function saveExecutiveCommitteeData(data: { content: string, membersContent: string }): Promise<void> {
+  await verifyAdminRole();
   try {
     const docRef = doc(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID);
     await setDoc(docRef, {
@@ -88,6 +101,7 @@ export async function saveExecutiveCommitteeData(data: { content: string, member
 // --- Functions for Managing Members ---
 
 export async function addExecutiveMember(member: Omit<ExecutiveMemberData, 'id' | 'createdAt'>): Promise<string> {
+    await verifyAdminRole();
     try {
         const membersCollectionRef = collection(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION);
         const docRef = await addDoc(membersCollectionRef, {
@@ -105,6 +119,7 @@ export async function addExecutiveMember(member: Omit<ExecutiveMemberData, 'id' 
 }
 
 export async function addBulkExecutiveMembers(members: NewMemberInput[], committeeType: CommitteeType): Promise<void> {
+    await verifyAdminRole();
     try {
         const batch = writeBatch(db);
         const membersCollectionRef = collection(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION);
@@ -157,6 +172,7 @@ export async function getExecutiveMembers(): Promise<ExecutiveMemberData[]> {
 }
 
 export async function updateExecutiveMember(memberId: string, updates: Partial<Omit<ExecutiveMemberData, 'id' | 'createdAt'>>): Promise<void> {
+    await verifyAdminRole();
     try {
         const memberDocRef = doc(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION, memberId);
         await updateDoc(memberDocRef, updates);
@@ -170,6 +186,7 @@ export async function updateExecutiveMember(memberId: string, updates: Partial<O
 }
 
 export async function deleteExecutiveMember(memberId: string): Promise<void> {
+    await verifyAdminRole();
     try {
         const memberDocRef = doc(db, COMMITTEE_COLLECTION, COMMITTEE_CONTENT_DOC_ID, MEMBERS_SUBCOLLECTION, memberId);
         await deleteDoc(memberDocRef);

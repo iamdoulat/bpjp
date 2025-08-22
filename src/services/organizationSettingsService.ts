@@ -1,9 +1,9 @@
-
 // src/services/organizationSettingsService.ts
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { User as AuthUser } from 'firebase/auth';
+import { getUserProfile } from './userService';
 
 export interface OrganizationSettingsData {
   id?: string; // Document ID, usually 'organizationDetails'
@@ -31,6 +31,17 @@ export interface OrganizationSettingsData {
 
 const SETTINGS_DOC_ID = 'organizationDetails';
 const SITE_CONTENT_COLLECTION = 'siteContent';
+
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
+}
 
 async function uploadImage(file: File, path: string): Promise<{ imageUrl: string, imagePath: string }> {
   const storageRef = ref(storage, path);
@@ -157,6 +168,7 @@ export async function saveOrganizationSettings(
   secretaryImageFile?: File,
   coverImageFile?: File
 ): Promise<void> {
+  await verifyAdminRole();
   try {
     const docRef = doc(db, SITE_CONTENT_COLLECTION, SETTINGS_DOC_ID);
     const currentSettings = await getDoc(docRef); // Fetch current doc to get existing image paths
@@ -205,5 +217,3 @@ export async function saveOrganizationSettings(
     throw new Error('An unknown error occurred while saving organization settings.');
   }
 }
-
-    

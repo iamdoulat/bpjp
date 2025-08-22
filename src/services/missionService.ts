@@ -1,7 +1,7 @@
-
 // src/services/missionService.ts
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { getUserProfile } from './userService';
 
 export interface MissionData {
   id?: string; // document ID, usually 'ourMissionContent'
@@ -12,6 +12,17 @@ export interface MissionData {
 
 const MISSION_DOC_ID = 'ourMissionContent';
 const SITE_CONTENT_COLLECTION = 'siteContent';
+
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
+}
 
 export async function getMissionData(): Promise<MissionData | null> {
   try {
@@ -46,6 +57,7 @@ export async function getMissionData(): Promise<MissionData | null> {
 }
 
 export async function saveMissionData(title: string, content: string): Promise<void> {
+  await verifyAdminRole();
   try {
     const docRef = doc(db, SITE_CONTENT_COLLECTION, MISSION_DOC_ID);
     await setDoc(docRef, {

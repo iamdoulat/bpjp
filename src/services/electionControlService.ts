@@ -1,6 +1,7 @@
 // src/services/electionControlService.ts
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getUserProfile } from './userService';
 
 const ELECTION_CONTROL_COLLECTION = 'electionControl';
 const MAIN_ELECTION_DOC_ID = 'mainElection';
@@ -10,6 +11,17 @@ export interface ElectionControlSettings {
   votingClosed: boolean;
   voteInstructions?: string | null; // Added voteInstructions
   lastUpdated?: Timestamp;
+}
+
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
 }
 
 // Gets the current election control settings. Defaults if not found.
@@ -39,6 +51,7 @@ export async function getElectionControlSettings(): Promise<ElectionControlSetti
 
 // Sets the results published status. Publishing results also closes voting.
 export async function setResultsPublished(isPublic: boolean): Promise<void> {
+  await verifyAdminRole();
   try {
     const docRef = doc(db, ELECTION_CONTROL_COLLECTION, MAIN_ELECTION_DOC_ID);
     await setDoc(docRef, {
@@ -60,6 +73,7 @@ export async function setResultsPublished(isPublic: boolean): Promise<void> {
 
 // Function to update specific election control settings, including vote instructions
 export async function updateElectionControlSettings(updates: Partial<ElectionControlSettings>): Promise<void> {
+  await verifyAdminRole();
   try {
     const docRef = doc(db, ELECTION_CONTROL_COLLECTION, MAIN_ELECTION_DOC_ID);
     const dataToUpdate = {

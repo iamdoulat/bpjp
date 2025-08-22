@@ -1,4 +1,3 @@
-
 // src/services/advisoryBoardService.ts
 import { db, storage, auth } from '@/lib/firebase';
 import {
@@ -17,6 +16,7 @@ import {
   type QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getUserProfile } from './userService';
 
 const SITE_CONTENT_COLLECTION = 'siteContent';
 const ORGANIZATION_DETAILS_DOC_ID = 'organizationDetails';
@@ -40,6 +40,17 @@ export interface NewAdvisoryBoardMemberInput {
 export interface UpdateAdvisoryBoardMemberInput {
   name?: string;
   title?: string;
+}
+
+async function verifyAdminRole(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  const userProfile = await getUserProfile(user.uid);
+  if (userProfile?.role !== 'admin') {
+    throw new Error("Permission denied. You must be an administrator to perform this action.");
+  }
 }
 
 async function uploadAdvisoryImage(file: File, memberId?: string): Promise<{ imageUrl: string, imagePath: string }> {
@@ -80,6 +91,7 @@ export async function addAdvisoryBoardMember(
   data: NewAdvisoryBoardMemberInput,
   imageFile?: File
 ): Promise<string> {
+  await verifyAdminRole();
   try {
     let imageDetails: { imageUrl: string, imagePath: string } | undefined;
     if (imageFile) {
@@ -148,6 +160,7 @@ export async function updateAdvisoryBoardMember(
   updates: UpdateAdvisoryBoardMemberInput,
   newImageFile?: File | null // null means remove existing image
 ): Promise<void> {
+  await verifyAdminRole();
   try {
     const memberDocRef = doc(db, SITE_CONTENT_COLLECTION, ORGANIZATION_DETAILS_DOC_ID, ADVISORY_BOARD_SUBCOLLECTION, memberId);
     const dataToUpdate: Partial<Omit<AdvisoryBoardMemberData, 'id' | 'createdAt'>> & { lastUpdated?: Timestamp } = {
@@ -191,6 +204,7 @@ export async function updateAdvisoryBoardMember(
 }
 
 export async function deleteAdvisoryBoardMember(memberId: string): Promise<void> {
+  await verifyAdminRole();
   try {
     const memberDocRef = doc(db, SITE_CONTENT_COLLECTION, ORGANIZATION_DETAILS_DOC_ID, ADVISORY_BOARD_SUBCOLLECTION, memberId);
     const memberSnap = await getDoc(memberDocRef);
