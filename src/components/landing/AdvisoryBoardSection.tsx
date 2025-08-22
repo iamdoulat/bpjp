@@ -56,23 +56,25 @@ export function AdvisoryBoardSection() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : members.length > 0 ? (
-             <Carousel opts={{ align: "start", loop: members.length > 5 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-5xl mx-auto">
-              <CarouselContent className="-ml-4">
-                {members.map((member) => (
-                  <CarouselItem key={member.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/5">
-                    <div className="p-1 h-full">
-                      <MemberCard member={member} />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              {members.length > 1 && (
-                <>
-                  <CarouselPrevious className="absolute left-[-15px] sm:left-[-25px] md:left-[-35px] top-1/2 -translate-y-1/2 hidden md:flex" />
-                  <CarouselNext className="absolute right-[-15px] sm:right-[-25px] md:right-[-35px] top-1/2 -translate-y-1/2 hidden md:flex" />
-                </>
-              )}
-            </Carousel>
+            <div className="w-[95%] mx-auto">
+              <Carousel opts={{ align: "start", loop: members.length > 5 }} className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-5xl mx-auto">
+                <CarouselContent className="-ml-4">
+                  {members.map((member) => (
+                    <CarouselItem key={member.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/5">
+                      <div className="p-1 h-full">
+                        <MemberCard member={member} />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                {members.length > 1 && (
+                  <>
+                    <CarouselPrevious className="absolute left-[-15px] sm:left-[-25px] md:left-[-35px] top-1/2 -translate-y-1/2 hidden md:flex" />
+                    <CarouselNext className="absolute right-[-15px] sm:right-[-25px] md:right-[-35px] top-1/2 -translate-y-1/2 hidden md:flex" />
+                  </>
+                )}
+              </Carousel>
+            </div>
           ) : (
              <Alert>
               <AlertTitle>No Members Found</AlertTitle>
