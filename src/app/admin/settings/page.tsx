@@ -420,7 +420,7 @@ export default function AdminSettingsPage() {
                       <FormLabel htmlFor="coverImageFile">Cover Picture</FormLabel>
                       {coverPreview && (<div className="mt-2 mb-2 w-full aspect-[12/5] relative rounded-md overflow-hidden border"><Image src={coverPreview} alt="Cover preview" layout="fill" objectFit="cover" data-ai-hint="organization banner"/></div>)}
                       <FormControl><Input id="coverImageFile" type="file" accept="image/png, image/jpeg, image/gif" onChange={handleCoverFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" disabled={isSubmittingOrgSettings} ref={coverFileInputRef} /></FormControl>
-                      <FormDescription>Upload a cover image for the About Us page banner (recommended 1200x500px).</FormDescription>
+                      <FormDescription>Upload a cover image for the About Us page banner (recommended 1280x560px).</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}/>
@@ -690,7 +690,7 @@ export default function AdminSettingsPage() {
         {/* Image Crop Dialogs */}
         {imageToCropSrcPresident && ( <ImageCropDialog isOpen={isPresidentCropDialogOpen} onClose={() => { setIsPresidentCropDialogOpen(false); setImageToCropSrcPresident(null); if (presidentFileInputRef.current) presidentFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcPresident} onCropComplete={handlePresidentCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
         {imageToCropSrcSecretary && ( <ImageCropDialog isOpen={isSecretaryCropDialogOpen} onClose={() => { setIsSecretaryCropDialogOpen(false); setImageToCropSrcSecretary(null); if (secretaryFileInputRef.current) secretaryFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcSecretary} onCropComplete={handleSecretaryCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
-        {imageToCropSrcCover && ( <ImageCropDialog isOpen={isCoverCropDialogOpen} onClose={() => { setIsCoverCropDialogOpen(false); setImageToCropSrcCover(null); if (coverFileInputRef.current) coverFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcCover} onCropComplete={handleCoverCropComplete} aspectRatio={1200 / 500} targetWidth={1200} targetHeight={500}/>)}
+        {imageToCropSrcCover && ( <ImageCropDialog isOpen={isCoverCropDialogOpen} onClose={() => { setIsCoverCropDialogOpen(false); setImageToCropSrcCover(null); if (coverFileInputRef.current) coverFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcCover} onCropComplete={handleCoverCropComplete} aspectRatio={1280 / 560} targetWidth={1280} targetHeight={560}/>)}
         {imageToCropSrcAdvisory && ( <ImageCropDialog isOpen={isAdvisoryCropDialogOpen} onClose={() => { setIsAdvisoryCropDialogOpen(false); setImageToCropSrcAdvisory(null); if (advisoryImageFileInputRef.current) advisoryImageFileInputRef.current.value = ""; if (editAdvisoryImageFileInputRef.current) editAdvisoryImageFileInputRef.current.value = ""; }} imageSrc={imageToCropSrcAdvisory} onCropComplete={handleAdvisoryCropComplete} aspectRatio={1} targetWidth={150} targetHeight={150}/>)}
       </main>
     </AppShell>
