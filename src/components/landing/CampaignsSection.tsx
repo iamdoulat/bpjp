@@ -83,7 +83,7 @@ export function CampaignsSection() {
             >
               <CarouselContent className="-ml-4">
                 {activeCampaigns.map((campaign) => (
-                  <CarouselItem key={campaign.id} className="pl-4 basis-full md:basis-1/2 lg:basis-[31%]">
+                  <CarouselItem key={campaign.id} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3">
                     <div className="p-1 h-full">
                       <CampaignCard campaign={campaign} isPublicView={true} />
                     </div>
