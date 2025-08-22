@@ -40,13 +40,13 @@ export function HeroSection() {
           className="mt-4 max-w-3xl text-lg text-gray-200 md:text-xl flex flex-col items-center gap-2"
         >
           <p 
-            className="bg-green-600/50 backdrop-blur-sm p-2 rounded-md"
+            className="bg-blue-600/50 backdrop-blur-sm p-2 rounded-md"
             style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}
           >
             ঠিকানা : {address}
           </p>
           <p 
-            className="bg-green-600/50 backdrop-blur-sm p-2 rounded-md"
+            className="bg-blue-600/50 backdrop-blur-sm p-2 rounded-md"
             style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}
           >
             রেজিঃ নং- {regNumber}, স্থাপিত: {established} ইংরেজি
