@@ -8,9 +8,9 @@
 *   **সম্পূর্ণ ডাইনামিক:** অ্যাডমিন প্যানেল থেকে ওয়েবসাইটের প্রায় সকল কন্টেন্ট, যেমন - আমাদের লক্ষ্য, কার্যনির্বাহী কমিটি, আমাদের সম্পর্কে পেজের তথ্য, নোটিশ, ইভেন্ট, ক্যাম্পেইন ইত্যাদি সহজেই পরিবর্তন এবং নিয়ন্ত্রণ করা যায়।
 *   **রিয়েল-টাইম আপডেট:** অ্যাডমিন প্যানেলে করা যেকোনো পরিবর্তন সাথে সাথে ওয়েবসাইটে প্রতিফলিত হয়, যা ব্যবহারকারীদের সবসময় আপ-টু-ডেট তথ্য প্রদান করে।
 
-    ![ওয়েবসাইট](https://res.cloudinary.com/dzepzzvh8/image/upload/w_450/v1755892239/WeChat_Screenshot_20250823014615_vorkss.jpg)
+    ![ওয়েবসাইট](https://res.cloudinary.com/dzepzzvh8/image/upload/w_800/v1755894578/WeChat_Screenshot_20250823014615_fueayc.jpg)
     
-    ![ওয়েবসাইট](https://res.cloudinary.com/dzepzzvh8/image/upload/w_450/v1755892768/WeChat_Screenshot_20250823014644_qrkwrh.jpg)
+    ![ওয়েবসাইট](https://res.cloudinary.com/dzepzzvh8/image/upload/w_800/v1755894629/WeChat_Screenshot_20250823014644_qto2v2.jpg)
 
 ### ব্যবহারকারী অংশ (User Portion)
 
