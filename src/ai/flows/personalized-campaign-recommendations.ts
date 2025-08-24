@@ -1,94 +1,71 @@
-// src/ai/flows/personalized-campaign-recommendations.ts
-'use server';
-
-/**
- * @fileOverview Personalized campaign recommendations based on donation history and preferences.
- *
- * - personalizedCampaignRecommendations - A function that handles the personalized campaign recommendation process.
- * - PersonalizedCampaignRecommendationsInput - The input type for the personalizedCampaignRecommendations function.
- * - PersonalizedCampaignRecommendationsOutput - The return type for the personalizedCampaignRecommendations function.
- */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-const PersonalizedCampaignRecommendationsInputSchema = z.object({
-  userId: z.string().describe('The ID of the user.'),
-  donationHistory: z.array(z.string()).describe('List of campaign IDs the user has donated to.'),
-  preferences: z.string().describe('User preferences for campaigns (e.g., environment, education).'),
-});
-export type PersonalizedCampaignRecommendationsInput = z.infer<typeof PersonalizedCampaignRecommendationsInputSchema>;
-
-const CampaignSchema = z.object({
-  campaignId: z.string().describe('The ID of the campaign.'),
-  name: z.string().describe('The name of the campaign.'),
-  description: z.string().describe('A short description of the campaign.'),
-  category: z.string().describe('The category of the campaign (e.g., environment, education).'),
-  imageUrl: z.string().url().optional().describe('URL of the campaign image.'),
-});
-
-const PersonalizedCampaignRecommendationsOutputSchema = z.array(CampaignSchema).describe('A list of recommended campaigns.');
-export type PersonalizedCampaignRecommendationsOutput = z.infer<typeof PersonalizedCampaignRecommendationsOutputSchema>;
-
-export async function personalizedCampaignRecommendations(
-  input: PersonalizedCampaignRecommendationsInput
-): Promise<PersonalizedCampaignRecommendationsOutput> {
-  return personalizedCampaignRecommendationsFlow(input);
-}
-
-const getCampaigns = ai.defineTool({
-  name: 'getCampaigns',
-  description: 'Retrieves a list of campaigns based on user preferences and donation history.',
-  inputSchema: z.object({
-    preferences: z.string().describe('User preferences for campaigns.'),
-    donationHistory: z.array(z.string()).describe('List of campaign IDs the user has donated to.'),
-  }),
-  outputSchema: z.array(CampaignSchema),
-},
-async (input) => {
-  // In a real application, this would call a database or service to retrieve campaigns.
-  // This is a placeholder implementation.
-  const campaigns = [
-    { campaignId: '1', name: 'Save the Rainforest', description: 'Protect the Amazon rainforest.', category: 'environment', imageUrl: 'https://placehold.co/600x400.png?text=Rainforest' },
-    { campaignId: '2', name: 'Educate a Child', description: 'Provide education to underprivileged children.', category: 'education', imageUrl: 'https://placehold.co/600x400.png?text=Education' },
-    { campaignId: '3', name: 'Clean Water Project', description: 'Provide clean water to communities in need.', category: 'water', imageUrl: 'https://placehold.co/600x400.png?text=Water' },
-    { campaignId: '4', name: 'Animal Shelter Support', description: 'Help local animal shelters provide care.', category: 'animals', imageUrl: 'https://placehold.co/600x400.png?text=Animals' },
-    { campaignId: '5', name: 'Tech for Good', description: 'Support initiatives using technology for social impact.', category: 'technology', imageUrl: 'https://placehold.co/600x400.png?text=Tech' },
-
-  ];
-
-  // Filter campaigns based on user preferences (simplified).
-  const filteredCampaigns = campaigns.filter(campaign => {
-    return input.preferences.toLowerCase().includes(campaign.category.toLowerCase());
-  });
-
-  return filteredCampaigns;
-});
-
-const prompt = ai.definePrompt({
-  name: 'personalizedCampaignRecommendationsPrompt',
-  input: {
-    schema: PersonalizedCampaignRecommendationsInputSchema,
+{
+  "name": "nextn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 9002",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
-  output: {
-    schema: PersonalizedCampaignRecommendationsOutputSchema,
+  "engines": {
+    "node": "20.x"
   },
-  tools: [getCampaigns],
-  prompt: `Based on the user's donation history of the following campaign IDs: {{{donationHistory}}},
-  and preferences: {{{preferences}}},
-  recommend campaigns that align with their interests using the getCampaigns tool. Return an array of
-campaigns that the user may be interested in.
-`,
-});
-
-const personalizedCampaignRecommendationsFlow = ai.defineFlow(
-  {
-    name: 'personalizedCampaignRecommendationsFlow',
-    inputSchema: PersonalizedCampaignRecommendationsInputSchema,
-    outputSchema: PersonalizedCampaignRecommendationsOutputSchema,
+  "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.7",
+    "@hookform/resolvers": "^3.9.0",
+    "@radix-ui/react-accordion": "^1.2.0",
+    "@radix-ui/react-alert-dialog": "^1.1.1",
+    "@radix-ui/react-avatar": "^1.1.0",
+    "@radix-ui/react-checkbox": "^1.1.1",
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-dropdown-menu": "^2.1.1",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-menubar": "^1.1.1",
+    "@radix-ui/react-popover": "^1.1.1",
+    "@radix-ui/react-progress": "^1.1.0",
+    "@radix-ui/react-radio-group": "^1.2.0",
+    "@radix-ui/react-scroll-area": "^1.1.0",
+    "@radix-ui/react-select": "^2.1.1",
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slider": "^1.2.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "@radix-ui/react-toast": "^1.2.1",
+    "@radix-ui/react-tooltip": "^1.1.2",
+    "@vercel/analytics": "^1.3.1",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "embla-carousel-react": "^8.1.7",
+    "firebase": "^10.12.4",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "lucide-react": "^0.417.0",
+    "next": "14.2.5",
+    "next-themes": "^0.3.0",
+    "papaparse": "^5.4.1",
+    "patch-package": "^8.0.0",
+    "react": "^18.3.1",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.52.1",
+    "react-image-crop": "^11.0.6",
+    "recharts": "^2.12.7",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.8"
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "@types/papaparse": "^5.3.14",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "typescript": "^5.5.4"
   }
-);
+}
