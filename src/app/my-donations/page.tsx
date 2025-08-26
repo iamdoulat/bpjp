@@ -185,7 +185,7 @@ export default function MyDonationsPage() {
           <div className="flex items-center gap-3">
             <History className="h-8 w-8 text-green-600" />
             <div>
-              <h1 className="text-2xl font-headline font-semibold">My Donation History</h1>
+              <h1 className="text-2xl font-headline font-semibold">আমার দানের তালিকা</h1>
               <p className="text-muted-foreground text-sm">
                 আপনার প্রতিটি অবদান ও তার বর্তমান অবস্থা সহজেই ট্র্যাক করুন।
               </p>
