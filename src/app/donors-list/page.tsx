@@ -298,7 +298,7 @@ export default function DonorsListPage() {
             <div className="flex items-center gap-3">
               <ListChecks className="h-8 w-8 text-green-600" />
               <div>
-                <h1 className="text-2xl font-headline font-semibold">All Valued Donors List</h1>
+                <h1 className="text-2xl font-headline font-semibold">সম্মানিত দাতাদের নামের তালিকা।</h1>
                 <p className="text-muted-foreground text-sm">
                   A detailed list of all successful donations.
                 </p>
