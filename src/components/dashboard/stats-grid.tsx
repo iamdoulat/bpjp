@@ -84,7 +84,7 @@ export function StatsGrid() {
 
   const userSpecificStats = user ? [
     { 
-      title: "Your Total Donations", 
+      title: "আপনি মোট দান করেছেন", 
       value: loadingUserStats || userFetchedStats.totalDonatedByUser === null ? <Skeleton className="h-7 w-20 bg-white/30" /> : formatCurrency(userFetchedStats.totalDonatedByUser),
       subtitle: "Successful donations", 
       icon: <DollarSign className="h-6 w-6" />,
