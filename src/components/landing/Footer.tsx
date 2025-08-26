@@ -100,26 +100,30 @@ export function Footer() {
                 </div>
                 <span>{organizationSettings?.contactEmail || "contact@example.com"}</span>
             </div>
-             <div className="flex items-center space-x-4 pt-2">
+             <div className="space-y-3 pt-2">
               <a
                 href="https://www.facebook.com/groups/bpkt2018"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 text-sm text-black dark:text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Facebook Group"
               >
-                <Facebook className="h-6 w-6" />
-                <span className="sr-only">Facebook Group</span>
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-white flex-shrink-0">
+                  <Facebook className="h-4 w-4" />
+                </div>
+                <span>Facebook Group</span>
               </a>
               <a
                 href="https://www.facebook.com/bpjkp"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 text-sm text-black dark:text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Facebook Page"
               >
-                <Facebook className="h-6 w-6" />
-                <span className="sr-only">Facebook Page</span>
+                 <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-white flex-shrink-0">
+                  <Facebook className="h-4 w-4" />
+                </div>
+                <span>Facebook Page</span>
               </a>
             </div>
           </div>
