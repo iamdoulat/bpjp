@@ -124,20 +124,26 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Facebook Widget */}
-          <div className="flex justify-center">
-            <iframe
-              src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fbpjkp&tabs=timeline&width=300&height=350&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=true&appId"
-              width="300"
-              height="350"
-              style={{ border: 'none', overflow: 'hidden' }}
-              scrolling="no"
-              frameBorder="0"
-              allowFullScreen={true}
-              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-              title="BPJP Facebook Page"
-              className="rounded-lg shadow-md"
-            ></iframe>
+          {/* Quick Links */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-black dark:text-foreground">Quick Links</h3>
+            <ul className="space-y-2 text-sm text-black dark:text-muted-foreground">
+              <li>
+                <Link href="#campaigns" className="hover:text-primary transition-colors">Campaigns</Link>
+              </li>
+              <li>
+                <Link href="#events" className="hover:text-primary transition-colors">Events</Link>
+              </li>
+              <li>
+                <Link href="#mission" className="hover:text-primary transition-colors">Mission</Link>
+              </li>
+              <li>
+                <Link href="#about" className="hover:text-primary transition-colors">About Us</Link>
+              </li>
+              <li>
+                <Link href="#committee" className="hover:text-primary transition-colors">Committee</Link>
+              </li>
+            </ul>
           </div>
 
           {/* Feedback Form */}
