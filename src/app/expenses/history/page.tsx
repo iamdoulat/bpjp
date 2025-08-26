@@ -89,7 +89,7 @@ export default function ExpensesHistoryPage() {
             <div>
               <h1 className="text-2xl font-headline font-semibold">ব্যয়ের সম্পূর্ণ তালিকা</h1>
               <p className="text-muted-foreground text-sm">
-                View all recorded expenses. These amounts are deducted from platform funds.
+                দেখুন আপনার টাকা কোন খাতে খরচ হয়েছে।
               </p>
             </div>
           </div>
