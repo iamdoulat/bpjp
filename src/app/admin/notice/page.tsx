@@ -43,7 +43,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileText as NoticeIcon, PlusCircle, Edit, Trash2, MoreHorizontal, AlertCircle, Save, X, Megaphone } from "lucide-react";
+import { Loader2, FileText as NoticeIcon, PlusCircle, Edit, Trash2, MoreHorizontal, AlertCircle, Save, X, Megaphone, BookOpenCheck } from "lucide-react";
 import {
   addNotice,
   getNotices,
@@ -51,6 +51,7 @@ import {
   deleteNotice,
   type NoticeData,
 } from "@/services/noticeService";
+import { getOrganizationSettings, saveOrganizationSettings, type OrganizationSettingsData } from "@/services/organizationSettingsService";
 import { Timestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
@@ -70,6 +71,12 @@ const noticeFormSchema = z.object({
 });
 
 type NoticeFormValues = z.infer<typeof noticeFormSchema>;
+
+const alertFormSchema = z.object({
+  importantAlert: z.string().max(5000, "Alert cannot exceed 5000 characters.").optional().or(z.literal('')),
+});
+type AlertFormValues = z.infer<typeof alertFormSchema>;
+
 
 function formatDisplayDateTime(date?: Timestamp): string {
   if (!date) return "N/A";
@@ -97,6 +104,9 @@ export default function ManageNoticePage() {
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const [isLoadingAlert, setIsLoadingAlert] = React.useState(true);
+  const [isSubmittingAlert, setIsSubmittingAlert] = React.useState(false);
+
   const form = useForm<NoticeFormValues>({
     resolver: zodResolver(noticeFormSchema),
     defaultValues: {
@@ -108,6 +118,11 @@ export default function ManageNoticePage() {
       imageFile: null,
       removeCurrentImage: false,
     },
+  });
+
+  const alertForm = useForm<AlertFormValues>({
+    resolver: zodResolver(alertFormSchema),
+    defaultValues: { importantAlert: "" },
   });
 
   const fetchNotices = React.useCallback(async () => {
@@ -125,7 +140,20 @@ export default function ManageNoticePage() {
 
   React.useEffect(() => {
     fetchNotices();
-  }, [fetchNotices]);
+
+    async function fetchAlert() {
+      setIsLoadingAlert(true);
+      try {
+        const settings = await getOrganizationSettings();
+        alertForm.setValue("importantAlert", settings?.importantAlert || "");
+      } catch (e) {
+        toast({ title: "Error Loading Alert", description: (e as Error).message, variant: "destructive" });
+      } finally {
+        setIsLoadingAlert(false);
+      }
+    }
+    fetchAlert();
+  }, [fetchNotices, alertForm, toast]);
   
   const resetDialogState = () => {
     form.reset();
@@ -230,6 +258,22 @@ export default function ManageNoticePage() {
     }
   };
 
+  const onAlertSubmit = async (data: AlertFormValues) => {
+    setIsSubmittingAlert(true);
+    try {
+      // We are saving only this one field, so we can pass a minimal object to the service.
+      // The service function should handle merging this into the main settings document.
+      const currentSettings = await getOrganizationSettings();
+      await saveOrganizationSettings({ ...currentSettings, ...data } as OrganizationSettingsData);
+      toast({ title: "Alert Saved", description: "The important alert has been updated." });
+      alertForm.reset({ importantAlert: data.importantAlert }); // Reset to mark form as not dirty
+    } catch (e) {
+      toast({ title: "Error Saving Alert", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setIsSubmittingAlert(false);
+    }
+  };
+
   return (
     <AppShell>
       <main className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
@@ -248,6 +292,54 @@ export default function ManageNoticePage() {
             Create Notice
           </Button>
         </div>
+
+        {/* Important Alert Section */}
+        <section className="mt-10">
+          <Card className="shadow-md">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5 text-green-600" />
+                <CardTitle className="text-lg">Important Alert</CardTitle>
+              </div>
+              <CardDescription>
+                This text will appear as a prominent alert on the public site. Leave blank to hide it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingAlert ? (
+                <Skeleton className="h-32 w-full" />
+              ) : (
+                <Form {...alertForm}>
+                  <form onSubmit={alertForm.handleSubmit(onAlertSubmit)} className="space-y-6">
+                    <FormField
+                      control={alertForm.control}
+                      name="importantAlert"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Alert Text</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter alert text here..."
+                              className="resize-y min-h-[150px]"
+                              {...field}
+                              disabled={isSubmittingAlert}
+                            />
+                          </FormControl>
+                          <FormDescription>Max 5000 characters. This will be displayed publicly.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" disabled={isSubmittingAlert || !alertForm.formState.isDirty}>
+                      {isSubmittingAlert && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save Alert
+                    </Button>
+                  </form>
+                </Form>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
         {loading ? (
           <div className="space-y-2">

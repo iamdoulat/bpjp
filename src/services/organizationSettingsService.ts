@@ -27,6 +27,7 @@ export interface OrganizationSettingsData {
   lastUpdated?: Timestamp;
   coverImageUrl?: string | null; // For the About Us page banner
   coverImagePath?: string | null; // For storage path
+  importantAlert?: string | null; // For global site alert
 }
 
 const SETTINGS_DOC_ID = 'organizationDetails';
@@ -102,6 +103,7 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
         contactPersonCell: data.contactPersonCell || null,
         coverImageUrl: data.coverImageUrl || null,
         coverImagePath: data.coverImagePath || null,
+        importantAlert: data.importantAlert || null,
         lastUpdated: data.lastUpdated as Timestamp,
       } as OrganizationSettingsData;
     }
@@ -126,6 +128,7 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       appName: process.env.NEXT_PUBLIC_APP_NAME || "BPJP",
       coverImageUrl: null,
       coverImagePath: null,
+      importantAlert: null,
       lastUpdated: undefined,
     };
   } catch (error) {
@@ -158,52 +161,57 @@ export async function getOrganizationSettings(): Promise<OrganizationSettingsDat
       secretaryImagePath: null,
       coverImageUrl: null,
       coverImagePath: null,
+      importantAlert: null,
     };
   }
 }
 
 export async function saveOrganizationSettings(
-  settingsData: Omit<OrganizationSettingsData, 'id' | 'lastUpdated' | 'presidentImageURL' | 'secretaryImageURL' | 'coverImageUrl' | 'presidentImagePath' | 'secretaryImagePath' | 'coverImagePath'>,
-  presidentImageFile?: File,
-  secretaryImageFile?: File,
-  coverImageFile?: File
+  settingsData: Omit<OrganizationSettingsData, 'id' | 'lastUpdated' | 'presidentImageURL' | 'secretaryImageURL' | 'coverImageUrl' | 'presidentImagePath' | 'secretaryImagePath' | 'coverImagePath'> & { importantAlert?: string | null },
+  presidentImageFile?: File | null, // Changed to allow null
+  secretaryImageFile?: File | null, // Changed to allow null
+  coverImageFile?: File | null // Changed to allow null
 ): Promise<void> {
   await verifyAdminRole();
   try {
     const docRef = doc(db, SITE_CONTENT_COLLECTION, SETTINGS_DOC_ID);
-    const currentSettings = await getDoc(docRef); // Fetch current doc to get existing image paths
+    const currentSettingsSnap = await getDoc(docRef);
 
     const dataToSave: Partial<OrganizationSettingsData> = {
       ...settingsData,
       lastUpdated: serverTimestamp() as Timestamp,
     };
+    
+    // Handle image file updates
+    const handleImageUpdate = async (file: File | null | undefined, fieldName: 'president' | 'secretary' | 'cover') => {
+        const urlField = `${fieldName}ImageURL`;
+        const pathField = `${fieldName}ImagePath`;
+        
+        if (file) { // New file provided
+            if (currentSettingsSnap.exists() && currentSettingsSnap.data()?.[pathField]) {
+                await deleteImage(currentSettingsSnap.data()?.[pathField]);
+            }
+            const imgDetails = await uploadImage(file, `organization/${SETTINGS_DOC_ID}/${fieldName}_image.${file.name.split('.').pop()}`);
+            (dataToSave as any)[urlField] = imgDetails.imageUrl;
+            (dataToSave as any)[pathField] = imgDetails.imagePath;
+        } else if (file === null) { // Explicitly told to remove the image
+            if (currentSettingsSnap.exists() && currentSettingsSnap.data()?.[pathField]) {
+                await deleteImage(currentSettingsSnap.data()?.[pathField]);
+            }
+            (dataToSave as any)[urlField] = null;
+            (dataToSave as any)[pathField] = null;
+        }
+        // If file is undefined, do nothing to the image fields
+    };
 
-    if (presidentImageFile) {
-      if (currentSettings.exists() && currentSettings.data()?.presidentImagePath) {
-        await deleteImage(currentSettings.data()?.presidentImagePath);
-      }
-      const presImgDetails = await uploadImage(presidentImageFile, `organization/${SETTINGS_DOC_ID}/president_image.${presidentImageFile.name.split('.').pop()}`);
-      dataToSave.presidentImageURL = presImgDetails.imageUrl;
-      dataToSave.presidentImagePath = presImgDetails.imagePath;
-    }
+    await handleImageUpdate(presidentImageFile, 'president');
+    await handleImageUpdate(secretaryImageFile, 'secretary');
+    await handleImageUpdate(coverImageFile, 'cover');
 
-    if (secretaryImageFile) {
-      if (currentSettings.exists() && currentSettings.data()?.secretaryImagePath) {
-        await deleteImage(currentSettings.data()?.secretaryImagePath);
-      }
-      const secImgDetails = await uploadImage(secretaryImageFile, `organization/${SETTINGS_DOC_ID}/secretary_image.${secretaryImageFile.name.split('.').pop()}`);
-      dataToSave.secretaryImageURL = secImgDetails.imageUrl;
-      dataToSave.secretaryImagePath = secImgDetails.imagePath;
-    }
-
-    if (coverImageFile) {
-      if (currentSettings.exists() && currentSettings.data()?.coverImagePath) {
-        await deleteImage(currentSettings.data()?.coverImagePath);
-      }
-      const coverImgDetails = await uploadImage(coverImageFile, `organization/${SETTINGS_DOC_ID}/cover_image.${coverImageFile.name.split('.').pop()}`);
-      dataToSave.coverImageUrl = coverImgDetails.imageUrl;
-      dataToSave.coverImagePath = coverImgDetails.imagePath;
-    }
+    // Make sure we don't try to save undefined file objects to Firestore
+    delete (dataToSave as any).presidentImageFile;
+    delete (dataToSave as any).secretaryImageFile;
+    delete (dataToSave as any).coverImageFile;
 
     await setDoc(docRef, dataToSave, { merge: true });
   } catch (error) {
