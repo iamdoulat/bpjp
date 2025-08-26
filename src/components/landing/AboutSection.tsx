@@ -44,7 +44,7 @@ export function AboutSection() {
                 </div>
               ) : (
                 <p>
-                  Established in {settings?.establishedYear || 'recent years'}, we are a non-profit organization with registration number {settings?.registrationNumber || 'N/A'}. Our main office is located at {settings?.address || 'our community center'}.
+                  ২০১৮ সালে প্রতিষ্ঠিত, আমরা একটি অলাভজনক প্রতিষ্ঠান (নিবন্ধন নং: ২০১৮/এ)। আমাদের প্রধান কার্যালয় অবস্থিত — কাজির হাট, থানা: ভূজপুর, উপজেলা: ফটিকছড়ি, জেলা: চট্টগ্রাম-৪৩৫০, বাংলাদেশ। — যা সত্যিই গুরুত্বপূর্ণ, সেটির পাশে দাঁড়ান—আপনার সহযোগিতায় বদলাবে জীবন —এখনই এগিয়ে আসুন। —মানবতার পথে আপনার অবদানই হোক আলোর দিশারি। সামান্য সহায়তাই বদলে দিতে পারে কারও ভবিষ্যৎ।
                 </p>
               )}
             </div>
