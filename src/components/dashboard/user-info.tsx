@@ -9,7 +9,7 @@ import { Skeleton } from '../ui/skeleton';
 
 export function UserInfo() {
   const { user, loading } = useAuth();
-  const [greeting, setGreeting] = useState("Welcome"); // Default greeting
+  const [greeting, setGreeting] = useState<string | null>(null); // Start with null
 
   useEffect(() => {
     // This effect runs only on the client, after the initial render.
@@ -73,6 +73,7 @@ export function UserInfo() {
     return namePart.substring(0, 2).toUpperCase();
   };
 
+  const finalGreeting = greeting || "Welcome";
 
   return (
     <div className="w-full p-4 sm:p-6 rounded-lg shadow-md bg-card text-card-foreground">
@@ -85,7 +86,7 @@ export function UserInfo() {
           <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
         </Avatar>
         <div>
-          <h2 className="text-2xl font-headline font-semibold">{greeting}, {userName}!</h2>
+          <h2 className="text-2xl font-headline font-semibold">{finalGreeting}, {userName}!</h2>
           <p className="text-sm text-muted-foreground">{userEmail}</p>
         </div>
       </div>
