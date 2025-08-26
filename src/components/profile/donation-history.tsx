@@ -77,9 +77,9 @@ const DonationHistory: React.FC = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <List className="h-6 w-6 text-green-600" />
-            <CardTitle className="text-xl font-headline">Donation History</CardTitle>
+            <CardTitle className="text-xl font-headline">আমার দানের তালিকা</CardTitle>
           </div>
-          <CardDescription>Your contributions and their status.</CardDescription>
+          <CardDescription>আপনার দান এবং বর্তমান অবস্থা।</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y divide-border">
@@ -113,7 +113,7 @@ const DonationHistory: React.FC = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <List className="h-6 w-6 text-green-600" />
-            <CardTitle className="text-xl font-headline">Donation History</CardTitle>
+            <CardTitle className="text-xl font-headline">আমারদানের তালিকা</CardTitle>
           </div>
           <CardDescription>আপনার দান এবং বর্তমান অবস্থা।</CardDescription>
         </CardHeader>
@@ -134,7 +134,7 @@ const DonationHistory: React.FC = () => {
       <CardHeader>
         <div className="flex items-center gap-2">
           <List className="h-6 w-6 text-green-600" />
-          <CardTitle className="text-xl font-headline">Donation History</CardTitle>
+          <CardTitle className="text-xl font-headline">আমারদানের তালিকা</CardTitle>
         </div>
         <CardDescription>আপনার দান এবং বর্তমান অবস্থা।</CardDescription>
       </CardHeader>
@@ -197,5 +197,6 @@ const DonationHistory: React.FC = () => {
 };
 
 export default DonationHistory;
+
 
 
