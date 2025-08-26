@@ -134,8 +134,8 @@ export default function ExecutiveCommitteePage() {
         <div className="flex items-center gap-3 mb-4">
           <Users className="h-8 w-8 text-green-600" />
           <div>
-            <h1 className="text-2xl font-headline font-bold">Executive Committee</h1>
-            <p className="text-muted-foreground text-md">Meet the dedicated members of our committee.</p>
+            <h1 className="text-2xl font-headline font-bold">এক্সিকিউটিভ কমিটি</h1>
+            <p className="text-muted-foreground text-md">আমাদের কমিটির নিবেদিত সদস্যদের সাথে পরিচিত হোন।</p>
           </div>
         </div>
                 
