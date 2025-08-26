@@ -140,7 +140,7 @@ export default function BrowseCampaignsPage() {
             <div>
               <h1 className="text-2xl font-headline font-bold">Browse Campaigns</h1>
               <p className="text-muted-foreground text-md">
-                Find causes you care about and make a difference.
+                ভালো কাজের পাশে থাকুন, পরিবর্তনের শক্তি হোন।
               </p>
             </div>
           </div>
@@ -199,5 +199,3 @@ function CampaignCardSkeleton() {
     </div>
   );
 }
-
-
