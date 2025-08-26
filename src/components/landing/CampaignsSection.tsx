@@ -60,7 +60,7 @@ export function CampaignsSection() {
             </span>
         </h2>
         <p className="mt-4 text-center text-lg text-black dark:text-muted-foreground">
-          Join us in making a difference. Support a cause that matters to you.
+          আপনার সমর্থনেই জন্ম নেয় আশা। পাশে থাকুন একটি মহৎ উদ্দেশ্যে।
         </p>
         <div className="mt-12 flex justify-center">
           {loading ? (
