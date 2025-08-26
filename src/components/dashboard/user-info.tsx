@@ -91,7 +91,7 @@ export function UserInfo() {
         </div>
       </div>
       <p className="text-sm text-muted-foreground">
-        Welcome to Your Dashboard – Here's an overview of your donations activity, ongoing campaigns, etc.
+        আপনার ড্যাশবোর্ডে স্বাগতম – এখানে আপনার দান কার্যক্রম, চলমান ক্যাম্পেইন ইত্যাদির সংক্ষিপ্ত বিবরণ দেখুন।
       </p>
     </div>
   );
