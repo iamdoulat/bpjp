@@ -300,7 +300,7 @@ export default function DonorsListPage() {
               <div>
                 <h1 className="text-2xl font-headline font-semibold">সম্মানিত দাতাদের নামের তালিকা।</h1>
                 <p className="text-muted-foreground text-sm">
-                  A detailed list of all successful donations.
+                  আপনার সফল দানের পূর্ণাঙ্গ তালিকা।
                 </p>
               </div>
             </div>
