@@ -93,7 +93,7 @@ export function CompletedCampaignsDashboardSection() {
         Completed Campaigns
       </h2>
       <p className="text-muted-foreground mb-6">
-        Review successfully concluded initiatives.
+      সফলভাবে সমাপ্ত উদ্যোগগুলো পর্যালোচনা করুন।
       </p>
 
       {loading && (

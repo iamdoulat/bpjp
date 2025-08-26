@@ -70,7 +70,7 @@ export function UpcomingCampaigns() {
         </h2>
       </div>
       <p className="text-muted-foreground mb-6 ml-8">
-        Get ready to support these causes starting soon.
+      শীঘ্রই শুরু হতে যাওয়া এই উদ্যোগগুলো সমর্থন করার জন্য প্রস্তুত হোন।
       </p>
 
       {loading && (
