@@ -245,7 +245,7 @@ export default function ElectionVotePage() {
             <CardHeader className="pb-3 pt-4">
               <div className="flex items-center gap-2">
                 <BookOpenCheck className="h-5 w-5 text-blue-600" />
-                <CardTitle className="text-base font-semibold text-blue-700 dark:text-blue-400">Voting Instructions</CardTitle>
+                <CardTitle className="text-base font-semibold text-blue-700 dark:text-blue-400">ভোট প্রদানের নিয়মাবলি</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="text-sm text-blue-700 dark:text-blue-300 pb-4">
@@ -350,9 +350,9 @@ export default function ElectionVotePage() {
           <div className="flex items-center gap-3">
             <Gavel className="h-8 w-8 text-green-600" />
             <div>
-              <h1 className="text-2xl font-headline font-semibold">Election &amp; Voting Portal</h1>
+              <h1 className="text-2xl font-headline font-semibold">নির্বাচন ও ভোটিং পোর্টাল</h1>
               <p className="text-muted-foreground text-sm">
-                Participate in organizational elections by casting your vote.
+              সংগঠনের নির্বাচনে অংশগ্রহণ করুন এবং আপনার ভোট দিন।
               </p>
             </div>
           </div>
@@ -411,7 +411,7 @@ export default function ElectionVotePage() {
                 <CardHeader className="pb-3 pt-4">
                   <div className="flex items-center gap-2">
                     <BookOpenCheck className="h-5 w-5 text-blue-600" />
-                    <CardTitle className="text-base font-semibold text-blue-700 dark:text-blue-400">Voting Instructions</CardTitle>
+                    <CardTitle className="text-base font-semibold text-blue-700 dark:text-blue-400">ভোট প্রদানের নিয়মাবলি</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="text-sm text-blue-700 dark:text-blue-300 pb-4">

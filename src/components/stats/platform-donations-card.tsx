@@ -37,7 +37,7 @@ export function PlatformDonationsCard() {
   if (loading) {
     return (
       <StatsCard
-        title="Platform Net Funds"
+        title="অবশিষ্ট নগত অর্থ রয়েছে"
         value={<Skeleton className="h-7 w-24 inline-block" />}
         subtitle="Net funds after expenses."
         icon={<Landmark className="h-5 w-5 text-green-600" />}
@@ -47,7 +47,7 @@ export function PlatformDonationsCard() {
 
   return (
     <StatsCard
-      title="Platform Net Funds"
+      title="অবশিষ্ট নগত অর্থ রয়েছে"
       value={formatCurrency(netPlatformFunds ?? 0)}
       subtitle="Total Succeeded Donations minus Expenses."
       icon={<Landmark className="h-5 w-5 text-green-600" />}

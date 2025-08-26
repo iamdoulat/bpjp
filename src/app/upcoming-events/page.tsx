@@ -184,9 +184,9 @@ export default function EventsPage() {
           <div className="flex items-center gap-3">
             <CalendarClock className="h-10 w-10 text-green-600" />
             <div>
-              <h1 className="text-2xl font-headline font-bold">Events</h1>
+              <h1 className="text-2xl font-headline font-bold">ইভেন্টসমূহ</h1>
               <p className="text-muted-foreground text-md">
-                Join our active events, see what's upcoming, or review past initiatives.
+              আমাদের সক্রিয় ইভেন্টে যোগ দিন, আগামি ইভেন্টগুলো দেখুন বা পূর্ববর্তী উদ্যোগসমূহ পর্যালোচনা করুন।
               </p>
             </div>
           </div>
@@ -199,7 +199,7 @@ export default function EventsPage() {
           setCurrentActivePage,
           totalActivePages,
           "No events are currently active.",
-          "Join these ongoing events.",
+          "চলমান ইভেন্টগুলোতে অংশ নিন।",
           Activity
         )}
 
@@ -210,7 +210,7 @@ export default function EventsPage() {
           setCurrentUpcomingPage,
           totalUpcomingPages,
           "No upcoming events scheduled yet. Stay tuned!",
-          "Get ready for these planned events.",
+          "এই আসন্ন ইভেন্টগুলোর জন্য প্রস্তুতি নিন।",
           CalendarClock
         )}
         
@@ -221,7 +221,7 @@ export default function EventsPage() {
           setCurrentCompletedPage,
           totalCompletedPages,
           "No events have been completed or archived yet.",
-          "Review these past or concluded events.",
+          "পুরনো বা সমাপ্ত ইভেন্ট পর্যালোচনা করুন।",
           CheckCircle2
         )}
 

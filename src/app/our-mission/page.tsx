@@ -48,7 +48,7 @@ export default function OurMissionPage() {
               {loading ? <Skeleton className="h-8 w-48" /> : missionData?.title || "Our Mission"}
             </h1>
             <p className="text-muted-foreground text-md">
-              Discover the core values and objectives that drive our organization.
+            আমাদের সংস্থাকে চালিত করা মূল মূল্যবোধ এবং উদ্দেশ্যগুলো আবিষ্কার করুন।
             </p>
           </div>
         </div>

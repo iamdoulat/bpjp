@@ -83,9 +83,9 @@ export default function BrowseCampaignsPage() {
             <h2 className="text-xl font-headline font-semibold text-foreground">{title}</h2>
         </div>
         <p className="text-muted-foreground mb-6 ml-9"> {/* Indent description to align with title */}
-          {title === "Active Campaigns" ? "Support these active initiatives today." :
-           title === "Upcoming Campaigns" ? "Get ready to support these upcoming causes." :
-           "Review these successfully concluded campaigns."}
+          {title === "Active Campaigns" ? "এই চলমান উদ্যোগগুলো আজই সমর্থন করুন।" :
+           title === "Upcoming Campaigns" ? "আগামী উদ্যোগগুলো সমর্থনের জন্য প্রস্তুত থাকুন।" :
+           "সফলভাবে শেষ হওয়া ক্যাম্পেইনসমূহ পর্যালোচনা করুন।"}
         </p>
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

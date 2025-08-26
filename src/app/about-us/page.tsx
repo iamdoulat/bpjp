@@ -142,8 +142,8 @@ export default function AboutUsPage() {
         <div className="flex items-center gap-3 mb-4">
           <Info className="h-8 w-8 text-green-600" />
           <div>
-            <h1 className="text-2xl font-headline font-bold">About Us</h1>
-            <p className="text-muted-foreground text-md">Learn more about our organization.</p>
+            <h1 className="text-2xl font-headline font-bold">আমাদের সম্পর্কে</h1>
+            <p className="text-muted-foreground text-md">আমাদের সংস্থার সম্পর্কে আরো তথ্য জানুন।</p>
           </div>
         </div>
 
