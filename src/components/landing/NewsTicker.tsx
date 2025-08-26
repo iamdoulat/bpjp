@@ -38,9 +38,10 @@ export function NewsTicker() {
       <div className="container mx-auto flex items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Megaphone className="h-6 w-6 flex-shrink-0" />
         <div className="relative flex-1 overflow-hidden">
-          <p className="whitespace-nowrap animate-marquee">
-            {alertText}
-          </p>
+          <div
+            className="whitespace-nowrap animate-marquee"
+            dangerouslySetInnerHTML={{ __html: alertText }}
+          />
         </div>
       </div>
     </div>
