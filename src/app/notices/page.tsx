@@ -9,9 +9,10 @@ import { Alert, AlertDescription, AlertTitle as ShadCNAlertTitle } from "@/compo
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText as NoticeIcon, ServerCrash, Search, Link as LinkIcon } from "lucide-react";
+import { FileText as NoticeIcon, ServerCrash, Search, Link as LinkIcon, Megaphone } from "lucide-react";
 import { getNotices, type NoticeData } from "@/services/noticeService";
 import { Timestamp } from "firebase/firestore";
+import { useAppContext } from "@/contexts/AppContext"; // Import the App Context
 
 function formatDisplayDate(date: Timestamp | Date | undefined) {
   if (!date) return "N/A";
@@ -27,6 +28,7 @@ export default function NoticesPage() {
   const [notices, setNotices] = React.useState<NoticeData[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const { organizationSettings, isLoadingAppSettings } = useAppContext(); // Get settings from context
 
   React.useEffect(() => {
     async function fetchActiveNotices() {
@@ -45,7 +47,10 @@ export default function NoticesPage() {
     fetchActiveNotices();
   }, []);
 
-  if (loading) {
+  const isLoadingPage = loading || isLoadingAppSettings;
+  const alertText = organizationSettings?.importantAlert;
+
+  if (isLoadingPage) {
     return (
       <AppShell>
         <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8">
@@ -56,6 +61,7 @@ export default function NoticesPage() {
               <Skeleton className="h-4 w-64" />
             </div>
           </div>
+          <Skeleton className="h-24 w-full" /> {/* Skeleton for alert */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => <NoticeCardSkeleton key={i} />)}
           </div>
@@ -88,6 +94,19 @@ export default function NoticesPage() {
             <p className="text-muted-foreground text-md">Important announcements and updates.</p>
           </div>
         </div>
+
+        {alertText && (
+          <Alert className="bg-primary/10 border-primary/20">
+            <Megaphone className="h-5 w-5 text-primary" />
+            <ShadCNAlertTitle className="font-semibold text-primary">Important Alert</ShadCNAlertTitle>
+            <AlertDescription>
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none [&_strong]:text-primary"
+                dangerouslySetInnerHTML={{ __html: alertText }}
+              />
+            </AlertDescription>
+          </Alert>
+        )}
 
         {notices.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
