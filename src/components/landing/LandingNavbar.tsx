@@ -29,12 +29,12 @@ export function LandingNavbar() {
     const handleHashChange = () => {
       setActiveLink(window.location.hash);
     };
+    
+    // Set initial active link after component mounts on client
+    handleHashChange();
 
     window.addEventListener("scroll", handleScroll);
     window.addEventListener("hashchange", handleHashChange, false);
-    
-    // Set initial active link
-    handleHashChange();
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
