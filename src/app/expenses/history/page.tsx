@@ -87,7 +87,7 @@ export default function ExpensesHistoryPage() {
           <div className="flex items-center gap-3 flex-grow">
             <ReceiptText className="h-8 w-8 text-green-600" />
             <div>
-              <h1 className="text-2xl font-headline font-semibold">Expenses History</h1>
+              <h1 className="text-2xl font-headline font-semibold">ব্যয়ের সম্পূর্ণ তালিকা</h1>
               <p className="text-muted-foreground text-sm">
                 View all recorded expenses. These amounts are deducted from platform funds.
               </p>
@@ -203,4 +203,3 @@ export default function ExpensesHistoryPage() {
     </AppShell>
   );
 }
-
