@@ -58,7 +58,7 @@ export function Footer() {
 
   return (
     <footer className="bg-header-background text-foreground border-t">
-      <div className="container py-12 px-4 sm:px-6 lg:px-8 ml-[150px]">
+      <div className="container py-12 px-4 sm:px-6 lg:px-8 lg:ml-[150px]">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
           {/* Organization Info */}
           <div className="space-y-4">
