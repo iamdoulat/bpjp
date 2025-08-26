@@ -10,11 +10,13 @@ import { AboutSection } from "@/components/landing/AboutSection";
 import { CommitteeSection } from "@/components/landing/CommitteeSection";
 import { Footer } from "@/components/landing/Footer";
 import { AdvisoryBoardSection } from "@/components/landing/AdvisoryBoardSection";
+import { NewsTicker } from "@/components/landing/NewsTicker";
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#EEEEEE] dark:bg-background">
       <LandingNavbar />
+      <NewsTicker />
       <div className="px-4 sm:px-6 lg:px-8">
         <main className="flex-1 max-w-7xl mx-auto">
           <HeroSection />
