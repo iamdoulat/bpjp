@@ -103,7 +103,7 @@ export function StatsGrid() {
 
   const baseStats = [
     { 
-      title: "Platform Net Funds", 
+      title: "অবশিষ্ট নগত অর্থ", 
       value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-24 bg-white/30" /> : formatCurrency(platformStats.netPlatformFunds),
       subtitle: "After operational expenses", 
       icon: <Landmark className="h-6 w-6" />,
