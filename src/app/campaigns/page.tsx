@@ -138,7 +138,7 @@ export default function BrowseCampaignsPage() {
           <div className="flex items-center gap-3">
             <Megaphone className="h-10 w-10 text-green-600" />
             <div>
-              <h1 className="text-2xl font-headline font-bold">Browse Campaigns</h1>
+              <h1 className="text-2xl font-headline font-bold">চলমান কিছু সক্রিয় ক্যাম্পেইন</h1>
               <p className="text-muted-foreground text-md">
                 ভালো কাজের পাশে থাকুন, পরিবর্তনের শক্তি হোন।
               </p>
