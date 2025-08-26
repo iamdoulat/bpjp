@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Megaphone, UserCircle2, ShieldCheck, Users,
   CreditCard, ClipboardList, PlusCircle, LogIn, UserPlus as UserPlusIcon,
   History as HistoryIcon, ReceiptText, FilePlus2, CalendarCheck2, CalendarPlus,
-  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays, Vote, Gavel, FileText as NoticeIcon
+  Settings, Info, Target, FileEdit, ListChecks, Landmark, CalendarDays, Vote, Gavel, FileText as NoticeIcon, MessageSquare
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -45,6 +45,7 @@ const adminNavLinks: NavItem[] = [
   { href: '/expenses/history-list', label: 'Manage Expenses', icon: ListChecks },
   { href: '/admin/events', label: 'Manage Events', icon: CalendarDays },
   { href: '/admin/election-vote', label: 'Manage Election & Vote', icon: Gavel },
+  { href: '/admin/feedback', label: 'Complain & Feedback', icon: MessageSquare },
   { href: '/admin/mission/edit', label: 'Manage Mission Page', icon: FileEdit },
   { href: '/admin/notice', label: 'Manage Notices', icon: FileEdit },
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
