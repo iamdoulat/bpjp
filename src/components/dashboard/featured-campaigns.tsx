@@ -77,7 +77,7 @@ export function FeaturedCampaigns() {
         </h2>
       </div>
       <p className="text-muted-foreground mb-6 ml-8">
-        Discover campaigns you can support right now.
+        আপনি যেসব ক্যাম্পেইন দান করতে চান তা এখনই দেখুন
       </p>
 
       {loading && (

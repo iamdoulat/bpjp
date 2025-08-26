@@ -92,7 +92,7 @@ export function StatsGrid() {
       isLoading: loadingUserStats
     },
     { 
-      title: "Campaigns You Support", 
+      title: "আপনার সমর্থিত ক্যাম্পেইন", 
       value: loadingUserStats || userFetchedStats.campaignsSupportedCount === null ? <Skeleton className="h-7 w-12 bg-white/30" /> : (userFetchedStats.campaignsSupportedCount?.toString() ?? "0"),
       subtitle: "Unique campaigns supported", 
       icon: <HeartPulse className="h-6 w-6" />,
@@ -111,7 +111,7 @@ export function StatsGrid() {
       isLoading: loadingPlatformStats || !platformStats
     },
     { 
-      title: "Active Campaigns", 
+      title: "চলমান ক্যাম্পেইন", 
       value: loadingPlatformStats || !platformStats ? <Skeleton className="h-7 w-12 bg-white/30" /> : platformStats.activeCampaigns.toString(), 
       subtitle: "Opportunities to give", 
       icon: <ListChecks className="h-6 w-6" />,
