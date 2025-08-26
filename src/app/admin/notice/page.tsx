@@ -262,8 +262,6 @@ export default function ManageNoticePage() {
   const onAlertSubmit = async (data: AlertFormValues) => {
     setIsSubmittingAlert(true);
     try {
-      // We are saving only this one field, so we can pass a minimal object to the service.
-      // The service function should handle merging this into the main settings document.
       const currentSettings = await getOrganizationSettings();
       await saveOrganizationSettings({ ...currentSettings, ...data } as OrganizationSettingsData);
       toast({ title: "Alert Saved", description: "The important alert has been updated." });
@@ -293,54 +291,6 @@ export default function ManageNoticePage() {
             Create Notice
           </Button>
         </div>
-
-        {/* Important Alert Section */}
-        <section className="mt-10">
-          <Card className="shadow-md">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Megaphone className="h-5 w-5 text-green-600" />
-                <CardTitle className="text-lg">Important Alert</CardTitle>
-              </div>
-              <CardDescription>
-                This text will appear as a prominent alert on the public site. Leave blank to hide it.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingAlert ? (
-                <Skeleton className="h-32 w-full" />
-              ) : (
-                <Form {...alertForm}>
-                  <form onSubmit={alertForm.handleSubmit(onAlertSubmit)} className="space-y-6">
-                    <FormField
-                      control={alertForm.control}
-                      name="importantAlert"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Alert Text</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Enter alert text here..."
-                              className="resize-y min-h-[150px]"
-                              {...field}
-                              disabled={isSubmittingAlert}
-                            />
-                          </FormControl>
-                          <FormDescription>Max 5000 characters. This will be displayed publicly.</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" disabled={isSubmittingAlert || !alertForm.formState.isDirty}>
-                      {isSubmittingAlert && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save Alert
-                    </Button>
-                  </form>
-                </Form>
-              )}
-            </CardContent>
-          </Card>
-        </section>
 
         {loading ? (
           <div className="space-y-2">
@@ -402,6 +352,54 @@ export default function ManageNoticePage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Important Alert Section */}
+        <section className="mt-10">
+          <Card className="shadow-md">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5 text-green-600" />
+                <CardTitle className="text-lg">Important Alert</CardTitle>
+              </div>
+              <CardDescription>
+                This text will appear as a prominent alert on the public site. Leave blank to hide it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingAlert ? (
+                <Skeleton className="h-32 w-full" />
+              ) : (
+                <Form {...alertForm}>
+                  <form onSubmit={alertForm.handleSubmit(onAlertSubmit)} className="space-y-6">
+                    <FormField
+                      control={alertForm.control}
+                      name="importantAlert"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Alert Text</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter alert text here..."
+                              className="resize-y min-h-[150px]"
+                              {...field}
+                              disabled={isSubmittingAlert}
+                            />
+                          </FormControl>
+                          <FormDescription>Max 5000 characters. This will be displayed publicly.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" disabled={isSubmittingAlert || !alertForm.formState.isDirty}>
+                      {isSubmittingAlert && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save Alert
+                    </Button>
+                  </form>
+                </Form>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => {if(!open) resetDialogState(); setIsDialogOpen(open)}}>
           <DialogContent className="sm:max-w-lg">
