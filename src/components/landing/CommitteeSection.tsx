@@ -38,7 +38,7 @@ export function CommitteeSection() {
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">Meet Our Committee</h2>
             </div>
             <div className="mt-4 text-lg text-black dark:text-muted-foreground">
-                <span>The driving force behind our mission. Committee Period: {loading ? <Skeleton className="h-5 w-24 inline-block" /> : settings?.committeePeriod || 'N/A'}.</span>
+                <span>দায়িত্ব, নেতৃত্ব ও অঙ্গীকারের প্রতীক । অগ্রগতির পথে একসাথে—আমাদের কমিটি। কমিটি সময়কাল: {loading ? <Skeleton className="h-5 w-24 inline-block" /> : settings?.committeePeriod || 'N/A'}।</span>
             </div>
         </div>
         <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto_1fr] md:items-center">
