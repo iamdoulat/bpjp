@@ -90,8 +90,8 @@ export default function NoticesPage() {
         <div className="flex items-center gap-3 mb-4">
           <NoticeIcon className="h-8 w-8 text-green-600" />
           <div>
-            <h1 className="text-2xl font-headline font-bold">Notices</h1>
-            <p className="text-muted-foreground text-md">Important announcements and updates.</p>
+            <h1 className="text-2xl font-headline font-bold">নোটিশ</h1>
+            <p className="text-muted-foreground text-md">গুরুত্বপূর্ণ ঘোষণা ও আপডেটসমূহ।</p>
           </div>
         </div>
 
