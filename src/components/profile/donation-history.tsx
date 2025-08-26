@@ -115,7 +115,7 @@ const DonationHistory: React.FC = () => {
             <List className="h-6 w-6 text-green-600" />
             <CardTitle className="text-xl font-headline">Donation History</CardTitle>
           </div>
-          <CardDescription>Your contributions and their status.</CardDescription>
+          <CardDescription>আপনার দান এবং বর্তমান অবস্থা।</CardDescription>
         </CardHeader>
         <CardContent>
              <Alert variant="default" className="mt-0">
@@ -136,7 +136,7 @@ const DonationHistory: React.FC = () => {
           <List className="h-6 w-6 text-green-600" />
           <CardTitle className="text-xl font-headline">Donation History</CardTitle>
         </div>
-        <CardDescription>Your contributions and their status.</CardDescription>
+        <CardDescription>আপনার দান এবং বর্তমান অবস্থা।</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         {error && (
@@ -197,4 +197,5 @@ const DonationHistory: React.FC = () => {
 };
 
 export default DonationHistory;
+
 
