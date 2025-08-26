@@ -100,7 +100,7 @@ export function Footer() {
                 </div>
                 <span>{organizationSettings?.contactEmail || "contact@example.com"}</span>
             </div>
-             <div className="space-y-3 pt-2">
+             <div className="flex items-center gap-6 pt-2">
               <a
                 href="https://www.facebook.com/groups/bpkt2018"
                 target="_blank"
