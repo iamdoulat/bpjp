@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getOrganizationSettings, type OrganizationSettingsData } from '@/services/organizationSettingsService';
-import { Building, Info } from 'lucide-react';
+import { Building, Info, CheckCircle } from 'lucide-react';
 
 export function AboutSection() {
   const [settings, setSettings] = useState<OrganizationSettingsData | null>(null);
@@ -36,16 +36,28 @@ export function AboutSection() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">
               {loading ? <Skeleton className="h-9 w-3/4" /> : settings?.organizationName || "Our Organization"}
             </h2>
-            <div className="text-black dark:text-muted-foreground">
+            <div className="text-black dark:text-muted-foreground space-y-3">
               {loading ? (
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-5/6" />
                 </div>
               ) : (
-                <p>
-                  ২০১৮ সালে প্রতিষ্ঠিত, আমরা একটি অলাভজনক প্রতিষ্ঠান (নিবন্ধন নং: ২০১৮/এ)। আমাদের প্রধান কার্যালয় অবস্থিত — কাজির হাট, থানা: ভূজপুর, উপজেলা: ফটিকছড়ি, জেলা: চট্টগ্রাম-৪৩৫০, বাংলাদেশ। — যা সত্যিই গুরুত্বপূর্ণ, সেটির পাশে দাঁড়ান—আপনার সহযোগিতায় বদলাবে জীবন —এখনই এগিয়ে আসুন। —মানবতার পথে আপনার অবদানই হোক আলোর দিশারি। সামান্য সহায়তাই বদলে দিতে পারে কারও ভবিষ্যৎ।
-                </p>
+                <>
+                  <p>
+                    ২০১৮ সালে প্রতিষ্ঠিত, আমরা একটি অলাভজনক প্রতিষ্ঠান (নিবন্ধন নং: ২০১৮/এ)। আমাদের প্রধান কার্যালয় অবস্থিত — কাজির হাট, থানা: ভূজপুর, উপজেলা: ফটিকছড়ি, জেলা: চট্টগ্রাম-৪৩৫০, বাংলাদেশ।
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <p>যা সত্যিই গুরুত্বপূর্ণ, সেটির পাশে দাঁড়ান—আপনার সহযোগিতায় বদলাবে জীবন —এখনই এগিয়ে আসুন।</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                       <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                       <p>মানবতার পথে আপনার অবদানই হোক আলোর দিশারি। সামান্য সহায়তাই বদলে দিতে পারে কারও ভবিষ্যৎ।</p>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
