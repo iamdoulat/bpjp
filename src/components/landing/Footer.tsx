@@ -106,24 +106,24 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-black dark:text-muted-foreground hover:text-primary transition-colors"
-                aria-label="Facebook Group"
+                aria-label="Facebook Groups"
               >
                 <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-white flex-shrink-0">
                   <Facebook className="h-4 w-4" />
                 </div>
-                <span>Facebook Group</span>
+                <span>Groups</span>
               </a>
               <a
                 href="https://www.facebook.com/bpjkp"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-black dark:text-muted-foreground hover:text-primary transition-colors"
-                aria-label="Facebook Page"
+                aria-label="Facebook Profile"
               >
                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-white flex-shrink-0">
                   <Facebook className="h-4 w-4" />
                 </div>
-                <span>Facebook Page</span>
+                <span>Profile</span>
               </a>
             </div>
           </div>
