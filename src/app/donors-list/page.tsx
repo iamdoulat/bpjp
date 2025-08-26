@@ -1,4 +1,3 @@
-
 // src/app/donors-list/page.tsx
 "use client";
 
@@ -193,7 +192,7 @@ export default function DonorsListPage() {
             <div className="flex items-center gap-3">
               <Medal className="h-8 w-8 text-amber-500" />
               <div>
-                <h1 className="text-2xl font-headline font-semibold">Top {TOP_DONORS_COUNT} Donors</h1>
+                <h1 className="text-2xl font-headline font-semibold">শীর্ষ ১০ জন সম্মানিত দাতা</h1>
                 <p className="text-muted-foreground text-sm">
                   Recognizing our most generous supporters.
                 </p>
