@@ -20,8 +20,16 @@ export function LandingNavbar() {
 
   const [scrolled, setScrolled] = React.useState(false);
   const [activeLink, setActiveLink] = React.useState("");
+  const [hasMounted, setHasMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+
+  React.useEffect(() => {
+    if (!hasMounted) return;
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
@@ -40,7 +48,7 @@ export function LandingNavbar() {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("hashchange", handleHashChange, false);
     };
-  }, []);
+  }, [hasMounted]);
 
   const navLinks = [
     { href: "#campaigns", label: "Campaigns" },
@@ -49,10 +57,31 @@ export function LandingNavbar() {
     { href: "#about", label: "About" },
     { href: "#committee", label: "Committee" },
   ];
+  
+  if (!hasMounted) {
+    // Render a skeleton or null during SSR and initial client render to avoid hydration mismatch
+    return (
+      <header className="sticky top-0 z-50 w-full bg-transparent">
+        <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 ml-[150px]">
+           <div className="flex items-center gap-2">
+             <Skeleton className="h-8 w-8 rounded" />
+             <Skeleton className="h-6 w-24" />
+           </div>
+            <div className="hidden items-center gap-6 md:flex">
+               {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-5 w-20" />)}
+            </div>
+           <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-9 rounded-md" />
+            <Skeleton className="h-9 w-20 rounded-md" />
+           </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${scrolled ? "border-b border-border/40 bg-background/95 backdrop-blur-sm" : "bg-transparent"}`}>
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 ml-[150px]">
         <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2">
             {appLogoUrl && <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />}

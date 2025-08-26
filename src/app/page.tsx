@@ -17,8 +17,8 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen bg-[#EEEEEE] dark:bg-background">
       <LandingNavbar />
       <NewsTicker />
-      <div className="px-4 sm:px-6 lg:px-8">
-        <main className="flex-1 max-w-7xl mx-auto">
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <HeroSection />
           <div className="mt-5">
             <CampaignsSection />
@@ -38,8 +38,8 @@ export default function LandingPage() {
           <div className="mt-5 mb-5">
             <AdvisoryBoardSection />
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
       <Footer />
     </div>
   );
