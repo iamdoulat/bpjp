@@ -54,10 +54,9 @@ export function CampaignsSection() {
     <section id="campaigns" className="pt-8 pb-5 md:pb-6 bg-card">
       <div className="container">
         <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl text-black dark:text-foreground">
-            Active{' '}
-            <span className="inline-block rounded-lg bg-green-600 text-white px-3 py-1">
-              Campaigns
-            </span>
+          <span className="bg-gradient-to-r from-green-500 via-teal-500 to-blue-500 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
+            Active Campaigns
+          </span>
         </h2>
         <p className="mt-4 text-center text-lg text-black dark:text-muted-foreground">
           আপনার সমর্থনেই জন্ম নেয় আশা। পাশে থাকুন একটি মহৎ উদ্দেশ্যে।
