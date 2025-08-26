@@ -203,7 +203,7 @@ export function Footer() {
         </div>
         <div className="mt-8 border-t pt-8 text-center text-sm text-black dark:text-muted-foreground">
           <p>
-            &copy; {currentYear} {organizationSettings?.organizationName}. All rights reserved.
+            2018 - 2025 {organizationSettings?.organizationName}. All rights reserved.
           </p>
           <p className="mt-1">
             Designed and Developed by{" "}
