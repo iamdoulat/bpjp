@@ -102,7 +102,7 @@ export function EventsSection() {
           </h2>
         </div>
         <p className="mt-4 text-center text-lg text-black dark:text-muted-foreground">
-          Join our community gatherings and make memories with us.
+          সহানুভূতিকে কাজে রূপ দিন । ছোট একটি পদক্ষেপও বড় পরিবর্তন আনতে পারে।
         </p>
         <div className="mt-12">
           {loading ? (
