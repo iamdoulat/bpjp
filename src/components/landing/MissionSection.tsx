@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getMissionData, type MissionData } from '@/services/missionService';
-import { Target } from 'lucide-react';
+import { CheckCircle, Target } from 'lucide-react';
 
 export function MissionSection() {
   const [missionData, setMissionData] = useState<MissionData | null>(null);
@@ -61,12 +61,24 @@ export function MissionSection() {
                   ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ (Bhujpur Probashi Jubokallan Porisod) হলো ভূজপুর এলাকার একটি প্রবাসী যুব সংগঠন। এটি ২০১৮ সালে প্রতিষ্ঠিত হয় এবং বিভিন্ন মানবিক কাজে সহায়তা প্রদান করে আসছে, যেমন বিবাহ, শিক্ষা, চিকিৎসা, বন্যা ও দুর্যোগ মোকাবিলা। পরিষদটি নিয়মিতভাবে দরিদ্র ও অসহায় মানুষের মাঝে ত্রাণ সামগ্রী বিতরণ করে থাকে, যার মধ্যে শীতবস্ত্র, ঈদ সামগ্রী ও খাদ্য বিতরণ উল্লেখযোগ্য।
                 </p>
                 <h3 className="text-xl font-bold text-foreground pt-4">সংগঠনটির প্রধান কার্যাবলী:</h3>
-                <ul className="list-disc list-inside space-y-2">
-                    <li>বিয়ে, শিক্ষা, চিকিৎসা এবং দুর্যোগ মোকাবিলায় সহায়তা করা।</li>
-                    <li>দরিদ্র ও অসহায় মানুষের মাঝে ত্রাণ সামগ্রী বিতরণ করা।</li>
-                    <li>নগদ অর্থ, শীতবস্ত্র, ঈদ বস্ত্র ও খাদ্য সামগ্রী বিতরণ করা।</li>
-                    <li>ভূজপুর এলাকার উন্নয়নে বিভিন্ন কার্যক্রম পরিচালনা করা।</li>
-                </ul>
+                <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <p>বিয়ে, শিক্ষা, চিকিৎসা এবং দুর্যোগ মোকাবিলায় সহায়তা করা।</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <p>দরিদ্র ও অসহায় মানুষের মাঝে ত্রাণ সামগ্রী বিতরণ করা।</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <p>নগদ অর্থ, শীতবস্ত্র, ঈদ বস্ত্র ও খাদ্য সামগ্রী বিতরণ করা।</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <p>ভূজপুর এলাকার উন্নয়নে বিভিন্ন কার্যক্রম পরিচালনা করা।</p>
+                    </div>
+                </div>
                 <p>
                   সংগঠনটি প্রবাসী যুবকদের একত্রিত করে এলাকার উন্নয়নে কাজ করার জন্য একটি প্ল্যাটফর্ম তৈরি করেছে। ইতিমধ্যে মানবিক সব কাজ করে এ সংগঠনটি বেশ সুনাম অর্জন করেছে একইসাথে ফটিকছড়ি উপজেলার শ্রেষ্ঠ মানবিক সংগঠনের খ্যাতি অর্জন করেছে। বছরে ২০ লাখ টাকা অনুদান দিয়ে আসছে এ সংগঠন। আগামীতেও আরো বৃহৎ আকারে কাজ করবে সংগঠনটি।
                 </p>
