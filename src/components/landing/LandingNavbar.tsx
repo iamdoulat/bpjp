@@ -53,13 +53,15 @@ export function LandingNavbar() {
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${scrolled ? "border-b border-border/40 bg-background/95 backdrop-blur-sm" : "bg-transparent"}`}>
       <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          {appLogoUrl && <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />}
-          <div className="text-xl font-bold text-foreground">
-            <span className="md:hidden">BPJP</span>
-            <span className="hidden md:inline">{appName}</span>
-          </div>
-        </Link>
+        <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
+            {appLogoUrl && <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />}
+            <div className="text-xl font-bold text-foreground">
+                <span className="md:hidden">BPJP</span>
+                <span className="hidden md:inline">{appName}</span>
+            </div>
+            </Link>
+        </div>
         <nav className="hidden items-center gap-6 text-base font-medium md:flex">
           {navLinks.map((link) => (
             <Link 
