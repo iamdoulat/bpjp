@@ -42,7 +42,7 @@ export function AdvisoryBoardSection() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-black dark:text-foreground">Guiding Our Path</h2>
           </div>
           <p className="mt-4 text-lg text-black dark:text-muted-foreground">
-            Meet the experienced leaders providing strategic advice and direction to our organization.
+            আমাদের সংগঠনে কৌশলগত দিকনির্দেশনা ও পরামর্শ প্রদানকারী অভিজ্ঞ নেতৃবৃন্দের সঙ্গে পরিচিত হোন।
           </p>
         </div>
         <div className="mt-12">
