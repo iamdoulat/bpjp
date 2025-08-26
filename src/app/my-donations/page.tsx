@@ -187,7 +187,7 @@ export default function MyDonationsPage() {
             <div>
               <h1 className="text-2xl font-headline font-semibold">My Donation History</h1>
               <p className="text-muted-foreground text-sm">
-                Track all your contributions and their status.
+                আপনার প্রতিটি অবদান ও তার বর্তমান অবস্থা সহজেই ট্র্যাক করুন।
               </p>
             </div>
           </div>
