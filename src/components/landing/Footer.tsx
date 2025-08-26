@@ -165,7 +165,7 @@ export function Footer() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input placeholder="Mobile Number with country code" {...field} disabled={isSubmitting} />
+                        <Input placeholder="Mobile number Ex. +8801234567890" {...field} disabled={isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
