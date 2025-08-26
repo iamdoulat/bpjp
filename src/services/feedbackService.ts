@@ -43,7 +43,7 @@ export async function addFeedback(data: NewFeedbackInput): Promise<string> {
   } catch (error) {
     console.error("[feedbackService.addFeedback] Error:", error);
     if (error instanceof Error && (error.message.includes("permission-denied"))) {
-        throw new Error("Failed to submit feedback: Permission to write to the database was denied.");
+        throw new Error("Failed to submit feedback: Permission to write to the database was denied. This is likely a Firestore security rule issue.");
     }
     throw new Error("An unexpected error occurred while submitting feedback.");
   }
@@ -81,8 +81,8 @@ export async function getFeedback(): Promise<FeedbackData[]> {
     return feedbackList;
   } catch (error) {
     console.error("[feedbackService.getFeedback] Error fetching feedback:", error);
-    if (error instanceof Error && (error.message.includes("permission-denied"))) {
-        throw new Error("Permission denied. You are not authorized to view feedback.");
+    if (error instanceof Error && (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions"))) {
+        throw new Error("Permission denied. You are not authorized to view feedback. This is a Firestore security rule issue.");
     }
     throw new Error("An unexpected error occurred while fetching feedback.");
   }
@@ -96,9 +96,11 @@ export async function deleteFeedback(feedbackId: string): Promise<void> {
     await deleteDoc(feedbackDocRef);
   } catch (error) {
     console.error(`[feedbackService.deleteFeedback] Error deleting feedback ${feedbackId}:`, error);
-    if (error instanceof Error && (error.message.includes("permission-denied"))) {
+    if (error instanceof Error && (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions"))) {
         throw new Error("Permission denied. You are not authorized to delete feedback.");
     }
     throw new Error("An unexpected error occurred while deleting feedback.");
   }
 }
+
+    
