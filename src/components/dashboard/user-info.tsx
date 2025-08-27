@@ -86,7 +86,7 @@ export function UserInfo() {
           <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
         </Avatar>
         <div>
-          <h2 className="text-2xl font-headline font-semibold">{finalGreeting}, {userName}!</h2>
+          <h2 className="text-2xl font-headline font-semibold">{greeting ? `${greeting}, ${userName}!` : <Skeleton className="h-8 w-48" />}</h2>
           <p className="text-sm text-muted-foreground">{userEmail}</p>
         </div>
       </div>
