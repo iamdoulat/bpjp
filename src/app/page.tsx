@@ -53,7 +53,7 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "WebSite",
+            "@type": "BPJP",
             name: "ভূজপুর প্রবাসী যুব কল্যাণ পরিষদ",
             url: "https://bpjp.vercel.app",
           }),
