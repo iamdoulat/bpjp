@@ -62,7 +62,7 @@ export function LandingNavbar() {
     // Render a skeleton or null during SSR and initial client render to avoid hydration mismatch
     return (
       <header className="sticky top-0 z-50 w-full bg-transparent">
-        <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 lg:ml-[150px]">
+        <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl">
            <div className="flex items-center gap-2">
              <Skeleton className="h-8 w-8 rounded" />
              <Skeleton className="h-6 w-24" />
@@ -81,7 +81,7 @@ export function LandingNavbar() {
 
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${scrolled ? "border-b border-border/40 bg-background/95 backdrop-blur-sm" : "bg-transparent"}`}>
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 lg:ml-[150px]">
+      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl">
         <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2">
             {appLogoUrl && <Image src={appLogoUrl} alt={`${appName} Logo`} width={32} height={32} className="h-8 w-8 rounded" data-ai-hint="logo company" />}
