@@ -52,7 +52,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-header-background/95 backdrop-blur supports-[backdrop-filter]:bg-header-background/60">
-      <div className="container flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-2"> 
           {user && <SidebarTrigger className="md:hidden" /> }
           <div className="flex items-center gap-2 md:flex peer-data-[state=expanded]:md:hidden min-w-0">
