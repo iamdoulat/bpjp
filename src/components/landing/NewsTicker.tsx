@@ -20,7 +20,7 @@ export function NewsTicker() {
   if (!hasMounted || isLoadingAppSettings) {
     return (
       <div className="bg-primary/10 py-3">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-6 w-3/4" />
         </div>
       </div>
@@ -35,7 +35,7 @@ export function NewsTicker() {
   // Render the actual ticker only on the client after data is loaded.
   return (
     <div className="bg-primary/90 text-primary-foreground py-3 overflow-hidden">
-      <div className="container mx-auto flex items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto flex items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Megaphone className="h-6 w-6 flex-shrink-0" />
         <div className="relative flex-1 overflow-hidden">
           <div
