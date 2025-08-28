@@ -88,8 +88,8 @@ export default function BrowseCampaignsPage() {
            "সফলভাবে শেষ হওয়া ক্যাম্পেইনসমূহ পর্যালোচনা করুন।"}
         </p>
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => <CampaignCardSkeleton key={i} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+            {[...Array(2)].map((_, i) => <CampaignCardSkeleton key={i} />)}
           </div>
         ) : error ? (
            <Alert variant="destructive" className="bg-destructive/10">
@@ -99,7 +99,7 @@ export default function BrowseCampaignsPage() {
           </Alert>
         ) : campaignsToShow.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
               {campaignsToShow.map(campaign => (
                 <CampaignCard key={campaign.id} campaign={campaign} isPublicView={true} />
               ))}
