@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { MonthlySummaryChart } from '@/components/dashboard/monthly-summary-chart';
+import { DonationsComparisonChart } from '@/components/dashboard/donations-comparison-chart';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -36,7 +37,10 @@ export default function DashboardPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-auto pb-20 md:pb-6">
         <UserInfo />
         <StatsGrid />
-        <MonthlySummaryChart />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <MonthlySummaryChart />
+          <DonationsComparisonChart />
+        </div>
         <FeaturedCampaigns />
       </main>
     </AppShell>
