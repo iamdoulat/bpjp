@@ -6,7 +6,6 @@ import { AppShell } from '@/components/layout/app-shell';
 import { UserInfo } from '@/components/dashboard/user-info';
 import { StatsGrid } from '@/components/dashboard/stats-grid';
 import { FeaturedCampaigns } from '@/components/dashboard/featured-campaigns';
-import { UpcomingCampaigns } from '@/components/dashboard/upcoming-campaigns';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -39,7 +38,6 @@ export default function DashboardPage() {
         <StatsGrid />
         <MonthlySummaryChart />
         <FeaturedCampaigns />
-        <UpcomingCampaigns />
       </main>
     </AppShell>
   );
