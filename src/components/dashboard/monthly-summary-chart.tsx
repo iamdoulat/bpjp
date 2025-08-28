@@ -149,7 +149,16 @@ export function MonthlySummaryChart() {
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent
-                    formatter={(value) => (value as number).toLocaleString("en-US", { style: "currency", currency: "BDT" })}
+                    formatter={(value, name) => {
+                       const label = name === 'donations' ? 'Donations' : name === 'expenses' ? 'Expenses' : name;
+                       const formattedValue = (value as number).toLocaleString("en-US", { style: "currency", currency: "BDT" });
+                       return (
+                         <div className="flex min-w-[120px] items-center justify-between">
+                            <span className="text-muted-foreground">{label}</span>
+                            <span>{formattedValue}</span>
+                         </div>
+                       );
+                    }}
                     indicator="dot"
                 />}
               />
