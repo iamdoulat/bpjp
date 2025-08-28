@@ -107,6 +107,9 @@ export async function getExpenses(): Promise<ExpenseData[]> {
   } catch (error) {
     console.error("Error fetching expenses from Firestore: ", error);
     if (error instanceof Error) {
+      if (error.message.includes("Missing or insufficient permissions")) {
+         throw new Error(`Failed to fetch expenses: Permission denied. Please check Firestore security rules for the 'expenses' collection.`);
+      }
       throw new Error(`Failed to fetch expenses: ${error.message}`);
     }
     throw new Error('An unknown error occurred while fetching expenses.');
