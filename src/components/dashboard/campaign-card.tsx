@@ -4,7 +4,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Card, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardTitle, CardFooter, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { CampaignData, ReactionType } from '@/services/campaignService';
@@ -267,7 +267,7 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
           data-ai-hint={getCampaignImageHint(campaign.campaignTitle, campaign.description)}
         />
       </div>
-      <div className="p-4 bg-card flex flex-col flex-grow">
+      <CardContent className="p-4 bg-card flex flex-col flex-grow">
         <CardTitle className="font-headline text-sm md:text-base mb-3 leading-tight truncate">
           {campaign.campaignTitle}
         </CardTitle>
@@ -386,7 +386,7 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
           </DialogContent>
         </Dialog>
 
-      </div>
+      </CardContent>
       {(isPublicView || !campaign.id?.startsWith('admin_preview')) && (
         <CardFooter className="p-3 bg-muted/20 border-t flex items-center justify-between">
           <Button
