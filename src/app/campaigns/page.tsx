@@ -12,7 +12,7 @@ import { getCampaigns, type CampaignData } from "@/services/campaignService";
 import { Megaphone, ChevronLeft, ChevronRight, ServerCrash, CheckCircle2 } from "lucide-react"; // Added CheckCircle2 for completed
 import { Timestamp } from "firebase/firestore";
 
-const CAMPAIGNS_PER_PAGE = 8; // Adjust as needed, for 4 per row, 8 is a good multiple.
+const CAMPAIGNS_PER_PAGE = 10; // Adjust as needed, for 5 per row, 10 is a good multiple.
 
 export default function BrowseCampaignsPage() {
   const [ongoingCampaigns, setOngoingCampaigns] = React.useState<CampaignData[]>([]);
@@ -88,8 +88,8 @@ export default function BrowseCampaignsPage() {
            "সফলভাবে শেষ হওয়া ক্যাম্পেইনসমূহ পর্যালোচনা করুন।"}
         </p>
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => <CampaignCardSkeleton key={i} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {[...Array(5)].map((_, i) => <CampaignCardSkeleton key={i} />)}
           </div>
         ) : error ? (
            <Alert variant="destructive" className="bg-destructive/10">
@@ -99,7 +99,7 @@ export default function BrowseCampaignsPage() {
           </Alert>
         ) : campaignsToShow.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {campaignsToShow.map(campaign => (
                 <CampaignCard key={campaign.id} campaign={campaign} isPublicView={true} />
               ))}
