@@ -257,7 +257,7 @@ export function CampaignCard({ campaign: initialCampaign, isPublicView = false, 
   };
 
   return (
-    <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden rounded-lg transform scale-110">
+    <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden rounded-lg">
       <div className="relative aspect-[3/2] w-full">
         <Image
           src={campaign.campaignImageUrl || `https://placehold.co/600x400.png`}
