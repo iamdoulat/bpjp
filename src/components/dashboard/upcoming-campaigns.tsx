@@ -1,3 +1,4 @@
+
 // src/components/dashboard/upcoming-campaigns.tsx
 "use client";
 
@@ -74,7 +75,7 @@ export function UpcomingCampaigns() {
       </p>
 
       {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(CAMPAIGNS_PER_PAGE)].map((_, i) => (
             <CardSkeleton key={i} />
           ))}
@@ -91,7 +92,7 @@ export function UpcomingCampaigns() {
 
       {!loading && !error && displayedCampaigns.length > 0 && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayedCampaigns.map((campaign) => (
               <CampaignCard key={campaign.id || campaign.campaignTitle} campaign={campaign} isPublicView={true} />
             ))}
